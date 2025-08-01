@@ -3,13 +3,22 @@
 **Awareen** (Awareness + Screen) is an Android application that helps users become more aware of their screen time through a persistent overlay timer. The app displays your current screen time in real-time, even when using other applications, promoting mindful device usage.
 
 ## 🚀 Features
-
 - **Persistent Overlay Timer**: Always-visible screen time counter that works across all apps
 - **Three-Level Alert System**: Progressive visual warnings based on usage time
 - **Customizable Display**: Adjustable colors, positions, and font sizes for each level
 - **Smart Display Modes**: Choose between always-on or interval-based timer display
 - **Analytics Dashboard**: Track your daily screen time patterns and trends
 - **Auto-Reset**: Configurable daily reset time for screen time tracking
+
+## 📸 Screenshots
+<p align="center">
+  <img src="./images/Screenshot_2025_08_01_15_31_57_447_com_example_screentimetracker.jpg" width="22%" />
+  <img src="./images/Screenshot_2025_08_01_15_32_00_510_com_example_screentimetracker.jpg" width="22%" />
+  <img src="./images/Screenshot_2025_08_01_15_32_03_565_com_example_screentimetracker.jpg" width="22%" />
+  <img src="./images/Screenshot_2025_08_01_15_32_16_560_com_example_screentimetracker.jpg" width="22%" />
+</p>
+
+
 
 ## 📱 How It Works
 
