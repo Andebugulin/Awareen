@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    tools:context=".SettingsActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Preview"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFA500"
+                android:layout_centerVertical="true"
+                android:layout_alignParentStart="true" />
+
+            <ImageButton
+                android:id="@+id/closeButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Close"
+                android:padding="6dp"
+                android:src="@drawable/ic_cross"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true" />
+        </RelativeLayout>
+
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/previewLayout"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/rounded_background">
+
+            <TextView
+                android:id="@+id/previewTimeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:12:34"
+                android:textSize="24sp"
+                android:textColor="#4CAF50"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/previewLevel1Header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Level 1"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:textColor="#4CAF50"
+                android:background="?attr/selectableItemBackground"
+                android:layout_marginEnd="8dp"/>
+            <TextView
+                android:id="@+id/previewLevel2Header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Level 2"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:textColor="#E0E0E0"
+                android:background="?attr/selectableItemBackground"
+                android:layout_marginEnd="8dp"/>
+            <TextView
+                android:id="@+id/previewLevel3Header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Level 3"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:textColor="#E0E0E0"
+                android:background="?attr/selectableItemBackground"/>
+        </LinearLayout>
+
+
+        <TextView
+            style="@style/SettingsHeader"
+            android:text="Level 1 Settings (0 - X min)"
+            android:textColor="#FFA500" />
+
+        <GridLayout
+            style="@style/SettingsGrid"
+            android:background="@drawable/rounded_background">
+            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="#E0E0E0" />
+            <Button android:id="@+id/level1ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
+
+            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="#E0E0E0" />
+            <Spinner
+                android:id="@+id/level1PositionSpinner"
+                style="@style/SettingsControl"
+                android:backgroundTint="#333333" />
+
+            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="#E0E0E0" />
+            <LinearLayout style="@style/SettingsControlLayout">
+                <SeekBar
+                    android:id="@+id/level1FontSizeSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="#FFA500"
+                    android:thumbTint="#FFA500" />
+                <TextView
+                    android:id="@+id/level1FontSizeValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="24sp"
+                    android:textColor="#E0E0E0" />
+            </LinearLayout>
+
+            <TextView style="@style/SettingsLabel" android:text="Max Time:" android:textColor="#E0E0E0" />
+            <LinearLayout style="@style/SettingsControlLayout">
+                <SeekBar
+                    android:id="@+id/level1TimeSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="#FFA500"
+                    android:thumbTint="#FFA500" />
+                <TextView
+                    android:id="@+id/level1TimeValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="30 min"
+                    android:textColor="#E0E0E0" />
+            </LinearLayout>
+        </GridLayout>
+
+        <TextView
+            style="@style/SettingsHeader"
+            android:text="Level 2 Settings (Level 1 Max - Y min)"
+            android:textColor="#FFA500" />
+        <GridLayout
+            style="@style/SettingsGrid"
+            android:background="@drawable/rounded_background">
+            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="#E0E0E0" />
+            <Button android:id="@+id/level2ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
+            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="#E0E0E0" />
+            <Spinner
+                android:id="@+id/level2PositionSpinner"
+                style="@style/SettingsControl"
+                android:backgroundTint="#333333" />
+
+            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="#E0E0E0" />
+            <LinearLayout style="@style/SettingsControlLayout">
+                <SeekBar
+                    android:id="@+id/level2FontSizeSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="#FFA500"
+                    android:thumbTint="#FFA500" />
+                <TextView
+                    android:id="@+id/level2FontSizeValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="26sp"
+                    android:textColor="#E0E0E0" />
+            </LinearLayout>
+
+            <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
+            <LinearLayout style="@style/SettingsControlLayout">
+                <SeekBar
+                    android:id="@+id/level2TimeSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="#FFA500"
+                    android:thumbTint="#FFA500" />
+                <TextView
+                    android:id="@+id/level2TimeValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="30 min"
+                    android:textColor="#E0E0E0" />
+            </LinearLayout>
+        </GridLayout>
+
+        <TextView
+            style="@style/SettingsHeader"
+            android:text="Level 3 Settings (Above Level 2 Max)"
+            android:textColor="#FFA500" />
+        <GridLayout
+            style="@style/SettingsGrid"
+            android:background="@drawable/rounded_background">
+            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="#E0E0E0" />
+            <Button android:id="@+id/level3ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
+            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="#E0E0E0" />
+            <Spinner
+                android:id="@+id/level3PositionSpinner"
+                style="@style/SettingsControl"
+                android:backgroundTint="#333333" />
+
+            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="#E0E0E0" />
+            <LinearLayout style="@style/SettingsControlLayout">
+                <SeekBar
+                    android:id="@+id/level3FontSizeSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="#FFA500"
+                    android:thumbTint="#FFA500" />
+                <TextView
+                    android:id="@+id/level3FontSizeValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="28sp"
+                    android:textColor="#E0E0E0" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/SettingsLabel"
+                android:text="Enable Blinking:"
+                android:textColor="#E0E0E0" />
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/level3BlinkingSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|start"
+                android:minHeight="48dp"
+                app:thumbTint="#FFA500"
+                app:trackTint="#333333"
+                tools:checked="true" />
+        </GridLayout>
+
+        <TextView
+            style="@style/SettingsHeader"
+            android:text="Daily Reset Time"
+            android:textColor="#FFA500" />
+        <GridLayout
+            style="@style/SettingsGrid"
+            android:background="@drawable/rounded_background">
+            <TextView style="@style/SettingsLabel" android:text="Hour (24h):" android:textColor="#E0E0E0" />
+            <Spinner
+                android:id="@+id/resetHourSpinner"
+                style="@style/SettingsControl"
+                android:backgroundTint="#333333" />
+
+            <TextView style="@style/SettingsLabel" android:text="Minute:" android:textColor="#E0E0E0" />
+            <Spinner
+                android:id="@+id/resetMinuteSpinner"
+                style="@style/SettingsControl"
+                android:backgroundTint="#333333" />
+        </GridLayout>
+
+        <TextView
+            style="@style/SettingsHeader"
+            android:text="Timer Display Settings"
+            android:textColor="#FFA500" />
+        <GridLayout
+            style="@style/SettingsGrid"
+            android:background="@drawable/rounded_background">
+
+            <TextView style="@style/SettingsLabel" android:text="Display Mode:" android:textColor="#E0E0E0" />
+            <Spinner
+                android:id="@+id/timerDisplayModeSpinner"
+                style="@style/SettingsControl"
+                android:backgroundTint="#333333" />
+
+            <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="#E0E0E0" />
+            <LinearLayout style="@style/SettingsControlLayout">
+                <SeekBar
+                    android:id="@+id/timerDisplayIntervalSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="#FFA500"
+                    android:thumbTint="#FFA500" />
+                <TextView
+                    android:id="@+id/timerDisplayIntervalValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="1 min"
+                    android:textColor="#E0E0E0" />
+            </LinearLayout>
+
+            <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
+            <LinearLayout style="@style/SettingsControlLayout">
+                <SeekBar
+                    android:id="@+id/timerDisplayDurationSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="#FFA500"
+                    android:thumbTint="#FFA500" />
+                <TextView
+                    android:id="@+id/timerDisplayDurationValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="5 sec"
+                    android:textColor="#E0E0E0" />
+            </LinearLayout>
+        </GridLayout>
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp"
+            android:text="Save Settings"
+            android:backgroundTint="#FFA500"
+            android:textColor="#121212" />
+
+    </LinearLayout>
+</ScrollView>

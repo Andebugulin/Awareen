@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="SettingsHeader">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginTop">24dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+    <style name="SettingsGrid">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:columnCount">2</item>
+        <item name="android:layout_marginBottom">16dp</item>
+    </style>
+
+    <style name="SettingsLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">start|center_vertical</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:layout_columnWeight">0</item> <item name="android:layout_rowWeight">1</item>
+    </style>
+
+    <style name="SettingsControl">
+        <item name="android:layout_width">0dp</item> <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">fill_horizontal|center_vertical</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:layout_rowWeight">1</item>
+    </style>
+
+    <style name="SettingsControlLayout" parent="SettingsControl">
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="SettingsSeekBar">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_gravity">center_vertical</item>
+    </style>
+
+    <style name="SettingsSeekBarValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:minWidth">50dp</item> <item name="android:layout_gravity">center_vertical</item>
+    </style>
+
+    <style name="AlertDialog">
+        <item name="android:windowBackground">@color/app_background_dark</item>
+        <item name="android:textColorPrimary">@color/dialog_text_light</item>
+        <item name="colorAccent">@color/dialog_button_highlight</item>
+
+        <item name="android:buttonBarPositiveButtonStyle">@style/AlertDialogButtonTextColor</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/AlertDialogButtonTextColor</item>
+        <item name="android:buttonBarNeutralButtonStyle">@style/AlertDialogButtonTextColor</item>
+    </style>
+
+    <style name="AlertDialogButtonTextColor" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">@color/dialog_button_highlight</item>
+    </style>
+
+    <style name="CustomAlertDialog" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">#1E1E1E</item> <!-- dark card background -->
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#CCCCCC</item>
+    </style>
+
+</resources>
