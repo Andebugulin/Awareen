@@ -16,8 +16,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.PowerManager
+import android.view.View
 import androidx.appcompat.app.AlertDialog
-
+import android.app.ActivityManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,6 +39,16 @@ class MainActivity : AppCompatActivity() {
         startServiceButton.setOnClickListener {
             checkOverlayPermissionAndStartService()
         }
+
+        val stopServiceButton = findViewById<Button>(R.id.stopServiceButton)
+        stopServiceButton.setOnClickListener {
+            val serviceIntent = Intent(this, ScreenTimeService::class.java)
+            stopService(serviceIntent)
+            Toast.makeText(this, "Screen time tracking stopped", Toast.LENGTH_SHORT).show()
+            startServiceButton.visibility = View.VISIBLE
+            stopServiceButton.visibility = View.GONE
+        }
+        updateButtonVisibility()
 
         // Set up social media links
         setupSocialLinks()
@@ -60,6 +71,27 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, AnalyticsActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateButtonVisibility()
+    }
+
+    private fun updateButtonVisibility() {
+        val isServiceRunning = isServiceRunning(ScreenTimeService::class.java)
+        findViewById<Button>(R.id.startServiceButton).visibility = if (isServiceRunning) View.GONE else View.VISIBLE
+        findViewById<Button>(R.id.stopServiceButton).visibility = if (isServiceRunning) View.VISIBLE else View.GONE
+    }
+
+    private fun isServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 
 
@@ -370,6 +402,8 @@ class MainActivity : AppCompatActivity() {
                 startService(serviceIntent)
             }
             Toast.makeText(this, "Screen time tracking started", Toast.LENGTH_SHORT).show()
+            findViewById<Button>(R.id.startServiceButton).visibility = View.GONE
+            findViewById<Button>(R.id.stopServiceButton).visibility = View.VISIBLE
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Error starting service: ${e.message}", Toast.LENGTH_LONG).show()

@@ -134,6 +134,19 @@
                     android:textColor="#E0E0E0" />
             </LinearLayout>
 
+            <TextView
+                style="@style/SettingsLabel"
+                android:text="Enable Blinking:"
+                android:textColor="#E0E0E0" />
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/level1BlinkingSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|start"
+                android:minHeight="48dp"
+                app:thumbTint="#FFA500"
+                app:trackTint="#333333" />
+
             <TextView style="@style/SettingsLabel" android:text="Max Time:" android:textColor="#E0E0E0" />
             <LinearLayout style="@style/SettingsControlLayout">
                 <SeekBar
@@ -177,6 +190,19 @@
                     android:text="26sp"
                     android:textColor="#E0E0E0" />
             </LinearLayout>
+
+            <TextView
+                style="@style/SettingsLabel"
+                android:text="Enable Blinking:"
+                android:textColor="#E0E0E0" />
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/level2BlinkingSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|start"
+                android:minHeight="48dp"
+                app:thumbTint="#FFA500"
+                app:trackTint="#333333" />
 
             <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
             <LinearLayout style="@style/SettingsControlLayout">

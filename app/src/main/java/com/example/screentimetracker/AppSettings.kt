@@ -15,6 +15,7 @@ object AppSettings {
     const val LEVEL_1_POSITION = "level_1_position" // String like "Top Left"
     const val LEVEL_1_FONT_SIZE = "level_1_font_size" // Integer
     const val LEVEL_1_MAX_TIME_SECONDS = "level_1_max_time_seconds" // Integer, in seconds
+    const val LEVEL_1_BLINKING_ENABLED = "level_1_blinking_enabled"
 
     // --- Level 2 Settings ---
     const val LEVEL_2_COLOR = "level_2_color"
@@ -22,6 +23,7 @@ object AppSettings {
     const val LEVEL_2_FONT_SIZE = "level_2_font_size"
     // Level 2 starts after Level 1 ends. This is the DURATION of Level 2.
     const val LEVEL_2_DURATION_SECONDS = "level_2_duration_seconds" // Integer, in seconds
+    const val LEVEL_2_BLINKING_ENABLED = "level_2_blinking_enabled"
 
     // --- Level 3 Settings ---
     // Level 3 starts after Level 1_MAX_TIME + Level 2_DURATION
@@ -45,12 +47,15 @@ object AppSettings {
     val DEFAULT_LEVEL_1_POSITION = "Top Right" // Default position
     const val DEFAULT_LEVEL_1_FONT_SIZE = 24 // Default font size in sp
     const val DEFAULT_LEVEL_1_MAX_TIME_SECONDS = 30 * 60 // 30 minutes
+    const val DEFAULT_LEVEL_1_BLINKING_ENABLED = false
 
     // Default settings for Level 2
     val DEFAULT_LEVEL_2_COLOR = Color.YELLOW
     val DEFAULT_LEVEL_2_POSITION = "Middle Left"
     const val DEFAULT_LEVEL_2_FONT_SIZE = 26 // Default font size in sp
     const val DEFAULT_LEVEL_2_DURATION_SECONDS = 30 * 60 // 30 minutes duration for level 2
+    const val DEFAULT_LEVEL_2_BLINKING_ENABLED = false
+
 
     // Default settings for Level 3
     val DEFAULT_LEVEL_3_COLOR = Color.RED

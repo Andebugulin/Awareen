@@ -55,12 +55,14 @@ class ScreenTimeService : Service() {
     private var level1Color: Int = AppSettings.DEFAULT_LEVEL_1_COLOR
     private var level1Position: String = AppSettings.DEFAULT_LEVEL_1_POSITION
     private var level1FontSize: Float = AppSettings.DEFAULT_LEVEL_1_FONT_SIZE.toFloat()
+    private var level1BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED
 
     private var level2DurationSeconds: Int = AppSettings.DEFAULT_LEVEL_2_DURATION_SECONDS
     private var level2Color: Int = AppSettings.DEFAULT_LEVEL_2_COLOR
     private var level2Position: String = AppSettings.DEFAULT_LEVEL_2_POSITION
     private var level2FontSize: Float = AppSettings.DEFAULT_LEVEL_2_FONT_SIZE.toFloat()
     private var level2EndTimeSeconds: Int = 0
+    private var level2BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED
 
     private var level3Color: Int = AppSettings.DEFAULT_LEVEL_3_COLOR
     private var level3Position: String = AppSettings.DEFAULT_LEVEL_3_POSITION
@@ -217,12 +219,14 @@ class ScreenTimeService : Service() {
         level1Color = prefs.getInt(AppSettings.LEVEL_1_COLOR, AppSettings.DEFAULT_LEVEL_1_COLOR)
         level1Position = prefs.getString(AppSettings.LEVEL_1_POSITION, AppSettings.DEFAULT_LEVEL_1_POSITION) ?: AppSettings.DEFAULT_LEVEL_1_POSITION
         level1FontSize = prefs.getInt(AppSettings.LEVEL_1_FONT_SIZE, AppSettings.DEFAULT_LEVEL_1_FONT_SIZE).toFloat()
+        level1BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED)
 
         level2DurationSeconds = prefs.getInt(AppSettings.LEVEL_2_DURATION_SECONDS, AppSettings.DEFAULT_LEVEL_2_DURATION_SECONDS)
         level2Color = prefs.getInt(AppSettings.LEVEL_2_COLOR, AppSettings.DEFAULT_LEVEL_2_COLOR)
         level2Position = prefs.getString(AppSettings.LEVEL_2_POSITION, AppSettings.DEFAULT_LEVEL_2_POSITION) ?: AppSettings.DEFAULT_LEVEL_2_POSITION
         level2FontSize = prefs.getInt(AppSettings.LEVEL_2_FONT_SIZE, AppSettings.DEFAULT_LEVEL_2_FONT_SIZE).toFloat()
         level2EndTimeSeconds = level1MaxTimeSeconds + level2DurationSeconds
+        level2BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED)
 
         level3Color = prefs.getInt(AppSettings.LEVEL_3_COLOR, AppSettings.DEFAULT_LEVEL_3_COLOR)
         level3Position = prefs.getString(AppSettings.LEVEL_3_POSITION, AppSettings.DEFAULT_LEVEL_3_POSITION) ?: AppSettings.DEFAULT_LEVEL_3_POSITION
@@ -349,23 +353,28 @@ class ScreenTimeService : Service() {
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level1FontSize)
                 updateOverlayLayoutParams(level1Position)
-                overlayView?.clearAnimation()
-                handler.removeCallbacks(blinkingRunnable)
+                if (level1BlinkingEnabled) {
+                    startBlinking()
+                } else {
+                    stopBlinking()
+                }
             }
             screenTimeSeconds < level2EndTimeSeconds -> {
                 timeTextView?.setTextColor(level2Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level2FontSize)
                 updateOverlayLayoutParams(level2Position)
-                overlayView?.clearAnimation()
-                handler.removeCallbacks(blinkingRunnable)
+                if (level2BlinkingEnabled) {
+                    startBlinking()
+                } else {
+                    stopBlinking()
+                }
             }
             else -> {
                 timeTextView?.setTextColor(level3Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level3FontSize)
                 updateOverlayLayoutParams(level3Position)
-
                 if (level3BlinkingEnabled) {
                     startBlinking()
                 } else {
@@ -378,15 +387,30 @@ class ScreenTimeService : Service() {
     private var isBlinking = false
     private val blinkingRunnable = object : Runnable {
         override fun run() {
-            if (screenTimeSeconds >= level2EndTimeSeconds && level3BlinkingEnabled && isBlinking) {
+            val shouldBlink = when {
+                screenTimeSeconds < level1MaxTimeSeconds -> level1BlinkingEnabled
+                screenTimeSeconds < level2EndTimeSeconds -> level2BlinkingEnabled
+                else -> level3BlinkingEnabled
+            }
+
+            if (shouldBlink && isBlinking) {
                 val seconds = screenTimeSeconds % 60
                 val isEvenSecond = seconds % 2 == 0
 
                 if (isEvenSecond) {
-                    timeTextView?.setTextColor(Color.WHITE)
-                    overlayView?.setBackgroundColor(level3Color)
+                    timeTextView?.setTextColor(Color.BLACK)
+                    overlayView?.setBackgroundColor(when {
+                        screenTimeSeconds < level1MaxTimeSeconds -> level1Color
+                        screenTimeSeconds < level2EndTimeSeconds -> level2Color
+                        else -> level3Color
+                    })
                 } else {
-                    timeTextView?.setTextColor(level3Color)
+                    val currentColor = when {
+                        screenTimeSeconds < level1MaxTimeSeconds -> level1Color
+                        screenTimeSeconds < level2EndTimeSeconds -> level2Color
+                        else -> level3Color
+                    }
+                    timeTextView?.setTextColor(currentColor)
                     overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 }
                 handler.postDelayed(this, 500)

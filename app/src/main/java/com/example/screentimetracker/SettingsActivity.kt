@@ -28,6 +28,10 @@ import android.widget.ImageButton
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.widget.SwitchCompat
+import android.text.Editable
+import android.text.TextWatcher
+import android.widget.EditText
+import android.widget.GridLayout
 
 import com.example.screentimetracker.AppSettings // Import your AppSettings
 
@@ -67,6 +71,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var level1FontSizeValue: TextView
     private lateinit var level1TimeSeekBar: SeekBar // Controls max time for level 1
     private lateinit var level1TimeValue: TextView  // Displays max time in minutes
+    private lateinit var level1BlinkingSwitch: SwitchCompat
 
     // UI Elements for Level 2 Settings
     private lateinit var level2ColorButton: Button
@@ -75,6 +80,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var level2FontSizeValue: TextView
     private lateinit var level2TimeSeekBar: SeekBar // Controls duration for level 2
     private lateinit var level2TimeValue: TextView  // Displays duration in minutes
+    private lateinit var level2BlinkingSwitch: SwitchCompat
 
     // UI Elements for Level 3 Settings
     private lateinit var level3ColorButton: Button
@@ -118,6 +124,8 @@ class SettingsActivity : AppCompatActivity() {
     private var currentLevel1Color: Int = AppSettings.DEFAULT_LEVEL_1_COLOR
     private var currentLevel2Color: Int = AppSettings.DEFAULT_LEVEL_2_COLOR
     private var currentLevel3Color: Int = AppSettings.DEFAULT_LEVEL_3_COLOR
+    private var currentLevel1BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED
+    private var currentLevel2BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED
     private var currentLevel3BlinkingEnabled: Boolean = DEFAULT_LEVEL_3_BLINKING_ENABLED // New state variable
 
 
@@ -212,6 +220,8 @@ class SettingsActivity : AppCompatActivity() {
         level1FontSizeValue = findViewById(R.id.level1FontSizeValue)
         level1TimeSeekBar = findViewById(R.id.level1TimeSeekBar)
         level1TimeValue = findViewById(R.id.level1TimeValue)
+        level1BlinkingSwitch = findViewById(R.id.level1BlinkingSwitch)
+
 
         // Level 2 controls
         level2ColorButton = findViewById(R.id.level2ColorButton)
@@ -220,6 +230,7 @@ class SettingsActivity : AppCompatActivity() {
         level2FontSizeValue = findViewById(R.id.level2FontSizeValue)
         level2TimeSeekBar = findViewById(R.id.level2TimeSeekBar)
         level2TimeValue = findViewById(R.id.level2TimeValue)
+        level2BlinkingSwitch = findViewById(R.id.level2BlinkingSwitch)
 
         // Level 3 controls
         level3ColorButton = findViewById(R.id.level3ColorButton)
@@ -238,6 +249,7 @@ class SettingsActivity : AppCompatActivity() {
         timerDisplayIntervalValue = findViewById(R.id.timerDisplayIntervalValue)
         timerDisplayDurationSeekBar = findViewById(R.id.timerDisplayDurationSeekBar)
         timerDisplayDurationValue = findViewById(R.id.timerDisplayDurationValue)
+
     }
 
     private fun setupCloseButton() {
@@ -314,19 +326,21 @@ class SettingsActivity : AppCompatActivity() {
         setupColorButtonControl(level1ColorButton, AppSettings.LEVEL_1_COLOR, AppSettings.DEFAULT_LEVEL_1_COLOR) { color -> currentLevel1Color = color }
         setupPositionSpinnerControl(level1PositionSpinner, AppSettings.LEVEL_1_POSITION, AppSettings.DEFAULT_LEVEL_1_POSITION)
         setupFontSizeSeekBarControl(level1FontSizeSeekBar, level1FontSizeValue, AppSettings.LEVEL_1_FONT_SIZE, AppSettings.DEFAULT_LEVEL_1_FONT_SIZE)
+        setupLevelBlinkingSwitchControl(level1BlinkingSwitch, AppSettings.LEVEL_1_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED) { enabled -> currentLevel1BlinkingEnabled = enabled }
         setupLevel1TimeSeekBarControl()
 
         // Level 2
         setupColorButtonControl(level2ColorButton, AppSettings.LEVEL_2_COLOR, AppSettings.DEFAULT_LEVEL_2_COLOR) { color -> currentLevel2Color = color }
         setupPositionSpinnerControl(level2PositionSpinner, AppSettings.LEVEL_2_POSITION, AppSettings.DEFAULT_LEVEL_2_POSITION)
         setupFontSizeSeekBarControl(level2FontSizeSeekBar, level2FontSizeValue, AppSettings.LEVEL_2_FONT_SIZE, AppSettings.DEFAULT_LEVEL_2_FONT_SIZE)
+        setupLevelBlinkingSwitchControl(level2BlinkingSwitch, AppSettings.LEVEL_2_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED) { enabled -> currentLevel2BlinkingEnabled = enabled }
         setupLevel2TimeSeekBarControl()
 
         // Level 3
         setupColorButtonControl(level3ColorButton, AppSettings.LEVEL_3_COLOR, AppSettings.DEFAULT_LEVEL_3_COLOR) { color -> currentLevel3Color = color }
         setupPositionSpinnerControl(level3PositionSpinner, AppSettings.LEVEL_3_POSITION, AppSettings.DEFAULT_LEVEL_3_POSITION)
         setupFontSizeSeekBarControl(level3FontSizeSeekBar, level3FontSizeValue, AppSettings.LEVEL_3_FONT_SIZE, AppSettings.DEFAULT_LEVEL_3_FONT_SIZE)
-        setupLevel3BlinkingSwitchControl() // Call new function for the switch
+        setupLevelBlinkingSwitchControl(level3BlinkingSwitch, AppSettings.LEVEL_3_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_3_BLINKING_ENABLED) { enabled -> currentLevel3BlinkingEnabled = enabled} // Call new function for the switch
 
 
         // Reset Time
@@ -403,32 +417,77 @@ class SettingsActivity : AppCompatActivity() {
      * A more advanced implementation would use a color picker dialog.
      */
     private fun setupColorButtonControl(button: Button, prefKey: String, defaultColor: Int, onColorSelected: (Int) -> Unit) {
-        // Load initial color from preferences
         var loadedColor = prefs.getInt(prefKey, defaultColor)
         button.setBackgroundColor(loadedColor)
-        onColorSelected(loadedColor) // Initialize the corresponding member variable
+        onColorSelected(loadedColor)
 
         val availableColors = listOf(
             Color.GREEN, Color.YELLOW, Color.RED, Color.CYAN, Color.MAGENTA, Color.BLUE,
-            Color.parseColor("#FFA500"), // Orange
-            Color.parseColor("#FF4081"), // Pink
+            Color.parseColor("#FFA500"), Color.parseColor("#FF4081"),
             Color.WHITE, Color.LTGRAY
         )
 
         button.setOnClickListener {
-            // Find the current index based on the *currently active* color
-            val currentIndex = availableColors.indexOf(loadedColor)
-            // Determine the next color in the cycle
-            loadedColor = if (currentIndex != -1 && currentIndex < availableColors.size - 1) {
-                availableColors[currentIndex + 1]
-            } else {
-                availableColors[0] // Cycle back to the first color
+            showColorPickerDialog(loadedColor, availableColors) { selectedColor ->
+                loadedColor = selectedColor
+                button.setBackgroundColor(loadedColor)
+                onColorSelected(loadedColor)
+                updatePreview()
+                markChanged()
             }
-            button.setBackgroundColor(loadedColor)
-            onColorSelected(loadedColor) // Update the corresponding member variable
-            updatePreview()
-            markChanged()
         }
+    }
+
+    private fun showColorPickerDialog(currentColor: Int, presetColors: List<Int>, onColorSelected: (Int) -> Unit) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
+        val hexInput = dialogView.findViewById<EditText>(R.id.hexInput)
+        val previewColor = dialogView.findViewById<View>(R.id.previewColor)
+        val randomButton = dialogView.findViewById<Button>(R.id.randomColorButton)
+
+        hexInput.setText(String.format("#%06X", 0xFFFFFF and currentColor))
+        previewColor.setBackgroundColor(currentColor)
+
+        randomButton.setOnClickListener {
+            val randomColor = Color.rgb(
+                (0..255).random(),
+                (0..255).random(),
+                (0..255).random()
+            )
+            hexInput.setText(String.format("#%06X", 0xFFFFFF and randomColor))
+            previewColor.setBackgroundColor(randomColor)
+        }
+
+        hexInput.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                try {
+                    val color = Color.parseColor(s.toString())
+                    previewColor.setBackgroundColor(color)
+                } catch (e: Exception) {
+                    // Invalid color
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .setTitle("Choose Color")
+            .setView(dialogView)
+            .setPositiveButton("Select") { _, _ ->
+                try {
+                    val color = Color.parseColor(hexInput.text.toString())
+                    onColorSelected(color)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Invalid color format", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+            .apply {
+                show()
+                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#FFA500"))
+                getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#FFA500"))
+            }
     }
 
     /**
@@ -513,14 +572,14 @@ class SettingsActivity : AppCompatActivity() {
         })
     }
 
-    private fun setupLevel3BlinkingSwitchControl() {
-        currentLevel3BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, DEFAULT_LEVEL_3_BLINKING_ENABLED)
-        level3BlinkingSwitch.isChecked = currentLevel3BlinkingEnabled
+    private fun setupLevelBlinkingSwitchControl(switch: SwitchCompat, prefKey: String, default: Boolean, onToggle: (Boolean) -> Unit) {
+        val enabled = prefs.getBoolean(prefKey, default)
+        switch.isChecked = enabled
+        onToggle(enabled)
 
-        level3BlinkingSwitch.setOnCheckedChangeListener { _, isChecked ->
-            currentLevel3BlinkingEnabled = isChecked
+        switch.setOnCheckedChangeListener { _, isChecked ->
+            onToggle(isChecked)
             markChanged()
-            // No direct preview update needed for blinking, but you could add a visual cue if desired.
         }
     }
 
@@ -528,58 +587,31 @@ class SettingsActivity : AppCompatActivity() {
      * Sets up spinners for selecting the daily reset time (hour and minute).
      */
     private fun setupResetTimeControls() {
-        // Get current time
-        val calendar = Calendar.getInstance()
-        currentHour = calendar.get(Calendar.HOUR_OF_DAY)
-        currentMinute = calendar.get(Calendar.MINUTE)
-
-        // Create arrays with limited options
-        val hours = Array(currentHour + 1) { i -> String.format("%02d", i) }
-
-        // Create minute array based on selected hour
-        val savedHour = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
-        val minuteLimit = if (savedHour < currentHour) 60 else currentMinute
-        val minutes = Array(minuteLimit) { i -> String.format("%02d", i) }
+        val hours = Array(24) { i -> String.format("%02d", i) }
+        val minutes = Array(60) { i -> String.format("%02d", i) }
 
         resetHourSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, hours)
         resetMinuteSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, minutes)
 
-        // Select saved values or defaults
-        val savedHourPosition = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
-            .coerceIn(0, hours.size - 1)
-        resetHourSpinner.setSelection(savedHourPosition)
+        val savedHour = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
+        val savedMinute = prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
 
-        val savedMinutePosition = prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
-            .coerceIn(0, minutes.size - 1)
-        resetMinuteSpinner.setSelection(savedMinutePosition)
+        resetHourSpinner.setSelection(savedHour)
+        resetMinuteSpinner.setSelection(savedMinute)
 
-        // Add listener to hour spinner to update minute spinner accordingly
         resetHourSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                // If selected hour equals current hour, limit minutes
-                val selectedHour = position
-                updateMinuteSpinner(selectedHour)
                 markChanged()
             }
-
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-    }
 
-    // Add this helper function
-    private fun updateMinuteSpinner(selectedHour: Int) {
-        // If selected hour equals current hour, limit minutes to current minute
-        val minuteLimit = if (selectedHour < currentHour) 60 else currentMinute
-        val minutes = Array(minuteLimit) { i -> String.format("%02d", i) }
-
-        // Store current selection if possible
-        val currentSelection = resetMinuteSpinner.selectedItemPosition.coerceIn(0, minuteLimit - 1)
-
-        // Update adapter
-        resetMinuteSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, minutes)
-
-        // Restore selection if possible
-        resetMinuteSpinner.setSelection(currentSelection)
+        resetMinuteSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                markChanged()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     /**
@@ -700,15 +732,6 @@ class SettingsActivity : AppCompatActivity() {
             return false
         }
 
-        // Validate reset time
-        val selectedHour = resetHourSpinner.selectedItemPosition
-        val selectedMinute = resetMinuteSpinner.selectedItemPosition
-
-        // If hour is current hour, check minute
-        if (selectedHour == currentHour && selectedMinute >= currentMinute) {
-            Toast.makeText(this, "Reset time must be earlier than current time.", Toast.LENGTH_SHORT).show()
-            return false
-        }
 
         return true
     }
@@ -724,6 +747,7 @@ class SettingsActivity : AppCompatActivity() {
             putString(AppSettings.LEVEL_1_POSITION, level1PositionSpinner.selectedItem.toString())
             putInt(AppSettings.LEVEL_1_FONT_SIZE, (MIN_FONT_SIZE_SP + level1FontSizeSeekBar.progress).toInt())
             putInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, currentLevel1MaxTimeMinutes * 60)
+            putBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, currentLevel1BlinkingEnabled)
 
             Log.d("SettingsActivity", "Saving Level 1: Color=$AppSettings.level1Color, Position=$AppSettings.level1Position, FontSize=$AppSettings.level1FontSize, MaxTimeSeconds=$AppSettings.level1MaxTimeSeconds")
 
@@ -732,6 +756,7 @@ class SettingsActivity : AppCompatActivity() {
             putString(AppSettings.LEVEL_2_POSITION, level2PositionSpinner.selectedItem.toString())
             putInt(AppSettings.LEVEL_2_FONT_SIZE, (MIN_FONT_SIZE_SP + level2FontSizeSeekBar.progress).toInt())
             putInt(AppSettings.LEVEL_2_DURATION_SECONDS, currentLevel2DurationMinutes * 60)
+            putBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, currentLevel2BlinkingEnabled)
 
             Log.d("SettingsActivity", "Saving Level 2: Color=$AppSettings.level2Color, Position=$AppSettings.level2Position, FontSize=$AppSettings.level2FontSize, DurationSeconds=$AppSettings.level2DurationSeconds")
 
