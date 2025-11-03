@@ -12,121 +12,161 @@
         android:id="@+id/toolbar_info_screen"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#121212" app:titleTextColor="#FFFFFF"
-        app:navigationIcon="?attr/homeAsUpIndicator" /> <ScrollView
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+        android:background="#121212"
+        app:titleTextColor="#FFFFFF"
+        app:navigationIcon="?attr/homeAsUpIndicator" />
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:layout_height="match_parent">
 
-        <ImageView
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/awareen" android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="App Logo" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Awareen: Screen Awareness"
-            android:textColor="#FFA500"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="24dp"/>
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:src="@drawable/awareen"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:contentDescription="App Logo" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="What is Awareen?"
-            android:textColor="#FFA500"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Awareen: Screen Awareness"
+                android:textColor="#FFA500"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="24dp"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Awareen helps you become more mindful of your screen time. It displays a persistent, color-coded timer on your screen, visually representing your active screen usage for the day. The goal is to help you stay aware without being intrusive."
-            android:textColor="#E0E0E0"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="20dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="What is Awareen?"
+                android:textColor="#FFA500"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="How the Timer Works"
-            android:textColor="#FFA500"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Awareen helps you become more mindful of your screen time. It displays a persistent, color-coded timer on your screen, visually representing your active screen usage for the day. The goal is to help you stay aware without being intrusive."
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="20dp"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=" • Level 1 (e.g., Green): Initial phase. Customizable time, color, position, and font size."
-            android:textColor="#E0E0E0"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="6dp"/>
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=" • Level 2 (e.g., Yellow): Gentle nudge. Also fully customizable."
-            android:textColor="#E0E0E0"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="6dp"/>
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=" • Level 3 (e.g., Red/Flashing): Stronger reminder. Again, fully customizable."
-            android:textColor="#E0E0E0"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="20dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="How the Timer Works"
+                android:textColor="#FFA500"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Key Features"
-            android:textColor="#FFA500"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=" • Persistent On-Screen Timer\n • Three Customizable Levels\n • Daily Reset (time configurable by you)\n • Overlay Permission Required (to show timer over other apps)\n • Minimal &amp; Ad-Free"
-            android:textColor="#E0E0E0"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="20dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=" • Level 1 (e.g., Green): Initial phase. Customizable time, color, position, and font size."
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="6dp"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Our Philosophy"
-            android:textColor="#FFA500"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Awareen is about empowerment, not restriction. Understand your habits, make conscious choices. Remember to look up from your screen and enjoy the world!"
-            android:textColor="#E0E0E0"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="20dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=" • Level 2 (e.g., Yellow): Gentle nudge. Also fully customizable."
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="6dp"/>
 
-    </LinearLayout>
-</ScrollView>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=" • Level 3 (e.g., Red/Flashing): Stronger reminder. Again, fully customizable."
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="20dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Key Features"
+                android:textColor="#FFA500"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=" • Persistent On-Screen Timer\n • Three Customizable Levels\n • Daily Reset (time configurable by you)\n • Overlay Permission Required (to show timer over other apps)\n • Minimal &amp; Ad-Free"
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="20dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Our Philosophy"
+                android:textColor="#FFA500"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Awareen is about empowerment, not restriction. Understand your habits, make conscious choices. Remember to look up from your screen and enjoy the world!"
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="20dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Open Source"
+                android:textColor="#FFA500"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Awareen is free and open source! The complete source code is available on GitHub. Feel free to contribute, report issues, or fork the project."
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="12dp"/>
+
+            <TextView
+                android:id="@+id/githubRepoLink"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="→ View on GitHub ←"
+                android:textColor="#FFA500"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:layout_marginBottom="20dp"/>
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>
