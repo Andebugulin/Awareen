@@ -2,15 +2,14 @@
 
 **Awareen** (Awareness + Screen) is an Android application that helps users become more aware of their screen time through a persistent overlay timer. The app displays your current screen time in real-time, even when using other applications, promoting mindful device usage.
 
-## 🚀 Features
+## Features
 - **Persistent Overlay Timer**: Always-visible screen time counter that works across all apps
-- **Three-Level Alert System**: Progressive visual warnings based on usage time
 - **Customizable Display**: Adjustable colors, positions, and font sizes for each level
 - **Smart Display Modes**: Choose between always-on or interval-based timer display
 - **Analytics Dashboard**: Track your daily screen time patterns and trends
 - **Auto-Reset**: Configurable daily reset time for screen time tracking
 
-## 📸 Screenshots
+## Screenshots
 <p align="center">
   <img src="./images/Screenshot_2025_08_01_15_31_57_447_com_example_screentimetracker.jpg" width="22%" />
   <img src="./images/Screenshot_2025_08_01_15_32_00_510_com_example_screentimetracker.jpg" width="22%" />
@@ -20,12 +19,12 @@
 
 
 
-## 📱 How It Works
+##  How It Works
 
 ### Three-Level System
-1. **Level 1 (Green)**: Default display for normal usage (0-30 minutes)
-2. **Level 2 (Yellow)**: Warning phase when approaching time limits (30-60 minutes)
-3. **Level 3 (Red)**: Alert phase for excessive usage (60+ minutes) with optional blinking
+1. **Level 1 (Green)**: Default display for normal usage (0-60 minutes)
+2. **Level 2 (Yellow)**: Warning phase when approaching time limits (60-120 minutes)
+3. **Level 3 (Red)**: Alert phase for excessive usage (120+ minutes) 
 
 > Colors and time thresholds are fully customizable in the settings.
 
@@ -33,14 +32,14 @@
 - **Always Mode**: Timer constantly visible on screen
 - **Interval Mode**: Timer appears periodically (configurable intervals)
 
-## 🛠️ Technical Stack
+## Technical Stack
 
 - **Language**: Kotlin
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 35 (Android 15)
 - **Architecture**: Service-based with overlay permissions
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Android 8.0 (API level 26) or higher
 - Overlay permission (System Alert Window)
@@ -48,11 +47,11 @@
 - Battery optimization exemption (recommended)
 - Auto-start permission (recommended)
 
-## 🔧 Installation
+## Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/awareen.git
+   git clone https://github.com/andebugulin/awareen.git
    cd awareen
    ```
 
@@ -61,12 +60,10 @@
    - Sync Gradle files
 
 3. **Build and Install**
-   ```bash
-   ./gradlew assembleDebug
-   adb install app/build/outputs/apk/debug/app-debug.apk
-   ```
+   - Just use android studio builder, its the simplest
+   - Go to build, then generate signed app bundle or APK, follow the steps
 
-## 🎯 Usage
+## Usage
 
 1. **Grant Permissions**: 
    - Launch Awareen
@@ -81,14 +78,14 @@
    - Check your usage patterns in the Analytics section
    - Track daily screen time trends
 
-## ⚙️ Configuration
+## Configuration
 
-### Default Settings
-- **Level 1**: 30 minutes (Green, Top Right, 24sp)
-- **Level 2**: 30 minutes duration (Yellow, Middle Left, 26sp)
-- **Level 3**: Unlimited (Red, Middle Center, 28sp, Blinking enabled)
+### In my opinion, best Settings
+- **Level 1**: 60 minutes (color - #6F48A7, Top Right, 22sp, blinking enabled)
+- **Level 2**: 60 minutes duration (#A8CC58, Top Left, 23sp, blinking enabled)
+- **Level 3**: Unlimited (#A3F5C8, Top Center, 33sp, blinking enabled)
 - **Reset Time**: Midnight (00:00)
-- **Display Mode**: Always visible
+- **Display Mode**: Interval each minute for 8 seconds
 
 ### Customization Options
 - Timer colors and positions for each level
@@ -96,9 +93,9 @@
 - Time thresholds for level transitions
 - Display intervals and durations
 - Daily reset timing
-- Blinking alerts for Level 3
+- Blinking alerts (I higly recommend it) 
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 app/src/main/
@@ -119,7 +116,7 @@ app/src/main/
 └── AndroidManifest.xml              # App permissions and components
 ```
 
-## 🔐 Permissions
+## Permissions
 
 ```
    <!-- Overlay permissions -->
@@ -133,7 +130,6 @@ app/src/main/
     <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Battery optimization and doze mode permissions -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -154,14 +150,13 @@ app/src/main/
     <uses-permission android:name="android.permission.VIBRATE" />
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
 **Timer stops working**:
 - Check if overlay permission is granted
 - Disable battery optimization for Awareen
-- Ensure the service is running in foreground
 - Ensure the app pause is disabled
 
 ## 🤝 Contributing
@@ -172,16 +167,11 @@ app/src/main/
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 👨‍💻 Author
+## Author
 
 **Andrei Gulin**
 - GitHub: [@Andebugulin](https://github.com/Andebugulin)
 - LinkedIn: [Andrei Gulin](https://www.linkedin.com/in/andrei-gulin)
-
-## 🔄 Version History
-
-- **v1.0.0**: Initial release with core overlay functionality
-- Features: Three-level system, customizable display, analytics tracking
 
 ## Support My Work
 
@@ -190,8 +180,6 @@ If you find this app useful, consider supporting me:
 <a href="https://www.buymeacoffee.com/andebugulin">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="160">
 </a>
-
-You can also find the premium version with additional features on [Gumroad](https://your-gumroad-link.gumroad.com/l/screentimetracker).
 
 ## Connect with Me
 
