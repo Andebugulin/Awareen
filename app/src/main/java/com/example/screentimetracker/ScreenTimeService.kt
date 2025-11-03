@@ -423,6 +423,8 @@ class ScreenTimeService : Service() {
     private fun startBlinking() {
         if (!isBlinking) {
             isBlinking = true
+            // Force immediate execution to sync with current second
+            handler.removeCallbacks(blinkingRunnable)
             handler.post(blinkingRunnable)
         }
     }
@@ -431,10 +433,14 @@ class ScreenTimeService : Service() {
         if (isBlinking) {
             isBlinking = false
             handler.removeCallbacks(blinkingRunnable)
-            if (screenTimeSeconds >= level2EndTimeSeconds) {
-                timeTextView?.setTextColor(level3Color)
-                overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
+            // Reset to normal display
+            val currentColor = when {
+                screenTimeSeconds < level1MaxTimeSeconds -> level1Color
+                screenTimeSeconds < level2EndTimeSeconds -> level2Color
+                else -> level3Color
             }
+            timeTextView?.setTextColor(currentColor)
+            overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
         }
     }
 
