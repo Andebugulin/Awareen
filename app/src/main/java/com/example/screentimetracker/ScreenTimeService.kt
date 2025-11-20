@@ -29,6 +29,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.os.FileObserver
+import android.os.PowerManager
 
 import com.example.screentimetracker.AppSettings
 
@@ -77,27 +78,41 @@ class ScreenTimeService : Service() {
 
     private val screenTimeUpdateRunnable = object : Runnable {
         override fun run() {
-            if (isScreenOn && isDeviceUnlocked) {
+            // VERIFY actual screen state instead of trusting broadcasts
+            val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
+
+            if (actuallyUnlocked) {
+                // Update our state variables to match reality
+                isScreenOn = true
+                isDeviceUnlocked = true
+
                 screenTimeSeconds++
+
+                // Handle interval visibility if enabled
+                if (timerDisplayMode == "interval") {
+                    val currentMinute = (screenTimeSeconds / 60) % timerDisplayIntervalMinutes
+                    val shouldShow = currentMinute == 0 && (screenTimeSeconds % 60) < timerDisplayDurationSeconds
+
+                    if (shouldShow != isTimerCurrentlyVisible) {
+                        isTimerCurrentlyVisible = shouldShow
+                        updateTimerVisibility()
+                    }
+                }
+
                 updateTimeDisplay()
                 saveScreenTime()
                 saveAnalyticsData()
-                handler.postDelayed(this, 1000)
-            }
-        }
-    }
 
-    private val timerVisibilityUpdateRunnable = object : Runnable {
-        override fun run() {
-            if (timerDisplayMode == "interval") {
-                val currentMinute = (screenTimeSeconds / 60) % timerDisplayIntervalMinutes
-                val shouldShow = currentMinute == 0 && (screenTimeSeconds % 60) < timerDisplayDurationSeconds
-
-                if (shouldShow != isTimerCurrentlyVisible) {
-                    isTimerCurrentlyVisible = shouldShow
-                    updateTimerVisibility()
-                }
+                // Continue counting
                 handler.postDelayed(this, 1000)
+            } else {
+                // Screen is locked or off - stop counting but check again soon
+                isScreenOn = false
+                isDeviceUnlocked = false
+                saveScreenTime()
+
+                // Check again in 2 seconds to resume when unlocked
+                handler.postDelayed(this, 2000)
             }
         }
     }
@@ -106,32 +121,28 @@ class ScreenTimeService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_OFF -> {
+                    // Just update state, the runnable will handle the rest
                     isScreenOn = false
                     isDeviceUnlocked = false
-                    handler.removeCallbacks(screenTimeUpdateRunnable)
-                    handler.removeCallbacks(timerVisibilityUpdateRunnable)
                     saveScreenTime()
                 }
 
                 Intent.ACTION_SCREEN_ON -> {
+                    // Screen turned on, but might still be locked
                     isScreenOn = true
-                    if (isDeviceUnlocked) {
-                        handler.post(screenTimeUpdateRunnable)
-                        if (timerDisplayMode == "interval") {
-                            handler.post(timerVisibilityUpdateRunnable)
-                        }
-                    }
                     checkDateChangeAndReset()
+                    // Don't start runnable yet - wait for USER_PRESENT
                 }
 
                 Intent.ACTION_USER_PRESENT -> {
+                    // User unlocked - now we can start counting
                     isDeviceUnlocked = true
-                    if (isScreenOn) {
-                        handler.post(screenTimeUpdateRunnable)
-                        if (timerDisplayMode == "interval") {
-                            handler.post(timerVisibilityUpdateRunnable)
-                        }
-                    }
+                    isScreenOn = true
+
+                    // Remove any pending callbacks first
+                    handler.removeCallbacks(screenTimeUpdateRunnable)
+                    // Start fresh
+                    handler.post(screenTimeUpdateRunnable)
                 }
             }
         }
@@ -201,12 +212,9 @@ class ScreenTimeService : Service() {
             val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
             isDeviceUnlocked = !keyguardManager.isKeyguardLocked
 
-            if (isScreenOn && isDeviceUnlocked) {
-                handler.post(screenTimeUpdateRunnable)
-                if (timerDisplayMode == "interval") {
-                    handler.post(timerVisibilityUpdateRunnable)
-                }
-            }
+            // Always start the runnable - it will self-verify the screen state
+            handler.removeCallbacks(screenTimeUpdateRunnable)
+            handler.post(screenTimeUpdateRunnable)
             scheduleResetTime()
             Log.d(TAG, "Service created successfully. Initial screenTimeSeconds: $screenTimeSeconds")
         } catch (e: Exception) {
@@ -384,6 +392,22 @@ class ScreenTimeService : Service() {
         }
     }
 
+    private fun isScreenActuallyOnAndUnlocked(): Boolean {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+
+        val isScreenOn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            powerManager.isInteractive
+        } else {
+            @Suppress("DEPRECATION")
+            powerManager.isScreenOn
+        }
+
+        val isLocked = keyguardManager.isKeyguardLocked
+
+        return isScreenOn && !isLocked
+    }
+
     private var isBlinking = false
     private val blinkingRunnable = object : Runnable {
         override fun run() {
@@ -522,7 +546,6 @@ class ScreenTimeService : Service() {
         super.onDestroy()
         handler.removeCallbacks(screenTimeUpdateRunnable)
         handler.removeCallbacks(blinkingRunnable)
-        handler.removeCallbacks(timerVisibilityUpdateRunnable)
         resetTimeJob?.let {
             handler.removeCallbacks(it)
         }
