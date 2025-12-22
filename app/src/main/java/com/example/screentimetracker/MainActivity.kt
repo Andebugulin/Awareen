@@ -94,7 +94,6 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-
     private fun setupSocialLinks() {
         val githubLink = findViewById<TextView>(R.id.githubLink)
         val linkedinLink = findViewById<TextView>(R.id.linkedinLink)

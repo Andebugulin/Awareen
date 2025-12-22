@@ -87,7 +87,6 @@ class ScreenTimeService : Service() {
                 isDeviceUnlocked = true
 
                 screenTimeSeconds++
-
                 // Handle interval visibility if enabled
                 if (timerDisplayMode == "interval") {
                     val currentMinute = (screenTimeSeconds / 60) % timerDisplayIntervalMinutes
@@ -349,6 +348,9 @@ class ScreenTimeService : Service() {
     }
 
     private fun updateTimeDisplay() {
+        // in order to always know if the reset should be done
+        checkDateChangeAndReset()
+
         val hours = screenTimeSeconds / 3600
         val minutes = (screenTimeSeconds % 3600) / 60
         val seconds = screenTimeSeconds % 60
@@ -517,6 +519,26 @@ class ScreenTimeService : Service() {
         val todayKey = getTodayDateKey()
         prefs.edit().putInt(todayKey, screenTimeSeconds).apply()
         prefs.edit().putString("last_date_key", todayKey).apply()
+
+        // Store the timestamp of the next scheduled reset
+        val nextResetTime = getNextResetTimeMillis()
+        prefs.edit().putLong("next_reset_timestamp", nextResetTime).apply()
+    }
+
+    private fun getNextResetTimeMillis(): Long {
+        val calendar = Calendar.getInstance()
+        val now = calendar.timeInMillis
+        calendar.apply {
+            set(Calendar.HOUR_OF_DAY, currentResetHour)
+            set(Calendar.MINUTE, currentResetMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+
+            if (timeInMillis <= now) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+        return calendar.timeInMillis
     }
 
     private fun loadScreenTime() {
@@ -530,14 +552,16 @@ class ScreenTimeService : Service() {
     }
 
     private fun checkDateChangeAndReset() {
-        val todayKey = getTodayDateKey()
-        val lastDateKey = prefs.getString("last_date_key", null)
+        val now = System.currentTimeMillis()
+        val nextResetTimestamp = prefs.getLong("next_reset_timestamp", 0L)
 
-        if (lastDateKey != null && lastDateKey != todayKey) {
+        // If we've passed the scheduled reset time, reset the counter
+        if (nextResetTimestamp > 0 && now >= nextResetTimestamp) {
+            Log.d(TAG, "Reset time reached, resetting counter")
             screenTimeSeconds = 0
-            updateTimeDisplay()
-            saveScreenTime()
-        } else if (lastDateKey == null) {
+            saveScreenTime() // This will also update next_reset_timestamp
+        } else if (nextResetTimestamp == 0L) {
+            // First run, just save the current state
             saveScreenTime()
         }
     }

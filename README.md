@@ -3,6 +3,7 @@
 **Awareen** (Awareness + Screen) is an Android application that helps users become more aware of their screen time through a persistent overlay timer. The app displays your current screen time in real-time, even when using other applications, promoting mindful device usage.
 
 ## Features
+
 - **Persistent Overlay Timer**: Always-visible screen time counter that works across all apps
 - **Customizable Display**: Adjustable colors, positions, and font sizes for each level
 - **Smart Display Modes**: Choose between always-on or interval-based timer display
@@ -10,6 +11,7 @@
 - **Auto-Reset**: Configurable daily reset time for screen time tracking
 
 ## Screenshots
+
 <p align="center">
   <img src="./images/Screenshot_2025_08_01_15_31_57_447_com_example_screentimetracker.jpg" width="22%" />
   <img src="./images/Screenshot_2025_08_01_15_32_00_510_com_example_screentimetracker.jpg" width="22%" />
@@ -17,18 +19,18 @@
   <img src="./images/Screenshot_2025_08_01_15_32_16_560_com_example_screentimetracker.jpg" width="22%" />
 </p>
 
-
-
-##  How It Works
+## How It Works
 
 ### Three-Level System
+
 1. **Level 1 (Green)**: Default display for normal usage (0-60 minutes)
 2. **Level 2 (Yellow)**: Warning phase when approaching time limits (60-120 minutes)
-3. **Level 3 (Red)**: Alert phase for excessive usage (120+ minutes) 
+3. **Level 3 (Red)**: Alert phase for excessive usage (120+ minutes)
 
 > Colors and time thresholds are fully customizable in the settings.
 
 ### Display Modes
+
 - **Always Mode**: Timer constantly visible on screen
 - **Interval Mode**: Timer appears periodically (configurable intervals)
 
@@ -50,12 +52,14 @@
 ## Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/andebugulin/awareen.git
    cd awareen
    ```
 
 2. **Open in Android Studio**
+
    - Import the project into Android Studio
    - Sync Gradle files
 
@@ -65,11 +69,13 @@
 
 ## Usage
 
-1. **Grant Permissions**: 
+1. **Grant Permissions**:
+
    - Launch Awareen
    - Press "Start Service" to request necessary permissions
 
 2. **Customize Settings**:
+
    - Access settings through the gear icon
    - Adjust colors, positions, and time thresholds
    - Configure display modes and reset times
@@ -81,6 +87,7 @@
 ## Configuration
 
 ### In my opinion, best Settings
+
 - **Level 1**: 60 minutes (color - #6F48A7, Top Right, 22sp, blinking enabled)
 - **Level 2**: 60 minutes duration (#A8CC58, Top Left, 23sp, blinking enabled)
 - **Level 3**: Unlimited (#A3F5C8, Top Center, 33sp, blinking enabled)
@@ -88,12 +95,13 @@
 - **Display Mode**: Interval each minute for 8 seconds
 
 ### Customization Options
+
 - Timer colors and positions for each level
 - Font sizes (adjustable per level)
 - Time thresholds for level transitions
 - Display intervals and durations
 - Daily reset timing
-- Blinking alerts (I higly recommend it) 
+- Blinking alerts (I higly recommend it)
 
 ## Project Structure
 
@@ -155,6 +163,7 @@ app/src/main/
 ### Common Issues
 
 **Timer stops working**:
+
 - Check if overlay permission is granted
 - Disable battery optimization for Awareen
 - Ensure the app pause is disabled
@@ -170,6 +179,7 @@ app/src/main/
 ## Author
 
 **Andrei Gulin**
+
 - GitHub: [@Andebugulin](https://github.com/Andebugulin)
 - LinkedIn: [Andrei Gulin](https://www.linkedin.com/in/andrei-gulin)
 
@@ -189,3 +199,13 @@ If you find this app useful, consider supporting me:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+### `Download`
+
+<div style="text-align: center; margin: 40px 0;">
+  <a href="https://play.google.com/store/apps/details?id=com.andebugulin.awareen2" target="_blank">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" style="height: 80px;">
+  </a>
+</div>
