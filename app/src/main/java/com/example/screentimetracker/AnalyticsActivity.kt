@@ -22,6 +22,8 @@ class AnalyticsActivity : AppCompatActivity() {
     private lateinit var averageTextView: TextView
     private lateinit var trendTextView: TextView
     private lateinit var progressTextView: TextView
+    private lateinit var lifetimeYearsTextView: TextView
+    private lateinit var lifetimeDaysTextView: TextView
     private lateinit var adapter: AnalyticsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +41,8 @@ class AnalyticsActivity : AppCompatActivity() {
         averageTextView = findViewById(R.id.averageTextView)
         trendTextView = findViewById(R.id.trendTextView)
         progressTextView = findViewById(R.id.progressTextView)
+        lifetimeYearsTextView = findViewById(R.id.lifetimeYearsTextView)
+        lifetimeDaysTextView = findViewById(R.id.lifetimeDaysTextView)
         recyclerView = findViewById(R.id.analyticsRecyclerView)
 
         backButton.setOnClickListener { finish() }
@@ -69,13 +73,11 @@ class AnalyticsActivity : AppCompatActivity() {
             }
         }
 
-        // Sort by date (newest first)
         dayDataList.sortByDescending { it.date }
         return dayDataList
     }
 
     private fun parseDateKey(dateKey: String): Date {
-        // Format: "analytics_YYYY_MM_DD"
         val parts = dateKey.split("_")
         if (parts.size >= 4) {
             val year = parts[1].toIntOrNull() ?: 2024
@@ -92,12 +94,14 @@ class AnalyticsActivity : AppCompatActivity() {
     private fun calculateStatistics(data: List<DayData>) {
         if (data.isEmpty()) return
 
-        // Calculate average
         val totalSeconds = data.sumOf { it.screenTimeSeconds }
         val averageSeconds = totalSeconds / data.size
         averageTextView.text = "Daily Average: ${formatTime(averageSeconds)}"
 
-        // Calculate trend (last 7 days vs previous 7 days)
+        // Lifetime comparison
+        calculateLifetimeComparison(averageSeconds)
+
+        // Trend calculation
         if (data.size >= 2) {
             val recentDays = data.take(minOf(7, data.size))
             val olderDays = data.drop(minOf(7, data.size)).take(minOf(7, data.size - minOf(7, data.size)))
@@ -126,7 +130,6 @@ class AnalyticsActivity : AppCompatActivity() {
             }
         }
 
-        // Progress assessment
         val last7Days = data.take(minOf(7, data.size))
         val daysUnder2Hours = last7Days.count { it.screenTimeSeconds < 2 * 3600 }
         val daysUnder4Hours = last7Days.count { it.screenTimeSeconds < 4 * 3600 }
@@ -145,6 +148,35 @@ class AnalyticsActivity : AppCompatActivity() {
                 progressTextView.setTextColor(Color.RED)
             }
         }
+    }
+
+    private fun calculateLifetimeComparison(avgDailySeconds: Int) {
+        val hoursPerDay = avgDailySeconds / 3600.0
+
+        // Realistic lifetime calculation (age 15-75, 60 years)
+        val yearsOfUsage = 60
+        val lifetimeDays = (hoursPerDay * 365 * yearsOfUsage / 24).toInt()
+        val lifetimeYears = lifetimeDays / 365.0
+
+        // Display years with color from existing palette
+        when {
+            lifetimeYears >= 5 -> {
+                lifetimeYearsTextView.text = String.format("%.1f years", lifetimeYears)
+                lifetimeYearsTextView.setTextColor(Color.RED)
+            }
+            lifetimeYears >= 2 -> {
+                lifetimeYearsTextView.text = String.format("%.1f years", lifetimeYears)
+                lifetimeYearsTextView.setTextColor(Color.parseColor("#FFA500"))
+            }
+            else -> {
+                lifetimeYearsTextView.text = String.format("%.1f years", lifetimeYears)
+                lifetimeYearsTextView.setTextColor(Color.GREEN)
+            }
+        }
+
+        // Display days
+        lifetimeDaysTextView.text = "$lifetimeDays days total"
+        lifetimeDaysTextView.setTextColor(Color.parseColor("#757575"))
     }
 
     private fun formatTime(seconds: Int): String {
@@ -202,7 +234,6 @@ class AnalyticsAdapter : RecyclerView.Adapter<AnalyticsAdapter.ViewHolder>() {
 
             timeTextView.text = formatTime(dayData.screenTimeSeconds)
 
-            // Status based on screen time
             when {
                 dayData.screenTimeSeconds < 2 * 3600 -> {
                     statusTextView.text = "Great!"
