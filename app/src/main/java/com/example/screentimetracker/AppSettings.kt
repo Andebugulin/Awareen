@@ -64,7 +64,7 @@ object AppSettings {
     const val DEFAULT_LEVEL_3_BLINKING_ENABLED = true
 
     // Default timer display settings
-    const val DEFAULT_TIMER_DISPLAY_MODE = "always" // "always" or "interval"
+    const val DEFAULT_TIMER_DISPLAY_MODE = "interval" // "always" or "interval"
     const val DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES = 1 // Show every 1 minute
     const val DEFAULT_TIMER_DISPLAY_DURATION_SECONDS = 5 // Show for 5 seconds
 

@@ -17,6 +17,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
@@ -24,14 +25,10 @@ import androidx.core.app.NotificationCompat
 import java.util.Calendar
 import android.util.Log
 import android.util.TypedValue
-import android.database.ContentObserver
-import android.net.Uri
-import android.provider.MediaStore
 import android.content.Context.RECEIVER_NOT_EXPORTED
-import android.os.FileObserver
 import android.os.PowerManager
-
 import com.example.screentimetracker.AppSettings
+import kotlin.math.abs
 
 class ScreenTimeService : Service() {
     private var windowManager: WindowManager? = null
@@ -43,6 +40,30 @@ class ScreenTimeService : Service() {
     private var isDeviceUnlocked = false
     private val handler = Handler(Looper.getMainLooper())
     private var resetTimeJob: Runnable? = null
+
+    // Drag functionality variables
+    private var initialX = 0
+    private var initialY = 0
+    private var initialTouchX = 0f
+    private var initialTouchY = 0f
+    private var isDragging = false
+    private var isHidden = false
+    private val CLICK_THRESHOLD = 10f // pixels
+
+    // Per-level custom position keys
+    companion object {
+        const val LEVEL_1_USE_CUSTOM = "level_1_use_custom_position"
+        const val LEVEL_1_CUSTOM_X = "level_1_custom_position_x"
+        const val LEVEL_1_CUSTOM_Y = "level_1_custom_position_y"
+
+        const val LEVEL_2_USE_CUSTOM = "level_2_use_custom_position"
+        const val LEVEL_2_CUSTOM_X = "level_2_custom_position_x"
+        const val LEVEL_2_CUSTOM_Y = "level_2_custom_position_y"
+
+        const val LEVEL_3_USE_CUSTOM = "level_3_use_custom_position"
+        const val LEVEL_3_CUSTOM_X = "level_3_custom_position_x"
+        const val LEVEL_3_CUSTOM_Y = "level_3_custom_position_y"
+    }
 
     // Timer display customization
     private var timerDisplayMode: String = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
@@ -76,18 +97,18 @@ class ScreenTimeService : Service() {
     private var currentLayoutParams: WindowManager.LayoutParams? = null
     private val TAG = "ScreenTimeService"
 
+    private var currentLevel = 1 // Track which level we're currently in
+
     private val screenTimeUpdateRunnable = object : Runnable {
         override fun run() {
-            // VERIFY actual screen state instead of trusting broadcasts
             val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
 
             if (actuallyUnlocked) {
-                // Update our state variables to match reality
                 isScreenOn = true
                 isDeviceUnlocked = true
 
                 screenTimeSeconds++
-                // Handle interval visibility if enabled
+
                 if (timerDisplayMode == "interval") {
                     val currentMinute = (screenTimeSeconds / 60) % timerDisplayIntervalMinutes
                     val shouldShow = currentMinute == 0 && (screenTimeSeconds % 60) < timerDisplayDurationSeconds
@@ -102,15 +123,11 @@ class ScreenTimeService : Service() {
                 saveScreenTime()
                 saveAnalyticsData()
 
-                // Continue counting
                 handler.postDelayed(this, 1000)
             } else {
-                // Screen is locked or off - stop counting but check again soon
                 isScreenOn = false
                 isDeviceUnlocked = false
                 saveScreenTime()
-
-                // Check again in 2 seconds to resume when unlocked
                 handler.postDelayed(this, 2000)
             }
         }
@@ -120,35 +137,26 @@ class ScreenTimeService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_OFF -> {
-                    // Just update state, the runnable will handle the rest
                     isScreenOn = false
                     isDeviceUnlocked = false
                     saveScreenTime()
                 }
 
                 Intent.ACTION_SCREEN_ON -> {
-                    // Screen turned on, but might still be locked
                     isScreenOn = true
                     checkDateChangeAndReset()
-                    // Don't start runnable yet - wait for USER_PRESENT
                 }
 
                 Intent.ACTION_USER_PRESENT -> {
-                    // User unlocked - now we can start counting
                     isDeviceUnlocked = true
                     isScreenOn = true
-
-                    // Remove any pending callbacks first
                     handler.removeCallbacks(screenTimeUpdateRunnable)
-                    // Start fresh
                     handler.post(screenTimeUpdateRunnable)
                 }
             }
         }
     }
 
-
-    // Settings update receiver
     private val settingsUpdateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == AppSettings.ACTION_SETTINGS_UPDATED) {
@@ -180,7 +188,6 @@ class ScreenTimeService : Service() {
             checkDateChangeAndReset()
             loadScreenTime()
 
-
             val keyFilter = IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
@@ -211,7 +218,6 @@ class ScreenTimeService : Service() {
             val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
             isDeviceUnlocked = !keyguardManager.isKeyguardLocked
 
-            // Always start the runnable - it will self-verify the screen state
             handler.removeCallbacks(screenTimeUpdateRunnable)
             handler.post(screenTimeUpdateRunnable)
             scheduleResetTime()
@@ -258,6 +264,11 @@ class ScreenTimeService : Service() {
     }
 
     private fun updateTimerVisibility() {
+        if (isHidden) {
+            overlayView?.visibility = View.GONE
+            return
+        }
+
         val shouldBeVisible = when {
             timerDisplayMode == "always" -> true
             timerDisplayMode == "interval" -> isTimerCurrentlyVisible
@@ -289,6 +300,14 @@ class ScreenTimeService : Service() {
         }
     }
 
+    private fun getCurrentLevel(): Int {
+        return when {
+            screenTimeSeconds < level1MaxTimeSeconds -> 1
+            screenTimeSeconds < level2EndTimeSeconds -> 2
+            else -> 3
+        }
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -303,6 +322,7 @@ class ScreenTimeService : Service() {
 
     private fun createOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+
         currentLayoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -311,15 +331,77 @@ class ScreenTimeService : Service() {
             else
                 WindowManager.LayoutParams.TYPE_PHONE,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
-        currentLayoutParams?.gravity = getGravityForPosition(level1Position)
+
+        // Set initial position based on level 1
+        applyPositionForLevel(1)
 
         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null)
         timeTextView = overlayView?.findViewById(R.id.timeTextView)
+
+        // Setup touch listener for drag and tap functionality
+        overlayView?.setOnTouchListener(object : View.OnTouchListener {
+            private var touchStartTime = 0L
+
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                if (event == null || currentLayoutParams == null) return false
+
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        touchStartTime = System.currentTimeMillis()
+                        initialX = currentLayoutParams!!.x
+                        initialY = currentLayoutParams!!.y
+                        initialTouchX = event.rawX
+                        initialTouchY = event.rawY
+                        isDragging = false
+                        return true
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        val deltaX = event.rawX - initialTouchX
+                        val deltaY = event.rawY - initialTouchY
+
+                        if (abs(deltaX) > CLICK_THRESHOLD || abs(deltaY) > CLICK_THRESHOLD) {
+                            isDragging = true
+
+                            currentLayoutParams?.gravity = Gravity.TOP or Gravity.START
+                            currentLayoutParams?.x = initialX + deltaX.toInt()
+                            currentLayoutParams?.y = initialY + deltaY.toInt()
+
+                            windowManager?.updateViewLayout(overlayView, currentLayoutParams)
+                        }
+                        return true
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        val touchDuration = System.currentTimeMillis() - touchStartTime
+
+                        if (!isDragging && touchDuration < 200) {
+                            // It's a tap - toggle visibility
+                            isHidden = !isHidden
+                            updateTimerVisibility()
+
+                            if (isHidden) {
+                                handler.postDelayed({
+                                    isHidden = false
+                                    updateTimerVisibility()
+                                }, 5000)
+                            }
+                        } else if (isDragging) {
+                            // Save custom position for current level
+                            val level = getCurrentLevel()
+                            saveCustomPositionForLevel(level, currentLayoutParams!!.x, currentLayoutParams!!.y)
+                        }
+
+                        isDragging = false
+                        return true
+                    }
+                }
+                return false
+            }
+        })
 
         try {
             if (overlayView != null && currentLayoutParams != null) {
@@ -329,6 +411,44 @@ class ScreenTimeService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error adding overlay view: ${e.message}", e)
+        }
+    }
+
+    private fun saveCustomPositionForLevel(level: Int, x: Int, y: Int) {
+        val (useCustomKey, xKey, yKey) = when (level) {
+            1 -> Triple(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_X, LEVEL_1_CUSTOM_Y)
+            2 -> Triple(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_X, LEVEL_2_CUSTOM_Y)
+            else -> Triple(LEVEL_3_USE_CUSTOM, LEVEL_3_CUSTOM_X, LEVEL_3_CUSTOM_Y)
+        }
+
+        prefs.edit()
+            .putBoolean(useCustomKey, true)
+            .putInt(xKey, x)
+            .putInt(yKey, y)
+            .apply()
+
+        Log.d(TAG, "Saved custom position for Level $level: x=$x, y=$y")
+    }
+
+    private fun applyPositionForLevel(level: Int) {
+        val (useCustomKey, xKey, yKey, positionString) = when (level) {
+            1 -> listOf(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_X, LEVEL_1_CUSTOM_Y, level1Position)
+            2 -> listOf(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_X, LEVEL_2_CUSTOM_Y, level2Position)
+            else -> listOf(LEVEL_3_USE_CUSTOM, LEVEL_3_CUSTOM_X, LEVEL_3_CUSTOM_Y, level3Position)
+        }
+
+        val useCustom = prefs.getBoolean(useCustomKey as String, false)
+
+        if (useCustom) {
+            currentLayoutParams?.gravity = Gravity.TOP or Gravity.START
+            currentLayoutParams?.x = prefs.getInt(xKey as String, 0)
+            currentLayoutParams?.y = prefs.getInt(yKey as String, 0)
+            Log.d(TAG, "Applied custom position for Level $level")
+        } else {
+            currentLayoutParams?.gravity = getGravityForPosition(positionString as String)
+            currentLayoutParams?.x = 0
+            currentLayoutParams?.y = 0
+            Log.d(TAG, "Applied default position for Level $level: $positionString")
         }
     }
 
@@ -348,7 +468,6 @@ class ScreenTimeService : Service() {
     }
 
     private fun updateTimeDisplay() {
-        // in order to always know if the reset should be done
         checkDateChangeAndReset()
 
         val hours = screenTimeSeconds / 3600
@@ -357,12 +476,26 @@ class ScreenTimeService : Service() {
         val timeText = String.format("%02d:%02d:%02d", hours, minutes, seconds)
         timeTextView?.text = timeText
 
+        val newLevel = getCurrentLevel()
+
+        // Check if level changed
+        if (newLevel != currentLevel) {
+            currentLevel = newLevel
+            applyPositionForLevel(currentLevel)
+            if (overlayView?.parent != null) {
+                try {
+                    windowManager?.updateViewLayout(overlayView, currentLayoutParams)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error updating overlay on level change: ${e.message}", e)
+                }
+            }
+        }
+
         when {
             screenTimeSeconds < level1MaxTimeSeconds -> {
                 timeTextView?.setTextColor(level1Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level1FontSize)
-                updateOverlayLayoutParams(level1Position)
                 if (level1BlinkingEnabled) {
                     startBlinking()
                 } else {
@@ -373,7 +506,6 @@ class ScreenTimeService : Service() {
                 timeTextView?.setTextColor(level2Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level2FontSize)
-                updateOverlayLayoutParams(level2Position)
                 if (level2BlinkingEnabled) {
                     startBlinking()
                 } else {
@@ -384,7 +516,6 @@ class ScreenTimeService : Service() {
                 timeTextView?.setTextColor(level3Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level3FontSize)
-                updateOverlayLayoutParams(level3Position)
                 if (level3BlinkingEnabled) {
                     startBlinking()
                 } else {
@@ -449,7 +580,6 @@ class ScreenTimeService : Service() {
     private fun startBlinking() {
         if (!isBlinking) {
             isBlinking = true
-            // Force immediate execution to sync with current second
             handler.removeCallbacks(blinkingRunnable)
             handler.post(blinkingRunnable)
         }
@@ -459,7 +589,6 @@ class ScreenTimeService : Service() {
         if (isBlinking) {
             isBlinking = false
             handler.removeCallbacks(blinkingRunnable)
-            // Reset to normal display
             val currentColor = when {
                 screenTimeSeconds < level1MaxTimeSeconds -> level1Color
                 screenTimeSeconds < level2EndTimeSeconds -> level2Color
@@ -500,16 +629,15 @@ class ScreenTimeService : Service() {
     }
 
     private fun updateOverlayLayoutParams(positionString: String, forceUpdate: Boolean = false) {
-        val newGravity = getGravityForPosition(positionString)
-        if (currentLayoutParams != null) {
-            if (currentLayoutParams!!.gravity != newGravity || forceUpdate) {
-                currentLayoutParams!!.gravity = newGravity
-                if (overlayView?.parent != null) {
-                    try {
-                        windowManager?.updateViewLayout(overlayView, currentLayoutParams)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error updating overlay layout: ${e.message}", e)
-                    }
+        // This method is kept for compatibility but position updates are now handled in updateTimeDisplay
+        if (forceUpdate) {
+            val level = getCurrentLevel()
+            applyPositionForLevel(level)
+            if (overlayView?.parent != null) {
+                try {
+                    windowManager?.updateViewLayout(overlayView, currentLayoutParams)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error updating overlay layout: ${e.message}", e)
                 }
             }
         }
@@ -520,7 +648,6 @@ class ScreenTimeService : Service() {
         prefs.edit().putInt(todayKey, screenTimeSeconds).apply()
         prefs.edit().putString("last_date_key", todayKey).apply()
 
-        // Store the timestamp of the next scheduled reset
         val nextResetTime = getNextResetTimeMillis()
         prefs.edit().putLong("next_reset_timestamp", nextResetTime).apply()
     }
@@ -555,13 +682,11 @@ class ScreenTimeService : Service() {
         val now = System.currentTimeMillis()
         val nextResetTimestamp = prefs.getLong("next_reset_timestamp", 0L)
 
-        // If we've passed the scheduled reset time, reset the counter
         if (nextResetTimestamp > 0 && now >= nextResetTimestamp) {
             Log.d(TAG, "Reset time reached, resetting counter")
             screenTimeSeconds = 0
-            saveScreenTime() // This will also update next_reset_timestamp
+            saveScreenTime()
         } else if (nextResetTimestamp == 0L) {
-            // First run, just save the current state
             saveScreenTime()
         }
     }
