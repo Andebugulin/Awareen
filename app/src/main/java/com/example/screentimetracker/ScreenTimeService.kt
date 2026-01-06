@@ -101,6 +101,9 @@ class ScreenTimeService : Service() {
 
     private val screenTimeUpdateRunnable = object : Runnable {
         override fun run() {
+            // ALWAYS check for reset on every iteration
+            checkDateChangeAndReset()
+
             val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
 
             if (actuallyUnlocked) {
@@ -144,10 +147,13 @@ class ScreenTimeService : Service() {
 
                 Intent.ACTION_SCREEN_ON -> {
                     isScreenOn = true
-                    checkDateChangeAndReset()
+                    checkDateChangeAndReset() // Check here too
                 }
 
                 Intent.ACTION_USER_PRESENT -> {
+                    // User just unlocked - CRITICAL reset check point
+                    checkDateChangeAndReset()
+
                     isDeviceUnlocked = true
                     isScreenOn = true
                     handler.removeCallbacks(screenTimeUpdateRunnable)
@@ -577,6 +583,8 @@ class ScreenTimeService : Service() {
         }
     }
 
+
+
     private fun startBlinking() {
         if (!isBlinking) {
             isBlinking = true
@@ -597,6 +605,43 @@ class ScreenTimeService : Service() {
             timeTextView?.setTextColor(currentColor)
             overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
         }
+    }
+
+    private fun shouldResetBasedOnDate(): Boolean {
+        val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+
+        // FIRST: Check if we're within grace period after settings change
+        val lastSettingsChangeTime = prefs.getLong("last_settings_change_timestamp", 0L)
+        val now = System.currentTimeMillis()
+        val GRACE_PERIOD_MS = 5 * 60 * 1000L // 5 minutes - increased for safety
+
+        if (lastSettingsChangeTime > 0 && (now - lastSettingsChangeTime) < GRACE_PERIOD_MS) {
+            Log.d(TAG, "Within grace period after settings change (${(now - lastSettingsChangeTime)/1000}s ago), skipping all reset checks")
+            return false
+        }
+
+        // Check if we already reset recently (prevent double resets)
+        val lastResetTime = prefs.getLong("last_actual_reset_timestamp", 0L)
+        val MIN_TIME_BETWEEN_RESETS_MS = 12 * 60 * 60 * 1000L // 12 hours
+
+        if (lastResetTime > 0) {
+            val timeSinceLastReset = now - lastResetTime
+            if (timeSinceLastReset < MIN_TIME_BETWEEN_RESETS_MS) {
+                Log.d(TAG, "Only ${timeSinceLastReset/1000/60} minutes since last reset, skipping")
+                return false
+            }
+        }
+
+        // Now check if we should reset based on the scheduled reset time
+        val nextResetTime = prefs.getLong("next_reset_timestamp", 0L)
+
+        if (nextResetTime > 0 && now >= nextResetTime) {
+            Log.d(TAG, "Reset time reached: nextReset=$nextResetTime, now=$now")
+            return true
+        }
+
+        Log.d(TAG, "No reset needed. Next reset at $nextResetTime (in ${(nextResetTime - now)/1000/60} minutes)")
+        return false
     }
 
     private fun scheduleResetTime() {
@@ -645,11 +690,13 @@ class ScreenTimeService : Service() {
 
     private fun saveScreenTime() {
         val todayKey = getTodayDateKey()
-        prefs.edit().putInt(todayKey, screenTimeSeconds).apply()
-        prefs.edit().putString("last_date_key", todayKey).apply()
+        val now = System.currentTimeMillis()
 
-        val nextResetTime = getNextResetTimeMillis()
-        prefs.edit().putLong("next_reset_timestamp", nextResetTime).apply()
+        prefs.edit()
+            .putInt(todayKey, screenTimeSeconds)
+            .putString("last_date_key", todayKey)
+            .putLong("last_save_timestamp", now)
+            .apply()
     }
 
     private fun getNextResetTimeMillis(): Long {
@@ -675,21 +722,32 @@ class ScreenTimeService : Service() {
 
     private fun getTodayDateKey(): String {
         val calendar = Calendar.getInstance()
+        // Simple date key - just use actual calendar day
         return "screen_time_${calendar.get(Calendar.YEAR)}_${calendar.get(Calendar.DAY_OF_YEAR)}"
     }
 
     private fun checkDateChangeAndReset() {
-        val now = System.currentTimeMillis()
-        val nextResetTimestamp = prefs.getLong("next_reset_timestamp", 0L)
-
-        if (nextResetTimestamp > 0 && now >= nextResetTimestamp) {
-            Log.d(TAG, "Reset time reached, resetting counter")
+        if (shouldResetBasedOnDate()) {
+            Log.d(TAG, "Performing reset - clearing screen time")
             screenTimeSeconds = 0
-            saveScreenTime()
-        } else if (nextResetTimestamp == 0L) {
-            saveScreenTime()
+
+            // Update to today's date key
+            val todayKey = getTodayDateKey()
+            val now = System.currentTimeMillis()
+
+            prefs.edit()
+                .putString("last_date_key", todayKey)
+                .putInt(todayKey, 0)
+                .putLong("last_save_timestamp", now)
+                .putLong("last_actual_reset_timestamp", now) // Track when we actually reset
+                .putLong("next_reset_timestamp", getNextResetTimeMillis())
+                .apply()
+
+            updateTimeDisplay()
+            Log.d(TAG, "Reset complete - screenTimeSeconds: $screenTimeSeconds, next reset: ${getNextResetTimeMillis()}")
         }
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
