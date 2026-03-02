@@ -29,6 +29,7 @@ class AnalyticsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_analytics)
+        window.navigationBarColor = android.graphics.Color.parseColor("#121212")
 
         prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
 

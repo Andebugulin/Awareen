@@ -11,7 +11,8 @@ class InfoActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_info) // We'll create this layout next
+        setContentView(R.layout.activity_info)
+        window.navigationBarColor = android.graphics.Color.parseColor("#121212") // We'll create this layout next
 
         // Setup Toolbar
         val toolbar: Toolbar = findViewById(R.id.toolbar_info_screen)

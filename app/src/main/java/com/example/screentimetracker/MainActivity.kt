@@ -34,7 +34,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
+        // Force dark navigation bar
+        window.navigationBarColor = Color.parseColor("#121212")
         val startServiceButton = findViewById<Button>(R.id.startServiceButton)
         startServiceButton.setOnClickListener {
             checkOverlayPermissionAndStartService()
