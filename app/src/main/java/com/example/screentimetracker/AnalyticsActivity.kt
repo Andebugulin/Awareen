@@ -3,20 +3,33 @@ package com.example.screentimetracker
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
+import org.json.JSONArray
+import org.json.JSONObject
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 class AnalyticsActivity : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "AnalyticsActivity"
+    }
+
     private lateinit var prefs: SharedPreferences
     private lateinit var recyclerView: RecyclerView
     private lateinit var averageTextView: TextView
@@ -25,6 +38,18 @@ class AnalyticsActivity : AppCompatActivity() {
     private lateinit var lifetimeYearsTextView: TextView
     private lateinit var lifetimeDaysTextView: TextView
     private lateinit var adapter: AnalyticsAdapter
+
+    private val exportLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let { exportAnalyticsToUri(it) }
+    }
+
+    private val importLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { importAnalyticsFromUri(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +76,15 @@ class AnalyticsActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = AnalyticsAdapter()
         recyclerView.adapter = adapter
+
+        findViewById<Button>(R.id.exportAnalyticsButton).setOnClickListener {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
+            exportLauncher.launch("awareen_analytics_$timestamp.json")
+        }
+
+        findViewById<Button>(R.id.importAnalyticsButton).setOnClickListener {
+            importLauncher.launch(arrayOf("application/json", "*/*"))
+        }
     }
 
     private fun loadAnalyticsData() {
@@ -92,6 +126,125 @@ class AnalyticsActivity : AppCompatActivity() {
         return Date()
     }
 
+    // =========================================================================
+    // EXPORT
+    // =========================================================================
+
+    private fun exportAnalyticsToUri(uri: Uri) {
+        try {
+            val root = JSONObject()
+            root.put("version", 1)
+            root.put("app", "awareen")
+            root.put("type", "analytics")
+            root.put("exported_at", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()))
+
+            val analyticsDates = prefs.getStringSet("analytics_dates", mutableSetOf()) ?: mutableSetOf()
+            val daysArray = JSONArray()
+
+            analyticsDates.forEach { dateKey ->
+                val screenTime = prefs.getInt(dateKey, 0)
+                if (screenTime > 0) {
+                    val dayObj = JSONObject()
+                    dayObj.put("date_key", dateKey)
+
+                    val parts = dateKey.split("_")
+                    if (parts.size >= 4) {
+                        dayObj.put("year", parts[1].toIntOrNull() ?: 0)
+                        dayObj.put("month", parts[2].toIntOrNull() ?: 0)
+                        dayObj.put("day", parts[3].toIntOrNull() ?: 0)
+                    }
+
+                    dayObj.put("screen_time_seconds", screenTime)
+
+                    val hourly = JSONObject()
+                    for (h in 0..23) {
+                        val hourKey = "${dateKey}_hour_$h"
+                        val hourVal = prefs.getInt(hourKey, 0)
+                        if (hourVal > 0) {
+                            hourly.put(h.toString(), hourVal)
+                        }
+                    }
+                    if (hourly.length() > 0) {
+                        dayObj.put("hourly_breakdown", hourly)
+                    }
+
+                    daysArray.put(dayObj)
+                }
+            }
+
+            root.put("analytics", daysArray)
+
+            contentResolver.openOutputStream(uri)?.use { os ->
+                os.write(root.toString(2).toByteArray())
+            }
+
+            Toast.makeText(this, "Analytics exported (${daysArray.length()} days)", Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Export failed: ${e.message}", e)
+            Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // =========================================================================
+    // IMPORT
+    // =========================================================================
+
+    private fun importAnalyticsFromUri(uri: Uri) {
+        try {
+            val jsonString = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
+                ?: throw Exception("Could not read file")
+
+            val root = JSONObject(jsonString)
+
+            if (root.optString("app") != "awareen" || root.optString("type") != "analytics") {
+                Toast.makeText(this, "Not a valid Awareen analytics file", Toast.LENGTH_LONG).show()
+                return
+            }
+
+            val daysArray = root.getJSONArray("analytics")
+            val existingDates = prefs.getStringSet("analytics_dates", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+
+            val editor = prefs.edit()
+            var importedCount = 0
+
+            for (i in 0 until daysArray.length()) {
+                val dayObj = daysArray.getJSONObject(i)
+                val dateKey = dayObj.getString("date_key")
+                val screenTime = dayObj.getInt("screen_time_seconds")
+
+                val existing = prefs.getInt(dateKey, 0)
+                if (screenTime > existing) {
+                    editor.putInt(dateKey, screenTime)
+                    existingDates.add(dateKey)
+
+                    if (dayObj.has("hourly_breakdown")) {
+                        val hourly = dayObj.getJSONObject("hourly_breakdown")
+                        hourly.keys().forEach { hour ->
+                            editor.putInt("${dateKey}_hour_$hour", hourly.getInt(hour))
+                        }
+                    }
+
+                    importedCount++
+                }
+            }
+
+            editor.putStringSet("analytics_dates", existingDates)
+            editor.apply()
+
+            Toast.makeText(this, "Imported $importedCount days of data", Toast.LENGTH_SHORT).show()
+            loadAnalyticsData()
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Import failed: ${e.message}", e)
+            Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // =========================================================================
+    // STATISTICS
+    // =========================================================================
+
     private fun calculateStatistics(data: List<DayData>) {
         if (data.isEmpty()) return
 
@@ -99,10 +252,8 @@ class AnalyticsActivity : AppCompatActivity() {
         val averageSeconds = totalSeconds / data.size
         averageTextView.text = "Daily Average: ${formatTime(averageSeconds)}"
 
-        // Lifetime comparison
         calculateLifetimeComparison(averageSeconds)
 
-        // Trend calculation
         if (data.size >= 2) {
             val recentDays = data.take(minOf(7, data.size))
             val olderDays = data.drop(minOf(7, data.size)).take(minOf(7, data.size - minOf(7, data.size)))
@@ -154,12 +305,10 @@ class AnalyticsActivity : AppCompatActivity() {
     private fun calculateLifetimeComparison(avgDailySeconds: Int) {
         val hoursPerDay = avgDailySeconds / 3600.0
 
-        // Realistic lifetime calculation (age 15-75, 60 years)
         val yearsOfUsage = 60
         val lifetimeDays = (hoursPerDay * 365 * yearsOfUsage / 24).toInt()
         val lifetimeYears = lifetimeDays / 365.0
 
-        // Display years with color from existing palette
         when {
             lifetimeYears >= 5 -> {
                 lifetimeYearsTextView.text = String.format("%.1f years", lifetimeYears)
@@ -175,7 +324,6 @@ class AnalyticsActivity : AppCompatActivity() {
             }
         }
 
-        // Display days
         lifetimeDaysTextView.text = "$lifetimeDays days total"
         lifetimeDaysTextView.setTextColor(Color.parseColor("#757575"))
     }
@@ -207,8 +355,7 @@ class AnalyticsAdapter : RecyclerView.Adapter<AnalyticsAdapter.ViewHolder>() {
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val dayData = data[position]
-        holder.bind(dayData)
+        holder.bind(data[position])
     }
 
     override fun getItemCount() = data.size
