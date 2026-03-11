@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -30,6 +31,11 @@ import androidx.appcompat.widget.SwitchCompat
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 import com.example.screentimetracker.AppSettings
 
@@ -45,6 +51,8 @@ class SettingsActivity : AppCompatActivity() {
 
         const val LEVEL_3_BLINKING_ENABLED = "level3_blinking_enabled"
         const val DEFAULT_LEVEL_3_BLINKING_ENABLED = true
+
+        private const val TAG = "SettingsActivity"
     }
 
     private lateinit var prefs: SharedPreferences
@@ -129,6 +137,22 @@ class SettingsActivity : AppCompatActivity() {
     private var isInitialSetup = true
     private var userChangesMade = false
 
+    // =========================================================================
+    // SAF launchers for export/import
+    // =========================================================================
+
+    private val exportSettingsLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let { exportSettingsToUri(it) }
+    }
+
+    private val importSettingsLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { importSettingsFromUri(it) }
+    }
+
     private fun finishInitialSetup() {
         Handler(Looper.getMainLooper()).postDelayed({
             isInitialSetup = false
@@ -138,6 +162,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+        window.navigationBarColor = android.graphics.Color.parseColor("#121212")
 
         prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -146,6 +171,7 @@ class SettingsActivity : AppCompatActivity() {
 
         initializeViews()
         setupCloseButton()
+        setupExportImportButtons()
 
         setupClickablePreviewHeaders()
         loadAndSetupControls()
@@ -227,6 +253,17 @@ class SettingsActivity : AppCompatActivity() {
         closeButton = findViewById(R.id.closeButton)
         closeButton.setOnClickListener {
             handleClose()
+        }
+    }
+
+    private fun setupExportImportButtons() {
+        findViewById<Button>(R.id.exportSettingsButton).setOnClickListener {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
+            exportSettingsLauncher.launch("awareen_settings_$timestamp.json")
+        }
+
+        findViewById<Button>(R.id.importSettingsButton).setOnClickListener {
+            importSettingsLauncher.launch(arrayOf("application/json", "*/*"))
         }
     }
 
@@ -360,19 +397,17 @@ class SettingsActivity : AppCompatActivity() {
         timerDisplayDurationSeekBar.isEnabled = isIntervalMode
     }
 
+    // =========================================================================
+    // COLOR PICKER — now with HSV visual picker
+    // =========================================================================
+
     private fun setupColorButtonControl(button: Button, prefKey: String, defaultColor: Int, onColorSelected: (Int) -> Unit) {
         var loadedColor = prefs.getInt(prefKey, defaultColor)
         button.setBackgroundColor(loadedColor)
         onColorSelected(loadedColor)
 
-        val availableColors = listOf(
-            Color.GREEN, Color.YELLOW, Color.RED, Color.CYAN, Color.MAGENTA, Color.BLUE,
-            Color.parseColor("#FFA500"), Color.parseColor("#FF4081"),
-            Color.WHITE, Color.LTGRAY
-        )
-
         button.setOnClickListener {
-            showColorPickerDialog(loadedColor, availableColors) { selectedColor ->
+            showColorPickerDialog(loadedColor) { selectedColor ->
                 loadedColor = selectedColor
                 button.setBackgroundColor(loadedColor)
                 onColorSelected(loadedColor)
@@ -382,31 +417,56 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun showColorPickerDialog(currentColor: Int, presetColors: List<Int>, onColorSelected: (Int) -> Unit) {
+    private fun showColorPickerDialog(currentColor: Int, onColorSelected: (Int) -> Unit) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
+        val colorPickerView = dialogView.findViewById<ColorPickerView>(R.id.colorPickerView)
         val hexInput = dialogView.findViewById<EditText>(R.id.hexInput)
         val previewColor = dialogView.findViewById<View>(R.id.previewColor)
         val randomButton = dialogView.findViewById<Button>(R.id.randomColorButton)
 
+        var updatingFromPicker = false
+        var updatingFromHex = false
+
+        // Initialize with current color
+        colorPickerView.setColor(currentColor)
         hexInput.setText(String.format("#%06X", 0xFFFFFF and currentColor))
         previewColor.setBackgroundColor(currentColor)
 
+        // When the visual picker changes, update hex + preview
+        colorPickerView.listener = object : ColorPickerView.OnColorChangedListener {
+            override fun onColorChanged(color: Int) {
+                if (updatingFromHex) return
+                updatingFromPicker = true
+                hexInput.setText(String.format("#%06X", 0xFFFFFF and color))
+                previewColor.setBackgroundColor(color)
+                updatingFromPicker = false
+            }
+        }
+
+        // Random button
         randomButton.setOnClickListener {
             val randomColor = Color.rgb(
                 (0..255).random(),
                 (0..255).random(),
                 (0..255).random()
             )
+            colorPickerView.setColor(randomColor)
             hexInput.setText(String.format("#%06X", 0xFFFFFF and randomColor))
             previewColor.setBackgroundColor(randomColor)
         }
 
+        // When hex input changes, update picker + preview
         hexInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
+                if (updatingFromPicker) return
                 try {
                     val color = Color.parseColor(s.toString())
+                    updatingFromHex = true
+                    colorPickerView.setColor(color)
                     previewColor.setBackgroundColor(color)
+                    updatingFromHex = false
                 } catch (e: Exception) {
+                    // ignore invalid input while typing
                 }
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -414,15 +474,9 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         AlertDialog.Builder(this, R.style.CustomAlertDialog)
-            .setTitle("Choose Color")
             .setView(dialogView)
             .setPositiveButton("Select") { _, _ ->
-                try {
-                    val color = Color.parseColor(hexInput.text.toString())
-                    onColorSelected(color)
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Invalid color format", Toast.LENGTH_SHORT).show()
-                }
+                onColorSelected(colorPickerView.getColor())
             }
             .setNegativeButton("Cancel", null)
             .create()
@@ -432,6 +486,121 @@ class SettingsActivity : AppCompatActivity() {
                 getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#FFA500"))
             }
     }
+
+    // =========================================================================
+    // EXPORT / IMPORT SETTINGS
+    // =========================================================================
+
+    private fun buildSettingsJson(): JSONObject {
+        val root = JSONObject()
+        root.put("version", 1)
+        root.put("app", "awareen")
+        root.put("type", "settings")
+        root.put("exported_at", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()))
+
+        val s = JSONObject()
+        s.put("level_1_color", String.format("#%06X", 0xFFFFFF and currentLevel1Color))
+        s.put("level_1_position", level1PositionSpinner.selectedItem.toString())
+        s.put("level_1_font_size", (MIN_FONT_SIZE_SP + level1FontSizeSeekBar.progress).toInt())
+        s.put("level_1_max_time_minutes", currentLevel1MaxTimeMinutes)
+        s.put("level_1_blinking_enabled", currentLevel1BlinkingEnabled)
+
+        s.put("level_2_color", String.format("#%06X", 0xFFFFFF and currentLevel2Color))
+        s.put("level_2_position", level2PositionSpinner.selectedItem.toString())
+        s.put("level_2_font_size", (MIN_FONT_SIZE_SP + level2FontSizeSeekBar.progress).toInt())
+        s.put("level_2_duration_minutes", currentLevel2DurationMinutes)
+        s.put("level_2_blinking_enabled", currentLevel2BlinkingEnabled)
+
+        s.put("level_3_color", String.format("#%06X", 0xFFFFFF and currentLevel3Color))
+        s.put("level_3_position", level3PositionSpinner.selectedItem.toString())
+        s.put("level_3_font_size", (MIN_FONT_SIZE_SP + level3FontSizeSeekBar.progress).toInt())
+        s.put("level_3_blinking_enabled", level3BlinkingSwitch.isChecked)
+
+        s.put("reset_hour", resetHourSpinner.selectedItemPosition)
+        s.put("reset_minute", resetMinuteSpinner.selectedItemPosition)
+
+        val selectedMode = if (timerDisplayModeSpinner.selectedItemPosition == 0) "always" else "interval"
+        s.put("timer_display_mode", selectedMode)
+        s.put("timer_display_interval_minutes", currentDisplayIntervalMinutes)
+        s.put("timer_display_duration_seconds", currentDisplayDurationSeconds)
+
+        root.put("settings", s)
+        return root
+    }
+
+    private fun exportSettingsToUri(uri: Uri) {
+        try {
+            val json = buildSettingsJson().toString(2)
+            contentResolver.openOutputStream(uri)?.use { os ->
+                os.write(json.toByteArray())
+            }
+            Toast.makeText(this, "Settings exported", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Export failed: ${e.message}", e)
+            Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun importSettingsFromUri(uri: Uri) {
+        try {
+            val jsonString = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
+                ?: throw Exception("Could not read file")
+
+            val root = JSONObject(jsonString)
+
+            if (root.optString("app") != "awareen" || root.optString("type") != "settings") {
+                Toast.makeText(this, "Not a valid Awareen settings file", Toast.LENGTH_LONG).show()
+                return
+            }
+
+            val s = root.getJSONObject("settings")
+
+            // Apply to prefs
+            prefs.edit().apply {
+                putInt(AppSettings.LEVEL_1_COLOR, Color.parseColor(s.getString("level_1_color")))
+                val l1Pos = s.getString("level_1_position")
+                if (l1Pos != "Custom") putString(AppSettings.LEVEL_1_POSITION, l1Pos)
+                putInt(AppSettings.LEVEL_1_FONT_SIZE, s.getInt("level_1_font_size"))
+                putInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, s.getInt("level_1_max_time_minutes") * 60)
+                putBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, s.getBoolean("level_1_blinking_enabled"))
+
+                putInt(AppSettings.LEVEL_2_COLOR, Color.parseColor(s.getString("level_2_color")))
+                val l2Pos = s.getString("level_2_position")
+                if (l2Pos != "Custom") putString(AppSettings.LEVEL_2_POSITION, l2Pos)
+                putInt(AppSettings.LEVEL_2_FONT_SIZE, s.getInt("level_2_font_size"))
+                putInt(AppSettings.LEVEL_2_DURATION_SECONDS, s.getInt("level_2_duration_minutes") * 60)
+                putBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, s.getBoolean("level_2_blinking_enabled"))
+
+                putInt(AppSettings.LEVEL_3_COLOR, Color.parseColor(s.getString("level_3_color")))
+                val l3Pos = s.getString("level_3_position")
+                if (l3Pos != "Custom") putString(AppSettings.LEVEL_3_POSITION, l3Pos)
+                putInt(AppSettings.LEVEL_3_FONT_SIZE, s.getInt("level_3_font_size"))
+                putBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, s.getBoolean("level_3_blinking_enabled"))
+
+                putInt(AppSettings.RESET_HOUR, s.getInt("reset_hour"))
+                putInt(AppSettings.RESET_MINUTE, s.getInt("reset_minute"))
+
+                putString(AppSettings.TIMER_DISPLAY_MODE, s.getString("timer_display_mode"))
+                putInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, s.getInt("timer_display_interval_minutes"))
+                putInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, s.getInt("timer_display_duration_seconds"))
+
+                apply()
+            }
+
+            Toast.makeText(this, "Settings imported — reloading…", Toast.LENGTH_SHORT).show()
+
+            // Reload UI
+            recreate()
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Import failed: ${e.message}", e)
+            Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // =========================================================================
+    // POSITION / FONT / TIME / BLINKING CONTROLS (unchanged logic)
+    // =========================================================================
 
     private fun setupPositionSpinnerControl(spinner: Spinner, prefKey: String, defaultPosition: String, level: Int) {
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, positionOptionsWithCustom)
@@ -456,7 +625,6 @@ class SettingsActivity : AppCompatActivity() {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (!isInitialSetup && position > 0) {
-                    // User selected a non-custom position, clear custom position
                     prefs.edit()
                         .putBoolean(useCustomKey, false)
                         .remove(xKey)
@@ -561,6 +729,10 @@ class SettingsActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
+
+    // =========================================================================
+    // PREVIEW
+    // =========================================================================
 
     private fun updatePreview() {
         val color: Int
