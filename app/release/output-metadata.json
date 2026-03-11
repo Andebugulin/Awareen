@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.screentimetracker",
+  "applicationId": "com.andebugulin.awareen2",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1,
-      "versionName": "1.0",
+      "versionCode": 19,
+      "versionName": "1.18",
       "outputFile": "app-release.apk"
     }
   ],

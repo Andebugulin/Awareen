@@ -1,8 +1,10 @@
 package com.example.screentimetracker
 
+import android.app.AlarmManager
 import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -39,7 +41,6 @@ class ScreenTimeService : Service() {
     private var isScreenOn = true
     private var isDeviceUnlocked = false
     private val handler = Handler(Looper.getMainLooper())
-    private var resetTimeJob: Runnable? = null
 
     // Drag functionality variables
     private var initialX = 0
@@ -63,6 +64,9 @@ class ScreenTimeService : Service() {
         const val LEVEL_3_USE_CUSTOM = "level_3_use_custom_position"
         const val LEVEL_3_CUSTOM_X = "level_3_custom_position_x"
         const val LEVEL_3_CUSTOM_Y = "level_3_custom_position_y"
+
+        const val ACTION_ALARM_RESET = "com.example.screentimetracker.ALARM_RESET"
+        private const val ALARM_REQUEST_CODE = 1001
     }
 
     // Timer display customization
@@ -99,10 +103,14 @@ class ScreenTimeService : Service() {
 
     private var currentLevel = 1 // Track which level we're currently in
 
+    // =========================================================================
+    // CORE TIMER LOOP
+    // =========================================================================
+
     private val screenTimeUpdateRunnable = object : Runnable {
         override fun run() {
-            // ALWAYS check for reset on every iteration
-            checkDateChangeAndReset()
+            // Always check for missed resets on every tick
+            checkAndPerformResetIfNeeded()
 
             val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
 
@@ -136,6 +144,10 @@ class ScreenTimeService : Service() {
         }
     }
 
+    // =========================================================================
+    // BROADCAST RECEIVERS
+    // =========================================================================
+
     private val keyEventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -147,12 +159,12 @@ class ScreenTimeService : Service() {
 
                 Intent.ACTION_SCREEN_ON -> {
                     isScreenOn = true
-                    checkDateChangeAndReset() // Check here too
+                    checkAndPerformResetIfNeeded()
                 }
 
                 Intent.ACTION_USER_PRESENT -> {
-                    // User just unlocked - CRITICAL reset check point
-                    checkDateChangeAndReset()
+                    // User just unlocked — critical reset check point
+                    checkAndPerformResetIfNeeded()
 
                     isDeviceUnlocked = true
                     isScreenOn = true
@@ -168,6 +180,7 @@ class ScreenTimeService : Service() {
             if (intent?.action == AppSettings.ACTION_SETTINGS_UPDATED) {
                 Log.d(TAG, "Received settings update broadcast, reloading settings.")
                 loadSettings()
+                scheduleExactAlarm()
             }
         }
     }
@@ -176,14 +189,31 @@ class ScreenTimeService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_TIME_CHANGED, Intent.ACTION_DATE_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> {
-                    Log.d(TAG, "Time or date changed, reloading settings and rescheduling reset time")
+                    Log.d(TAG, "Time or date changed, reloading settings and rescheduling")
                     loadSettings()
-                    scheduleResetTime()
-                    checkDateChangeAndReset()
+                    scheduleExactAlarm()
+                    checkAndPerformResetIfNeeded()
                 }
             }
         }
     }
+
+    /**
+     * Receives the AlarmManager broadcast to perform reset even from Doze.
+     */
+    private val alarmResetReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_ALARM_RESET) {
+                Log.d(TAG, "AlarmManager reset fired")
+                checkAndPerformResetIfNeeded()
+                scheduleExactAlarm() // schedule the next one
+            }
+        }
+    }
+
+    // =========================================================================
+    // SERVICE LIFECYCLE
+    // =========================================================================
 
     override fun onCreate() {
         super.onCreate()
@@ -191,7 +221,8 @@ class ScreenTimeService : Service() {
             prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
             loadSettings()
 
-            checkDateChangeAndReset()
+            // Check for any missed resets (e.g. phone was off overnight)
+            checkAndPerformResetIfNeeded()
             loadScreenTime()
 
             val keyFilter = IntentFilter().apply {
@@ -211,6 +242,9 @@ class ScreenTimeService : Service() {
             val settingsFilter = IntentFilter(AppSettings.ACTION_SETTINGS_UPDATED)
             registerReceiver(settingsUpdateReceiver, settingsFilter, RECEIVER_NOT_EXPORTED)
 
+            val alarmFilter = IntentFilter(ACTION_ALARM_RESET)
+            registerReceiver(alarmResetReceiver, alarmFilter, RECEIVER_NOT_EXPORTED)
+
             createNotificationChannel()
             val notification = NotificationCompat.Builder(this, "screen_time_channel")
                 .setContentTitle("Screen Time Tracker")
@@ -226,12 +260,193 @@ class ScreenTimeService : Service() {
 
             handler.removeCallbacks(screenTimeUpdateRunnable)
             handler.post(screenTimeUpdateRunnable)
-            scheduleResetTime()
+
+            // Schedule Doze-proof alarm for the next reset time
+            scheduleExactAlarm()
+
             Log.d(TAG, "Service created successfully. Initial screenTimeSeconds: $screenTimeSeconds")
         } catch (e: Exception) {
             Log.e(TAG, "Error in onCreate: ${e.message}", e)
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacks(screenTimeUpdateRunnable)
+        handler.removeCallbacks(blinkingRunnable)
+        saveScreenTime()
+
+        cancelAlarm()
+
+        try {
+            unregisterReceiver(keyEventReceiver)
+            unregisterReceiver(timeChangedReceiver)
+            unregisterReceiver(settingsUpdateReceiver)
+            unregisterReceiver(alarmResetReceiver)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error unregistering receivers: ${e.message}", e)
+        }
+
+        if (overlayView != null && windowManager != null) {
+            try {
+                windowManager?.removeView(overlayView)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error removing overlay view: ${e.message}", e)
+            } finally {
+                overlayView = null
+                windowManager = null
+            }
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return START_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    // =========================================================================
+    // RESET LOGIC — deterministic, Doze-proof
+    //
+    // Core idea: on every check, compute the most recent wall-clock time that
+    // matches the configured reset hour:minute and is <= now. If the last
+    // actual reset happened BEFORE that moment, a reset is overdue.
+    //
+    // This works whether the phone was asleep 8 hours or 8 seconds.
+    // =========================================================================
+
+    /**
+     * Returns the most recent wall-clock instant matching
+     * [currentResetHour]:[currentResetMinute] that is <= now.
+     */
+    private fun getMostRecentResetTimeMillis(): Long {
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, currentResetHour)
+            set(Calendar.MINUTE, currentResetMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        // If that time hasn't happened yet today, the most recent one was yesterday
+        if (cal.timeInMillis > now) {
+            cal.add(Calendar.DAY_OF_YEAR, -1)
+        }
+        return cal.timeInMillis
+    }
+
+    /**
+     * Returns the next future wall-clock instant matching
+     * [currentResetHour]:[currentResetMinute] that is > now.
+     */
+    private fun getNextResetTimeMillis(): Long {
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, currentResetHour)
+            set(Calendar.MINUTE, currentResetMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        if (cal.timeInMillis <= now) {
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+        }
+        return cal.timeInMillis
+    }
+
+    /**
+     * Deterministic reset check. No grace periods, no minimum-time guards.
+     * Simply: did a scheduled reset moment pass since the last actual reset?
+     */
+    private fun shouldReset(): Boolean {
+        val lastReset = prefs.getLong("last_actual_reset_timestamp", 0L)
+        val mostRecentScheduled = getMostRecentResetTimeMillis()
+
+        // Reset if last reset happened before the most recent scheduled reset
+        val needed = lastReset < mostRecentScheduled
+        if (needed) {
+            Log.d(TAG, "Reset needed: lastReset=$lastReset < scheduledAt=$mostRecentScheduled")
+        }
+        return needed
+    }
+
+    /**
+     * Single entry point for all reset checks throughout the service.
+     */
+    private fun checkAndPerformResetIfNeeded() {
+        if (shouldReset()) {
+            Log.d(TAG, "Performing reset — clearing screen time to 0")
+            screenTimeSeconds = 0
+
+            val todayKey = getTodayDateKey()
+            val now = System.currentTimeMillis()
+
+            prefs.edit()
+                .putString("last_date_key", todayKey)
+                .putInt(todayKey, 0)
+                .putLong("last_save_timestamp", now)
+                .putLong("last_actual_reset_timestamp", now)
+                .apply()
+
+            updateTimeDisplay()
+            Log.d(TAG, "Reset complete. Next reset at ${getNextResetTimeMillis()}")
+        }
+    }
+
+    // =========================================================================
+    // ALARM MANAGER — fires even through Doze
+    // =========================================================================
+
+    /**
+     * Schedules an exact alarm for the next reset time.
+     * This ensures the reset fires even if the Handler is suspended.
+     */
+    private fun scheduleExactAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(ACTION_ALARM_RESET).apply {
+            setPackage(packageName)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            ALARM_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val nextReset = getNextResetTimeMillis()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                nextReset,
+                pendingIntent
+            )
+        } else {
+            alarmManager.setExact(
+                AlarmManager.RTC_WAKEUP,
+                nextReset,
+                pendingIntent
+            )
+        }
+
+        Log.d(TAG, "Exact alarm scheduled for $nextReset (in ${(nextReset - System.currentTimeMillis()) / 1000 / 60} min)")
+    }
+
+    private fun cancelAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(ACTION_ALARM_RESET).apply {
+            setPackage(packageName)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            ALARM_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+    }
+
+    // =========================================================================
+    // SETTINGS
+    // =========================================================================
 
     private fun loadSettings() {
         level1MaxTimeSeconds = prefs.getInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, AppSettings.DEFAULT_LEVEL_1_MAX_TIME_SECONDS)
@@ -260,7 +475,7 @@ class ScreenTimeService : Service() {
         timerDisplayIntervalMinutes = prefs.getInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES)
         timerDisplayDurationSeconds = prefs.getInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS)
 
-        Log.d(TAG, "Settings loaded: Timer Display Mode=$timerDisplayMode, Interval=${timerDisplayIntervalMinutes}min, Duration=${timerDisplayDurationSeconds}s")
+        Log.d(TAG, "Settings loaded: reset=${currentResetHour}:${currentResetMinute}, displayMode=$timerDisplayMode")
 
         if (overlayView != null && windowManager != null) {
             updateOverlayLayoutParams(getCurrentPositionString(), true)
@@ -268,6 +483,10 @@ class ScreenTimeService : Service() {
             updateTimerVisibility()
         }
     }
+
+    // =========================================================================
+    // TIMER VISIBILITY
+    // =========================================================================
 
     private fun updateTimerVisibility() {
         if (isHidden) {
@@ -284,6 +503,10 @@ class ScreenTimeService : Service() {
         overlayView?.visibility = if (shouldBeVisible) View.VISIBLE else View.GONE
     }
 
+    // =========================================================================
+    // ANALYTICS
+    // =========================================================================
+
     private fun saveAnalyticsData() {
         val calendar = Calendar.getInstance()
         val dateKey = "analytics_${calendar.get(Calendar.YEAR)}_${calendar.get(Calendar.MONTH)}_${calendar.get(Calendar.DAY_OF_MONTH)}"
@@ -297,6 +520,10 @@ class ScreenTimeService : Service() {
         existingDates.add(dateKey)
         prefs.edit().putStringSet("analytics_dates", existingDates).apply()
     }
+
+    // =========================================================================
+    // POSITION / LEVEL HELPERS
+    // =========================================================================
 
     private fun getCurrentPositionString(): String {
         return when {
@@ -314,6 +541,10 @@ class ScreenTimeService : Service() {
         }
     }
 
+    // =========================================================================
+    // NOTIFICATION
+    // =========================================================================
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -325,6 +556,10 @@ class ScreenTimeService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
     }
+
+    // =========================================================================
+    // OVERLAY
+    // =========================================================================
 
     private fun createOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -473,8 +708,52 @@ class ScreenTimeService : Service() {
         }
     }
 
+    private fun updateOverlayLayoutParams(positionString: String, forceUpdate: Boolean = false) {
+        if (forceUpdate) {
+            val level = getCurrentLevel()
+            applyPositionForLevel(level)
+            if (overlayView?.parent != null) {
+                try {
+                    windowManager?.updateViewLayout(overlayView, currentLayoutParams)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error updating overlay layout: ${e.message}", e)
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // SCREEN TIME PERSISTENCE
+    // =========================================================================
+
+    private fun saveScreenTime() {
+        val todayKey = getTodayDateKey()
+        val now = System.currentTimeMillis()
+
+        prefs.edit()
+            .putInt(todayKey, screenTimeSeconds)
+            .putString("last_date_key", todayKey)
+            .putLong("last_save_timestamp", now)
+            .apply()
+    }
+
+    private fun loadScreenTime() {
+        val todayKey = getTodayDateKey()
+        screenTimeSeconds = prefs.getInt(todayKey, 0)
+    }
+
+    private fun getTodayDateKey(): String {
+        val calendar = Calendar.getInstance()
+        return "screen_time_${calendar.get(Calendar.YEAR)}_${calendar.get(Calendar.DAY_OF_YEAR)}"
+    }
+
+    // =========================================================================
+    // DISPLAY UPDATE
+    // =========================================================================
+
     private fun updateTimeDisplay() {
-        checkDateChangeAndReset()
+        // Also check reset here so display is always correct after wake
+        checkAndPerformResetIfNeeded()
 
         val hours = screenTimeSeconds / 3600
         val minutes = (screenTimeSeconds % 3600) / 60
@@ -502,34 +781,26 @@ class ScreenTimeService : Service() {
                 timeTextView?.setTextColor(level1Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level1FontSize)
-                if (level1BlinkingEnabled) {
-                    startBlinking()
-                } else {
-                    stopBlinking()
-                }
+                if (level1BlinkingEnabled) startBlinking() else stopBlinking()
             }
             screenTimeSeconds < level2EndTimeSeconds -> {
                 timeTextView?.setTextColor(level2Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level2FontSize)
-                if (level2BlinkingEnabled) {
-                    startBlinking()
-                } else {
-                    stopBlinking()
-                }
+                if (level2BlinkingEnabled) startBlinking() else stopBlinking()
             }
             else -> {
                 timeTextView?.setTextColor(level3Color)
                 overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level3FontSize)
-                if (level3BlinkingEnabled) {
-                    startBlinking()
-                } else {
-                    stopBlinking()
-                }
+                if (level3BlinkingEnabled) startBlinking() else stopBlinking()
             }
         }
     }
+
+    // =========================================================================
+    // SCREEN STATE CHECK
+    // =========================================================================
 
     private fun isScreenActuallyOnAndUnlocked(): Boolean {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -546,6 +817,10 @@ class ScreenTimeService : Service() {
 
         return isScreenOn && !isLocked
     }
+
+    // =========================================================================
+    // BLINKING
+    // =========================================================================
 
     private var isBlinking = false
     private val blinkingRunnable = object : Runnable {
@@ -583,8 +858,6 @@ class ScreenTimeService : Service() {
         }
     }
 
-
-
     private fun startBlinking() {
         if (!isBlinking) {
             isBlinking = true
@@ -606,181 +879,4 @@ class ScreenTimeService : Service() {
             overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
         }
     }
-
-    private fun shouldResetBasedOnDate(): Boolean {
-        val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
-
-        // FIRST: Check if we're within grace period after settings change
-        val lastSettingsChangeTime = prefs.getLong("last_settings_change_timestamp", 0L)
-        val now = System.currentTimeMillis()
-        val GRACE_PERIOD_MS = 5 * 60 * 1000L // 5 minutes - increased for safety
-
-        if (lastSettingsChangeTime > 0 && (now - lastSettingsChangeTime) < GRACE_PERIOD_MS) {
-            Log.d(TAG, "Within grace period after settings change (${(now - lastSettingsChangeTime)/1000}s ago), skipping all reset checks")
-            return false
-        }
-
-        // Check if we already reset recently (prevent double resets)
-        val lastResetTime = prefs.getLong("last_actual_reset_timestamp", 0L)
-        val MIN_TIME_BETWEEN_RESETS_MS = 12 * 60 * 60 * 1000L // 12 hours
-
-        if (lastResetTime > 0) {
-            val timeSinceLastReset = now - lastResetTime
-            if (timeSinceLastReset < MIN_TIME_BETWEEN_RESETS_MS) {
-                Log.d(TAG, "Only ${timeSinceLastReset/1000/60} minutes since last reset, skipping")
-                return false
-            }
-        }
-
-        // Now check if we should reset based on the scheduled reset time
-        val nextResetTime = prefs.getLong("next_reset_timestamp", 0L)
-
-        if (nextResetTime > 0 && now >= nextResetTime) {
-            Log.d(TAG, "Reset time reached: nextReset=$nextResetTime, now=$now")
-            return true
-        }
-
-        Log.d(TAG, "No reset needed. Next reset at $nextResetTime (in ${(nextResetTime - now)/1000/60} minutes)")
-        return false
-    }
-
-    private fun scheduleResetTime() {
-        resetTimeJob?.let {
-            handler.removeCallbacks(it)
-        }
-
-        val calendar = Calendar.getInstance()
-        val now = calendar.timeInMillis
-        calendar.apply {
-            set(Calendar.HOUR_OF_DAY, currentResetHour)
-            set(Calendar.MINUTE, currentResetMinute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-
-            if (calendar.timeInMillis <= now) {
-                add(Calendar.DAY_OF_YEAR, 1)
-            }
-        }
-        val delayMillis = calendar.timeInMillis - now
-
-        resetTimeJob = Runnable {
-            screenTimeSeconds = 0
-            loadSettings()
-            updateTimeDisplay()
-            saveScreenTime()
-            scheduleResetTime()
-        }
-        handler.postDelayed(resetTimeJob!!, delayMillis)
-    }
-
-    private fun updateOverlayLayoutParams(positionString: String, forceUpdate: Boolean = false) {
-        // This method is kept for compatibility but position updates are now handled in updateTimeDisplay
-        if (forceUpdate) {
-            val level = getCurrentLevel()
-            applyPositionForLevel(level)
-            if (overlayView?.parent != null) {
-                try {
-                    windowManager?.updateViewLayout(overlayView, currentLayoutParams)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error updating overlay layout: ${e.message}", e)
-                }
-            }
-        }
-    }
-
-    private fun saveScreenTime() {
-        val todayKey = getTodayDateKey()
-        val now = System.currentTimeMillis()
-
-        prefs.edit()
-            .putInt(todayKey, screenTimeSeconds)
-            .putString("last_date_key", todayKey)
-            .putLong("last_save_timestamp", now)
-            .apply()
-    }
-
-    private fun getNextResetTimeMillis(): Long {
-        val calendar = Calendar.getInstance()
-        val now = calendar.timeInMillis
-        calendar.apply {
-            set(Calendar.HOUR_OF_DAY, currentResetHour)
-            set(Calendar.MINUTE, currentResetMinute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-
-            if (timeInMillis <= now) {
-                add(Calendar.DAY_OF_YEAR, 1)
-            }
-        }
-        return calendar.timeInMillis
-    }
-
-    private fun loadScreenTime() {
-        val todayKey = getTodayDateKey()
-        screenTimeSeconds = prefs.getInt(todayKey, 0)
-    }
-
-    private fun getTodayDateKey(): String {
-        val calendar = Calendar.getInstance()
-        // Simple date key - just use actual calendar day
-        return "screen_time_${calendar.get(Calendar.YEAR)}_${calendar.get(Calendar.DAY_OF_YEAR)}"
-    }
-
-    private fun checkDateChangeAndReset() {
-        if (shouldResetBasedOnDate()) {
-            Log.d(TAG, "Performing reset - clearing screen time")
-            screenTimeSeconds = 0
-
-            // Update to today's date key
-            val todayKey = getTodayDateKey()
-            val now = System.currentTimeMillis()
-
-            prefs.edit()
-                .putString("last_date_key", todayKey)
-                .putInt(todayKey, 0)
-                .putLong("last_save_timestamp", now)
-                .putLong("last_actual_reset_timestamp", now) // Track when we actually reset
-                .putLong("next_reset_timestamp", getNextResetTimeMillis())
-                .apply()
-
-            updateTimeDisplay()
-            Log.d(TAG, "Reset complete - screenTimeSeconds: $screenTimeSeconds, next reset: ${getNextResetTimeMillis()}")
-        }
-    }
-
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacks(screenTimeUpdateRunnable)
-        handler.removeCallbacks(blinkingRunnable)
-        resetTimeJob?.let {
-            handler.removeCallbacks(it)
-        }
-        saveScreenTime()
-
-        try {
-            unregisterReceiver(keyEventReceiver)
-            unregisterReceiver(timeChangedReceiver)
-            unregisterReceiver(settingsUpdateReceiver)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error unregistering receivers: ${e.message}", e)
-        }
-
-        if (overlayView != null && windowManager != null) {
-            try {
-                windowManager?.removeView(overlayView)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error removing overlay view: ${e.message}", e)
-            } finally {
-                overlayView = null
-                windowManager = null
-            }
-        }
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
 }

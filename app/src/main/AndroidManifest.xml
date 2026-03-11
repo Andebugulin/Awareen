@@ -14,6 +14,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- Alarm permissions (Doze-proof reset) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <!-- Battery optimization and doze mode permissions -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -58,12 +61,12 @@
         </activity>
         <activity android:name=".SettingsActivity" />
         <activity
-        android:name=".InfoActivity"
-        android:label="About Awareen"
-        android:parentActivityName=".MainActivity"> <meta-data
-        android:name="android.support.PARENT_ACTIVITY"
-        android:value=".MainActivity" />
-    </activity>
+            android:name=".InfoActivity"
+            android:label="About Awareen"
+            android:parentActivityName=".MainActivity"> <meta-data
+            android:name="android.support.PARENT_ACTIVITY"
+            android:value=".MainActivity" />
+        </activity>
         <activity android:name=".AnalyticsActivity"
             android:label="Analytics"
             android:parentActivityName=".MainActivity">

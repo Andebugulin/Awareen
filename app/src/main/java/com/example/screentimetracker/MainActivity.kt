@@ -19,11 +19,15 @@ import android.os.PowerManager
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import android.app.ActivityManager
+import android.content.SharedPreferences
+import android.util.Log
+import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val OVERLAY_PERMISSION_REQ_CODE = 1234
+        private const val TAG = "MainActivity"
     }
 
     private var hasRequestedBatteryOptimization = false
@@ -77,6 +81,63 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateButtonVisibility()
+
+        // Defensive reset check — catches missed resets even if service was killed
+        performDefensiveResetCheck()
+    }
+
+    /**
+     * Standalone reset check that runs every time the user opens the app.
+     *
+     * This is the safety net: if the service was killed, the alarm didn't fire,
+     * and the boot receiver didn't run — this catches it the moment the user
+     * opens the app.
+     *
+     * Uses the exact same deterministic logic as ScreenTimeService:
+     *   "Did a scheduled reset moment pass since the last actual reset?"
+     */
+    private fun performDefensiveResetCheck() {
+        try {
+            val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+
+            val resetHour = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
+            val resetMinute = prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
+            val lastReset = prefs.getLong("last_actual_reset_timestamp", 0L)
+
+            // Compute the most recent wall-clock time matching reset hour:minute
+            val now = System.currentTimeMillis()
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, resetHour)
+                set(Calendar.MINUTE, resetMinute)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            if (cal.timeInMillis > now) {
+                cal.add(Calendar.DAY_OF_YEAR, -1)
+            }
+            val mostRecentScheduled = cal.timeInMillis
+
+            if (lastReset < mostRecentScheduled) {
+                Log.d(TAG, "Defensive reset: lastReset=$lastReset < scheduled=$mostRecentScheduled — resetting")
+
+                // Build today's date key
+                val todayCal = Calendar.getInstance()
+                val todayKey = "screen_time_${todayCal.get(Calendar.YEAR)}_${todayCal.get(Calendar.DAY_OF_YEAR)}"
+
+                prefs.edit()
+                    .putString("last_date_key", todayKey)
+                    .putInt(todayKey, 0)
+                    .putLong("last_save_timestamp", now)
+                    .putLong("last_actual_reset_timestamp", now)
+                    .apply()
+
+                Log.d(TAG, "Defensive reset complete — screen time zeroed for $todayKey")
+            } else {
+                Log.d(TAG, "Defensive reset: no reset needed (lastReset=$lastReset >= scheduled=$mostRecentScheduled)")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in defensive reset check: ${e.message}", e)
+        }
     }
 
     private fun updateButtonVisibility() {
