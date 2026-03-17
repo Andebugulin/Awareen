@@ -112,6 +112,11 @@ class ScreenTimeService : Service() {
             // Always check for missed resets on every tick
             checkAndPerformResetIfNeeded()
 
+            // Periodically verify the overlay is still attached (every 30s)
+            if (screenTimeSeconds % 30 == 0) {
+                ensureOverlayAttached()
+            }
+
             val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
 
             if (actuallyUnlocked) {
@@ -230,14 +235,25 @@ class ScreenTimeService : Service() {
                 addAction(Intent.ACTION_SCREEN_OFF)
                 addAction(Intent.ACTION_USER_PRESENT)
             }
-            registerReceiver(keyEventReceiver, keyFilter, RECEIVER_NOT_EXPORTED)
+            // System broadcasts come from outside the app — must NOT use
+            // RECEIVER_NOT_EXPORTED, which silently drops them on API 34+.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(keyEventReceiver, keyFilter, Context.RECEIVER_EXPORTED)
+            } else {
+                registerReceiver(keyEventReceiver, keyFilter)
+            }
 
             val timeFilter = IntentFilter().apply {
                 addAction(Intent.ACTION_TIME_CHANGED)
                 addAction(Intent.ACTION_DATE_CHANGED)
                 addAction(Intent.ACTION_TIMEZONE_CHANGED)
             }
-            registerReceiver(timeChangedReceiver, timeFilter)
+            // Also system broadcasts
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(timeChangedReceiver, timeFilter, Context.RECEIVER_EXPORTED)
+            } else {
+                registerReceiver(timeChangedReceiver, timeFilter)
+            }
 
             val settingsFilter = IntentFilter(AppSettings.ACTION_SETTINGS_UPDATED)
             registerReceiver(settingsUpdateReceiver, settingsFilter, RECEIVER_NOT_EXPORTED)
@@ -300,7 +316,38 @@ class ScreenTimeService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // If the service was restarted by the system (e.g. after being killed),
+        // onCreate already ran. But if onStartCommand is called on a running
+        // service (e.g. startForegroundService while already alive), make sure
+        // the overlay is still attached and settings are fresh.
+        loadSettings()
+        ensureOverlayAttached()
+
+        // Make sure the timer loop is running
+        handler.removeCallbacks(screenTimeUpdateRunnable)
+        handler.post(screenTimeUpdateRunnable)
+
         return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        Log.d(TAG, "Task removed — scheduling service restart")
+
+        // Re-start the service so the overlay comes back
+        val restartIntent = Intent(applicationContext, ScreenTimeService::class.java)
+        val pendingIntent = PendingIntent.getService(
+            applicationContext,
+            2001,
+            restartIntent,
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.set(
+            AlarmManager.RTC_WAKEUP,
+            System.currentTimeMillis() + 1000,
+            pendingIntent
+        )
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -554,6 +601,42 @@ class ScreenTimeService : Service() {
             )
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    // =========================================================================
+    // OVERLAY HEALTH — detect and recover from system-detached overlays
+    // =========================================================================
+
+    /**
+     * Checks whether the overlay view is still attached to WindowManager.
+     * If not (system removed it during Doze, config change, memory pressure,
+     * or task removal), re-creates it. This is the single most important
+     * defence against the "timer disappears after days" bug.
+     */
+    private fun ensureOverlayAttached() {
+        try {
+            if (overlayView?.parent != null && windowManager != null) {
+                // View is still attached — nothing to do
+                return
+            }
+
+            Log.w(TAG, "Overlay detached — re-creating")
+
+            // Clean up stale references
+            if (overlayView != null && windowManager != null) {
+                try {
+                    windowManager?.removeView(overlayView)
+                } catch (_: Exception) { /* already removed */ }
+            }
+            overlayView = null
+            timeTextView = null
+            windowManager = null
+
+            // Re-create from scratch
+            createOverlay()
+        } catch (e: Exception) {
+            Log.e(TAG, "ensureOverlayAttached failed: ${e.message}", e)
         }
     }
 

@@ -493,7 +493,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun buildSettingsJson(): JSONObject {
         val root = JSONObject()
-        root.put("version", 1)
+        root.put("version", 2)
         root.put("app", "awareen")
         root.put("type", "settings")
         root.put("exported_at", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()))
@@ -523,6 +523,25 @@ class SettingsActivity : AppCompatActivity() {
         s.put("timer_display_mode", selectedMode)
         s.put("timer_display_interval_minutes", currentDisplayIntervalMinutes)
         s.put("timer_display_duration_seconds", currentDisplayDurationSeconds)
+
+        // Custom per-level drag positions
+        val positions = JSONObject()
+        for (level in 1..3) {
+            val (useKey, xKey, yKey) = when (level) {
+                1 -> Triple(ScreenTimeService.LEVEL_1_USE_CUSTOM, ScreenTimeService.LEVEL_1_CUSTOM_X, ScreenTimeService.LEVEL_1_CUSTOM_Y)
+                2 -> Triple(ScreenTimeService.LEVEL_2_USE_CUSTOM, ScreenTimeService.LEVEL_2_CUSTOM_X, ScreenTimeService.LEVEL_2_CUSTOM_Y)
+                else -> Triple(ScreenTimeService.LEVEL_3_USE_CUSTOM, ScreenTimeService.LEVEL_3_CUSTOM_X, ScreenTimeService.LEVEL_3_CUSTOM_Y)
+            }
+            if (prefs.getBoolean(useKey, false)) {
+                val posObj = JSONObject()
+                posObj.put("x", prefs.getInt(xKey, 0))
+                posObj.put("y", prefs.getInt(yKey, 0))
+                positions.put("level_$level", posObj)
+            }
+        }
+        if (positions.length() > 0) {
+            s.put("custom_positions", positions)
+        }
 
         root.put("settings", s)
         return root
@@ -555,42 +574,100 @@ class SettingsActivity : AppCompatActivity() {
 
             val s = root.getJSONObject("settings")
 
-            // Apply to prefs
+            // Apply to prefs — use opt* for backward compatibility with older exports
             prefs.edit().apply {
-                putInt(AppSettings.LEVEL_1_COLOR, Color.parseColor(s.getString("level_1_color")))
-                val l1Pos = s.getString("level_1_position")
-                if (l1Pos != "Custom") putString(AppSettings.LEVEL_1_POSITION, l1Pos)
-                putInt(AppSettings.LEVEL_1_FONT_SIZE, s.getInt("level_1_font_size"))
-                putInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, s.getInt("level_1_max_time_minutes") * 60)
-                putBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, s.getBoolean("level_1_blinking_enabled"))
+                // Level 1
+                s.optString("level_1_color", "").takeIf { it.isNotEmpty() }?.let {
+                    putInt(AppSettings.LEVEL_1_COLOR, Color.parseColor(it))
+                }
+                val l1Pos = s.optString("level_1_position", "")
+                if (l1Pos.isNotEmpty() && l1Pos != "Custom") putString(AppSettings.LEVEL_1_POSITION, l1Pos)
+                if (s.has("level_1_font_size")) putInt(AppSettings.LEVEL_1_FONT_SIZE, s.getInt("level_1_font_size"))
+                if (s.has("level_1_max_time_minutes")) putInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, s.getInt("level_1_max_time_minutes") * 60)
+                if (s.has("level_1_blinking_enabled")) putBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, s.getBoolean("level_1_blinking_enabled"))
 
-                putInt(AppSettings.LEVEL_2_COLOR, Color.parseColor(s.getString("level_2_color")))
-                val l2Pos = s.getString("level_2_position")
-                if (l2Pos != "Custom") putString(AppSettings.LEVEL_2_POSITION, l2Pos)
-                putInt(AppSettings.LEVEL_2_FONT_SIZE, s.getInt("level_2_font_size"))
-                putInt(AppSettings.LEVEL_2_DURATION_SECONDS, s.getInt("level_2_duration_minutes") * 60)
-                putBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, s.getBoolean("level_2_blinking_enabled"))
+                // Level 2
+                s.optString("level_2_color", "").takeIf { it.isNotEmpty() }?.let {
+                    putInt(AppSettings.LEVEL_2_COLOR, Color.parseColor(it))
+                }
+                val l2Pos = s.optString("level_2_position", "")
+                if (l2Pos.isNotEmpty() && l2Pos != "Custom") putString(AppSettings.LEVEL_2_POSITION, l2Pos)
+                if (s.has("level_2_font_size")) putInt(AppSettings.LEVEL_2_FONT_SIZE, s.getInt("level_2_font_size"))
+                if (s.has("level_2_duration_minutes")) putInt(AppSettings.LEVEL_2_DURATION_SECONDS, s.getInt("level_2_duration_minutes") * 60)
+                if (s.has("level_2_blinking_enabled")) putBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, s.getBoolean("level_2_blinking_enabled"))
 
-                putInt(AppSettings.LEVEL_3_COLOR, Color.parseColor(s.getString("level_3_color")))
-                val l3Pos = s.getString("level_3_position")
-                if (l3Pos != "Custom") putString(AppSettings.LEVEL_3_POSITION, l3Pos)
-                putInt(AppSettings.LEVEL_3_FONT_SIZE, s.getInt("level_3_font_size"))
-                putBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, s.getBoolean("level_3_blinking_enabled"))
+                // Level 3
+                s.optString("level_3_color", "").takeIf { it.isNotEmpty() }?.let {
+                    putInt(AppSettings.LEVEL_3_COLOR, Color.parseColor(it))
+                }
+                val l3Pos = s.optString("level_3_position", "")
+                if (l3Pos.isNotEmpty() && l3Pos != "Custom") putString(AppSettings.LEVEL_3_POSITION, l3Pos)
+                if (s.has("level_3_font_size")) putInt(AppSettings.LEVEL_3_FONT_SIZE, s.getInt("level_3_font_size"))
+                if (s.has("level_3_blinking_enabled")) putBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, s.getBoolean("level_3_blinking_enabled"))
 
-                putInt(AppSettings.RESET_HOUR, s.getInt("reset_hour"))
-                putInt(AppSettings.RESET_MINUTE, s.getInt("reset_minute"))
+                // Reset time
+                if (s.has("reset_hour")) putInt(AppSettings.RESET_HOUR, s.getInt("reset_hour"))
+                if (s.has("reset_minute")) putInt(AppSettings.RESET_MINUTE, s.getInt("reset_minute"))
 
-                putString(AppSettings.TIMER_DISPLAY_MODE, s.getString("timer_display_mode"))
-                putInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, s.getInt("timer_display_interval_minutes"))
-                putInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, s.getInt("timer_display_duration_seconds"))
+                // Timer display
+                s.optString("timer_display_mode", "").takeIf { it.isNotEmpty() }?.let {
+                    putString(AppSettings.TIMER_DISPLAY_MODE, it)
+                }
+                if (s.has("timer_display_interval_minutes")) putInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, s.getInt("timer_display_interval_minutes"))
+                if (s.has("timer_display_duration_seconds")) putInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, s.getInt("timer_display_duration_seconds"))
 
-                apply()
+                // Custom drag positions (v2+)
+                val positions = s.optJSONObject("custom_positions")
+                for (level in 1..3) {
+                    val (useKey, xKey, yKey) = when (level) {
+                        1 -> Triple(ScreenTimeService.LEVEL_1_USE_CUSTOM, ScreenTimeService.LEVEL_1_CUSTOM_X, ScreenTimeService.LEVEL_1_CUSTOM_Y)
+                        2 -> Triple(ScreenTimeService.LEVEL_2_USE_CUSTOM, ScreenTimeService.LEVEL_2_CUSTOM_X, ScreenTimeService.LEVEL_2_CUSTOM_Y)
+                        else -> Triple(ScreenTimeService.LEVEL_3_USE_CUSTOM, ScreenTimeService.LEVEL_3_CUSTOM_X, ScreenTimeService.LEVEL_3_CUSTOM_Y)
+                    }
+                    val posObj = positions?.optJSONObject("level_$level")
+                    if (posObj != null) {
+                        putBoolean(useKey, true)
+                        putInt(xKey, posObj.getInt("x"))
+                        putInt(yKey, posObj.getInt("y"))
+                    } else {
+                        putBoolean(useKey, false)
+                        remove(xKey)
+                        remove(yKey)
+                    }
+                }
+
+                commit() // synchronous — prefs must be written before we notify the service
             }
 
-            Toast.makeText(this, "Settings imported — reloading…", Toast.LENGTH_SHORT).show()
+            // Notify the running service to reload settings.
+            // Belt-and-suspenders: broadcast + startService (triggers onStartCommand
+            // which calls loadSettings on an already-running service, no restart).
+            val updateIntent = Intent(AppSettings.ACTION_SETTINGS_UPDATED).apply {
+                setPackage(packageName)
+            }
+            sendBroadcast(updateIntent)
 
-            // Reload UI
-            recreate()
+            // Poke the service directly — onStartCommand reloads settings + ensures overlay
+            try {
+                val serviceIntent = Intent(this, ScreenTimeService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
+            } catch (e: Exception) {
+                // Service not running — that's fine, don't start it
+                Log.d(TAG, "Service not running, skipping poke: ${e.message}")
+            }
+
+            Toast.makeText(this, "Settings imported!", Toast.LENGTH_SHORT).show()
+
+            // Reload all UI controls in-place from the updated prefs
+            isInitialSetup = true
+            hasChanges = false
+            userChangesMade = false
+            loadAndSetupControls()
+            updatePreview()
 
         } catch (e: Exception) {
             Log.e(TAG, "Import failed: ${e.message}", e)
