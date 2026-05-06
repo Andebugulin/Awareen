@@ -180,6 +180,7 @@ class ScreenTimeService : Service() {
 
     private val settingsUpdateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d(TAG, "settingsUpdateReceiver fired with action=${intent?.action}")
             if (intent?.action == AppSettings.ACTION_SETTINGS_UPDATED) {
                 Log.d(TAG, "Received settings update broadcast, reloading settings.")
                 loadSettings()

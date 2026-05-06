@@ -178,22 +178,12 @@ class SettingsActivity : AppCompatActivity() {
             if (validateSettings()) {
                 saveSettings()
 
-                val intent = Intent(AppSettings.ACTION_SETTINGS_UPDATED)
+                val intent = Intent(AppSettings.ACTION_SETTINGS_UPDATED).apply {
+                    setPackage(packageName)
+                }
                 sendBroadcast(intent)
 
                 Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show()
-
-                val serviceIntent = Intent(this, ScreenTimeService::class.java)
-                stopService(serviceIntent)
-                Log.d("SettingsActivity", "Stopping ScreenTimeService...")
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent)
-                    Log.d("SettingsActivity", "Starting ScreenTimeService as foreground service...")
-                } else {
-                    startService(serviceIntent)
-                    Log.d("SettingsActivity", "Starting ScreenTimeService...")
-                }
 
                 finish()
             }
