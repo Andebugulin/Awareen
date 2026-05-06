@@ -1,4 +1,4 @@
-package com.example.screentimetracker
+package com.andebugulin.awareen
 
 import android.graphics.Color
 
@@ -78,5 +78,5 @@ object AppSettings {
     const val DEFAULT_RESET_MINUTE = 0
 
     // Action for broadcasting settings updates
-    const val ACTION_SETTINGS_UPDATED = "com.example.screentimetracker.SETTINGS_UPDATED"
+    const val ACTION_SETTINGS_UPDATED = "com.andebugulin.awareen.SETTINGS_UPDATED"
 }

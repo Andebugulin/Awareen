@@ -1,4 +1,4 @@
-package com.example.screentimetracker
+package com.andebugulin.awareen
 
 import android.content.Context
 import android.graphics.*

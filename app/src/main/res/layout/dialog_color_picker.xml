@@ -16,7 +16,7 @@
         android:layout_marginBottom="16dp" />
 
     <!-- Custom HSV Color Picker -->
-    <com.example.screentimetracker.ColorPickerView
+    <com.andebugulin.awareen.ColorPickerView
         android:id="@+id/colorPickerView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

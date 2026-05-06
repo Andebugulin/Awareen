@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.screentimetracker"
+    namespace = "com.andebugulin.awareen"
     compileSdk = 35
     defaultConfig {
         applicationId = "com.andebugulin.awareen2"

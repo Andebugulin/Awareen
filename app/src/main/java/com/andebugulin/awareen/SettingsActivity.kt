@@ -1,4 +1,4 @@
-package com.example.screentimetracker
+package com.andebugulin.awareen
 
 import android.content.Context
 import android.content.Intent
@@ -22,7 +22,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
-import java.util.Calendar
 import android.app.AlertDialog
 import android.widget.ImageButton
 import android.os.Handler
@@ -36,8 +35,6 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-import com.example.screentimetracker.AppSettings
 
 class SettingsActivity : AppCompatActivity() {
 

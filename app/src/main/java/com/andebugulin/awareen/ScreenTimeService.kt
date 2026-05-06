@@ -1,4 +1,4 @@
-package com.example.screentimetracker
+package com.andebugulin.awareen
 
 import android.app.AlarmManager
 import android.app.KeyguardManager
@@ -27,9 +27,7 @@ import androidx.core.app.NotificationCompat
 import java.util.Calendar
 import android.util.Log
 import android.util.TypedValue
-import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.os.PowerManager
-import com.example.screentimetracker.AppSettings
 import kotlin.math.abs
 
 class ScreenTimeService : Service() {
@@ -65,7 +63,7 @@ class ScreenTimeService : Service() {
         const val LEVEL_3_CUSTOM_X = "level_3_custom_position_x"
         const val LEVEL_3_CUSTOM_Y = "level_3_custom_position_y"
 
-        const val ACTION_ALARM_RESET = "com.example.screentimetracker.ALARM_RESET"
+        const val ACTION_ALARM_RESET = "com.andebugulin.awareen.ALARM_RESET"
         private const val ALARM_REQUEST_CODE = 1001
     }
 
@@ -74,7 +72,6 @@ class ScreenTimeService : Service() {
     private var timerDisplayIntervalMinutes: Int = AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES
     private var timerDisplayDurationSeconds: Int = AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS
     private var isTimerCurrentlyVisible = true
-    private var timerVisibilityJob: Runnable? = null
 
     // Settings variables
     private var level1MaxTimeSeconds: Int = AppSettings.DEFAULT_LEVEL_1_MAX_TIME_SECONDS
@@ -110,6 +107,7 @@ class ScreenTimeService : Service() {
     private val screenTimeUpdateRunnable = object : Runnable {
         override fun run() {
             // Always check for missed resets on every tick
+            // :REVIEW we check reset on every resume activity, possible that this is not needed
             checkAndPerformResetIfNeeded()
 
             // Periodically verify the overlay is still attached (every 30s)
@@ -836,6 +834,7 @@ class ScreenTimeService : Service() {
 
     private fun updateTimeDisplay() {
         // Also check reset here so display is always correct after wake
+        // :REVIEW not sure if this is needed since we also check it in the main loop on every tick
         checkAndPerformResetIfNeeded()
 
         val hours = screenTimeSeconds / 3600

@@ -1,4 +1,4 @@
-package com.example.screentimetracker
+package com.andebugulin.awareen
 
 import android.content.Intent
 import android.net.Uri
@@ -13,13 +13,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.PowerManager
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import android.app.ActivityManager
-import android.content.SharedPreferences
 import android.util.Log
 import java.util.Calendar
 
@@ -30,7 +28,9 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
     }
 
+    // :Delete
     private var hasRequestedBatteryOptimization = false
+    // :Delete
     private var hasRequestedAutoStart = false
 
 
@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         // Force dark navigation bar
         window.navigationBarColor = Color.parseColor("#121212")
+
         val startServiceButton = findViewById<Button>(R.id.startServiceButton)
         startServiceButton.setOnClickListener {
             checkOverlayPermissionAndStartService()
@@ -266,6 +267,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     // Enhanced startScreenTimeService function
     private fun startScreenTimeService() {
         try {
@@ -304,8 +306,6 @@ class MainActivity : AppCompatActivity() {
             }
         )
     }
-
-
 
     private fun requestBatteryOptimizationExemption() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager

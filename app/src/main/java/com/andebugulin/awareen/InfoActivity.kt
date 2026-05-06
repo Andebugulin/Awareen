@@ -1,4 +1,4 @@
-package com.example.screentimetracker // Use your actual package name
+package com.andebugulin.awareen // Use your actual package name
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

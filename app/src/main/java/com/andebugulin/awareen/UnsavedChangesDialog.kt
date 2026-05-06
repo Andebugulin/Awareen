@@ -1,4 +1,4 @@
-package com.example.screentimetracker // Adjust package as needed
+package com.andebugulin.awareen // Adjust package as needed
 
 import android.app.Dialog
 import android.content.Context
@@ -6,13 +6,12 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 
 // Import your R file if it's not automatically resolved
-import com.example.screentimetracker.R
+import com.andebugulin.awareen.R
 
 class UnsavedChangesDialog(
     context: Context,
