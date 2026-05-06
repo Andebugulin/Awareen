@@ -78,5 +78,6 @@ object AppSettings {
     const val DEFAULT_RESET_MINUTE = 0
 
     // Action for broadcasting settings updates
+    // Broadcast sent after settings save. recievers must be registered with setPackage(packageName) target!
     const val ACTION_SETTINGS_UPDATED = "com.andebugulin.awareen.SETTINGS_UPDATED"
 }
