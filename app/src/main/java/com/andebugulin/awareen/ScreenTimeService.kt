@@ -184,6 +184,7 @@ class ScreenTimeService : Service() {
             if (intent?.action == AppSettings.ACTION_SETTINGS_UPDATED) {
                 Log.d(TAG, "Received settings update broadcast, reloading settings.")
                 loadSettings()
+                applySettingsToOverlay()
                 scheduleExactAlarm()
             }
         }
@@ -195,6 +196,7 @@ class ScreenTimeService : Service() {
                 Intent.ACTION_TIME_CHANGED, Intent.ACTION_DATE_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> {
                     Log.d(TAG, "Time or date changed, reloading settings and rescheduling")
                     loadSettings()
+                    applySettingsToOverlay()
                     scheduleExactAlarm()
                     checkAndPerformResetIfNeeded()
                 }
@@ -224,6 +226,7 @@ class ScreenTimeService : Service() {
         try {
             prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
             loadSettings()
+            applySettingsToOverlay()
 
             // Check for any missed resets (e.g. phone was off overnight)
             checkAndPerformResetIfNeeded()
@@ -320,6 +323,8 @@ class ScreenTimeService : Service() {
         // service (e.g. startForegroundService while already alive), make sure
         // the overlay is still attached and settings are fresh.
         loadSettings()
+        applySettingsToOverlay()
+        
         ensureOverlayAttached()
 
         // Make sure the timer loop is running
@@ -522,12 +527,15 @@ class ScreenTimeService : Service() {
         timerDisplayDurationSeconds = prefs.getInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS)
 
         Log.d(TAG, "Settings loaded: reset=${currentResetHour}:${currentResetMinute}, displayMode=$timerDisplayMode")
+    }
 
+    private fun applySettingsToOverlay() {
         if (overlayView != null && windowManager != null) {
             updateOverlayLayoutParams(getCurrentPositionString(), true)
             updateTimeDisplay()
             updateTimerVisibility()
         }
+
     }
 
     // =========================================================================
