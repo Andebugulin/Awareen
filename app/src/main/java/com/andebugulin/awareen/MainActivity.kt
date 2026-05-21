@@ -88,6 +88,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * :Solve problem (The logic is not unique, and SERVICE has similar logic)
+     *  if logic is changed in one place, it should be changed in the other likewise. Should be examined!
+     * :View
+     *
      * Standalone reset check that runs every time the user opens the app.
      *
      * This is the safety net: if the service was killed, the alarm didn't fire,

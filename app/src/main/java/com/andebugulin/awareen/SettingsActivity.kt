@@ -515,9 +515,9 @@ class SettingsActivity : AppCompatActivity() {
         val positions = JSONObject()
         for (level in 1..3) {
             val (useKey, xKey, yKey) = when (level) {
-                1 -> Triple(ScreenTimeService.LEVEL_1_USE_CUSTOM, ScreenTimeService.LEVEL_1_CUSTOM_X, ScreenTimeService.LEVEL_1_CUSTOM_Y)
-                2 -> Triple(ScreenTimeService.LEVEL_2_USE_CUSTOM, ScreenTimeService.LEVEL_2_CUSTOM_X, ScreenTimeService.LEVEL_2_CUSTOM_Y)
-                else -> Triple(ScreenTimeService.LEVEL_3_USE_CUSTOM, ScreenTimeService.LEVEL_3_CUSTOM_X, ScreenTimeService.LEVEL_3_CUSTOM_Y)
+                1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_X, OverlayController.LEVEL_1_CUSTOM_Y)
+                2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_X, OverlayController.LEVEL_2_CUSTOM_Y)
+                else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_X, OverlayController.LEVEL_3_CUSTOM_Y)
             }
             if (prefs.getBoolean(useKey, false)) {
                 val posObj = JSONObject()
@@ -607,9 +607,9 @@ class SettingsActivity : AppCompatActivity() {
                 val positions = s.optJSONObject("custom_positions")
                 for (level in 1..3) {
                     val (useKey, xKey, yKey) = when (level) {
-                        1 -> Triple(ScreenTimeService.LEVEL_1_USE_CUSTOM, ScreenTimeService.LEVEL_1_CUSTOM_X, ScreenTimeService.LEVEL_1_CUSTOM_Y)
-                        2 -> Triple(ScreenTimeService.LEVEL_2_USE_CUSTOM, ScreenTimeService.LEVEL_2_CUSTOM_X, ScreenTimeService.LEVEL_2_CUSTOM_Y)
-                        else -> Triple(ScreenTimeService.LEVEL_3_USE_CUSTOM, ScreenTimeService.LEVEL_3_CUSTOM_X, ScreenTimeService.LEVEL_3_CUSTOM_Y)
+                        1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_X, OverlayController.LEVEL_1_CUSTOM_Y)
+                        2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_X, OverlayController.LEVEL_2_CUSTOM_Y)
+                        else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_X, OverlayController.LEVEL_3_CUSTOM_Y)
                     }
                     val posObj = positions?.optJSONObject("level_$level")
                     if (posObj != null) {
@@ -671,9 +671,9 @@ class SettingsActivity : AppCompatActivity() {
         spinner.adapter = adapter
 
         val (useCustomKey, xKey, yKey) = when (level) {
-            1 -> Triple(ScreenTimeService.LEVEL_1_USE_CUSTOM, ScreenTimeService.LEVEL_1_CUSTOM_X, ScreenTimeService.LEVEL_1_CUSTOM_Y)
-            2 -> Triple(ScreenTimeService.LEVEL_2_USE_CUSTOM, ScreenTimeService.LEVEL_2_CUSTOM_X, ScreenTimeService.LEVEL_2_CUSTOM_Y)
-            else -> Triple(ScreenTimeService.LEVEL_3_USE_CUSTOM, ScreenTimeService.LEVEL_3_CUSTOM_X, ScreenTimeService.LEVEL_3_CUSTOM_Y)
+            1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_X, OverlayController.LEVEL_1_CUSTOM_Y)
+            2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_X, OverlayController.LEVEL_2_CUSTOM_Y)
+            else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_X, OverlayController.LEVEL_3_CUSTOM_Y)
         }
 
         val hasCustomPosition = prefs.getBoolean(useCustomKey, false)
