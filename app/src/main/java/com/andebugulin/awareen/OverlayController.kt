@@ -7,6 +7,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.util.Log
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -14,6 +15,32 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
 import kotlin.math.abs
+
+/**
+ * Visual configuration for a single level (color, position, font size, blink).
+ */
+data class LevelSettings(
+    val color: Int,
+    val position: String,
+    val fontSize: Float,
+    val blinkingEnabled: Boolean,
+)
+
+/**
+ * Full snapshot of overlay-related settings. Built fresh by the service on
+ * every render call — cheap to allocate, keeps the controller stateless w.r.t.
+ * configuration.
+ */
+data class OverlaySettings(
+    val level1: LevelSettings,
+    val level1MaxTimeSeconds: Int,
+    val level2: LevelSettings,
+    val level2DurationSeconds: Int,
+    val level3: LevelSettings,
+    val timerDisplayMode: String,
+    val timerDisplayIntervalMinutes: Int,
+    val timerDisplayDurationSeconds: Int,
+)
 
 class OverlayController(
     private val context: Context,
@@ -34,22 +61,20 @@ class OverlayController(
 
         private const val TAG = "OverlayController"
         private const val CLICK_THRESHOLD = 10f
+        private const val TAP_HIDE_DURATION_MS = 5000L
+        private const val TRANSLUCENT_BG = "#80000000"
     }
 
     // =========================================================================
     // OVERLAY STATE
     // =========================================================================
 
-    internal var overlayView: View? = null
-        private set
-    internal var timeTextView: TextView? = null
-        private set
+    private var overlayView: View? = null
+    private var timeTextView: TextView? = null
     private var windowManager: WindowManager? = null
-    internal var currentLayoutParams: WindowManager.LayoutParams? = null
-        private set
+    private var currentLayoutParams: WindowManager.LayoutParams? = null
 
-    var currentLevel = 1
-        internal set
+    private var currentLevel = 1
 
     private var initialX = 0
     private var initialY = 0
@@ -57,22 +82,11 @@ class OverlayController(
     private var initialTouchY = 0f
     private var isDragging = false
     private var isHidden = false
-
-    // Updated by service when settings change
-    var timerDisplayMode: String = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
     private var isIntervalVisible = true
 
-    // Per-level colors — used by blinking. Will move into a settings object in step 4.
-    var level1Color: Int = AppSettings.DEFAULT_LEVEL_1_COLOR
-    var level2Color: Int = AppSettings.DEFAULT_LEVEL_2_COLOR
-    var level3Color: Int = AppSettings.DEFAULT_LEVEL_3_COLOR
-
-    // Saved create() callbacks so ensureAttached can recreate the overlay without re-plumbing.
+    // Stashed at create() so ensureAttached can recreate without the service
+    // re-plumbing the handler.
     private var savedHandler: Handler? = null
-    private var savedGetCurrentLevel: (() -> Int)? = null
-    private var savedOnRenderNeeded: (() -> Unit)? = null
-
-    private var isBlinking = false
 
     // =========================================================================
     // LIFECYCLE
@@ -80,15 +94,8 @@ class OverlayController(
 
     fun isCreated(): Boolean = overlayView != null && windowManager != null
 
-    fun create(
-        handler: Handler,
-        level1Position: String,
-        getCurrentLevel: () -> Int,
-        onRenderNeeded: () -> Unit,
-    ) {
+    fun create(handler: Handler, level1Position: String) {
         savedHandler = handler
-        savedGetCurrentLevel = getCurrentLevel
-        savedOnRenderNeeded = onRenderNeeded
 
         windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
@@ -109,12 +116,11 @@ class OverlayController(
         overlayView = LayoutInflater.from(context).inflate(R.layout.overlay_layout, null)
         timeTextView = overlayView?.findViewById(R.id.timeTextView)
 
-        overlayView?.setOnTouchListener(buildTouchListener(handler, getCurrentLevel))
+        overlayView?.setOnTouchListener(buildTouchListener(handler))
 
         try {
             if (overlayView != null && currentLayoutParams != null) {
                 windowManager?.addView(overlayView, currentLayoutParams)
-                onRenderNeeded()
                 updateTimerVisibility()
             }
         } catch (e: Exception) {
@@ -123,7 +129,6 @@ class OverlayController(
     }
 
     fun destroy() {
-        stopBlinking()
         if (overlayView != null && windowManager != null) {
             try {
                 windowManager?.removeView(overlayView)
@@ -136,44 +141,111 @@ class OverlayController(
         windowManager = null
     }
 
-    fun ensureAttached(level1Position: String) {
+    /**
+     * Verify the overlay is still attached to the WindowManager. If it has been
+     * detached (Doze, config change, memory pressure, task removal), recreate
+     * and render fresh. Single most important defence against the
+     * "timer disappears after days" bug.
+     */
+    fun ensureAttached(seconds: Int, settings: OverlaySettings) {
         try {
             if (overlayView?.parent != null && isCreated()) return
             Log.w(TAG, "Overlay detached — re-creating")
             destroy()
             val handler = savedHandler ?: return
-            val getCurrentLevel = savedGetCurrentLevel ?: return
-            val onRenderNeeded = savedOnRenderNeeded ?: return
-            create(handler, level1Position, getCurrentLevel, onRenderNeeded)
+            create(handler, settings.level1.position)
+            render(seconds, settings)
         } catch (e: Exception) {
             Log.e(TAG, "ensureAttached failed: ${e.message}", e)
         }
     }
 
     // =========================================================================
-    // VISIBILITY
+    // RENDER — the single entry point for view updates.
+    //
+    // Called once per tick by the service. Reads [seconds] and [settings] and
+    // applies every visible aspect of the overlay: text, level transitions,
+    // colors (blink or static), font size, interval visibility. The service
+    // does no view work of its own.
     // =========================================================================
 
-    fun setIntervalVisible(shouldShow: Boolean) {
+    fun render(seconds: Int, settings: OverlaySettings) {
+        if (!isCreated()) return
+
+        // 1. Update displayed time
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        val secs = seconds % 60
+        timeTextView?.text = String.format("%02d:%02d:%02d", hours, minutes, secs)
+
+        // 2. Determine current level
+        val level2EndSeconds = settings.level1MaxTimeSeconds + settings.level2DurationSeconds
+        val newLevel = when {
+            seconds < settings.level1MaxTimeSeconds -> 1
+            seconds < level2EndSeconds -> 2
+            else -> 3
+        }
+        val levelSettings = when (newLevel) {
+            1 -> settings.level1
+            2 -> settings.level2
+            else -> settings.level3
+        }
+
+        // 3. Apply position on level change
+        if (newLevel != currentLevel) {
+            currentLevel = newLevel
+            applyPositionForLevel(newLevel, levelSettings.position)
+            updateLayout()
+        }
+
+        // 4. Font size
+        timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, levelSettings.fontSize)
+
+        // 5. Colors. Blink parity is keyed to `seconds`, so the color flip lands
+        // on the same instant as the digit change.
+        if (levelSettings.blinkingEnabled) {
+            if (seconds % 2 == 0) {
+                timeTextView?.setTextColor(Color.BLACK)
+                overlayView?.setBackgroundColor(levelSettings.color)
+            } else {
+                timeTextView?.setTextColor(levelSettings.color)
+                overlayView?.setBackgroundColor(Color.parseColor(TRANSLUCENT_BG))
+            }
+        } else {
+            timeTextView?.setTextColor(levelSettings.color)
+            overlayView?.setBackgroundColor(Color.parseColor(TRANSLUCENT_BG))
+        }
+
+        // 6. Interval visibility
+        val shouldShow = if (settings.timerDisplayMode == "interval") {
+            val currentMinute = (seconds / 60) % settings.timerDisplayIntervalMinutes
+            currentMinute == 0 && (seconds % 60) < settings.timerDisplayDurationSeconds
+        } else {
+            true
+        }
+        setIntervalVisible(shouldShow)
+    }
+
+    // =========================================================================
+    // VISIBILITY (internal — touch listener + render)
+    // =========================================================================
+
+    private fun setIntervalVisible(shouldShow: Boolean) {
         if (shouldShow == isIntervalVisible) return
         isIntervalVisible = shouldShow
         updateTimerVisibility()
     }
 
-    fun updateTimerVisibility() {
-        if (isHidden) {
-            overlayView?.visibility = View.GONE
-            return
-        }
-        val shouldBeVisible = timerDisplayMode == "always" || isIntervalVisible
-        overlayView?.visibility = if (shouldBeVisible) View.VISIBLE else View.GONE
+    private fun updateTimerVisibility() {
+        val visible = !isHidden && isIntervalVisible
+        overlayView?.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
     // =========================================================================
-    // POSITION
+    // POSITION (internal)
     // =========================================================================
 
-    internal fun applyPositionForLevel(level: Int, positionString: String) {
+    private fun applyPositionForLevel(level: Int, positionString: String) {
         val (useCustomKey, xKey, yKey) = when (level) {
             1 -> Triple(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_X, LEVEL_1_CUSTOM_Y)
             2 -> Triple(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_X, LEVEL_2_CUSTOM_Y)
@@ -189,10 +261,9 @@ class OverlayController(
             currentLayoutParams?.x = 0
             currentLayoutParams?.y = 0
         }
-        Log.d(TAG, "Applied position for Level $level: $positionString")
     }
 
-    internal fun updateLayout() {
+    private fun updateLayout() {
         if (overlayView?.parent != null) {
             try {
                 windowManager?.updateViewLayout(overlayView, currentLayoutParams)
@@ -200,56 +271,6 @@ class OverlayController(
                 Log.e(TAG, "Error updating overlay layout: ${e.message}", e)
             }
         }
-    }
-
-    fun setPositionForLevel(level: Int, positionString: String) {
-        applyPositionForLevel(level, positionString)
-        updateLayout()
-    }
-
-    // =========================================================================
-    // BLINKING
-    //
-    // Driven by the service's per-second tick (not a self-scheduled runnable).
-    // This guarantees the color flip happens at the exact instant the displayed
-    // second changes, so the user never sees the background appear/disappear
-    // in the middle of a second.
-    // =========================================================================
-
-    fun startBlinking() {
-        isBlinking = true
-    }
-
-    fun stopBlinking() {
-        if (!isBlinking) return
-        isBlinking = false
-        timeTextView?.setTextColor(colorForCurrentLevel())
-        overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
-    }
-
-    /**
-     * Called by the service once per second after [updateTimeDisplay] updates
-     * the visible text. Applies the blink phase for [seconds] so the color
-     * change is synchronized with the second change.
-     *
-     * No-op when not blinking.
-     */
-    fun applyBlinkForSecond(seconds: Int) {
-        if (!isBlinking) return
-        val color = colorForCurrentLevel()
-        if (seconds % 2 == 0) {
-            timeTextView?.setTextColor(Color.BLACK)
-            overlayView?.setBackgroundColor(color)
-        } else {
-            timeTextView?.setTextColor(color)
-            overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
-        }
-    }
-
-    private fun colorForCurrentLevel(): Int = when (currentLevel) {
-        1 -> level1Color
-        2 -> level2Color
-        else -> level3Color
     }
 
     private fun getGravityForPosition(positionString: String): Int = when (positionString) {
@@ -276,67 +297,64 @@ class OverlayController(
             .putInt(xKey, x)
             .putInt(yKey, y)
             .apply()
-        Log.d(TAG, "Saved custom position for Level $level: x=$x, y=$y")
     }
 
     // =========================================================================
-    // TOUCH LISTENER
+    // TOUCH LISTENER (internal)
     // =========================================================================
 
-    private fun buildTouchListener(
-        handler: Handler,
-        getCurrentLevel: () -> Int,
-    ): View.OnTouchListener = object : View.OnTouchListener {
-        private var touchStartTime = 0L
+    private fun buildTouchListener(handler: Handler): View.OnTouchListener =
+        object : View.OnTouchListener {
+            private var touchStartTime = 0L
 
-        override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-            if (event == null || currentLayoutParams == null) return false
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                if (event == null || currentLayoutParams == null) return false
 
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    touchStartTime = System.currentTimeMillis()
-                    initialX = currentLayoutParams!!.x
-                    initialY = currentLayoutParams!!.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    isDragging = false
-                    return true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val deltaX = event.rawX - initialTouchX
-                    val deltaY = event.rawY - initialTouchY
-                    if (abs(deltaX) > CLICK_THRESHOLD || abs(deltaY) > CLICK_THRESHOLD) {
-                        isDragging = true
-                        currentLayoutParams?.gravity = Gravity.TOP or Gravity.START
-                        currentLayoutParams?.x = initialX + deltaX.toInt()
-                        currentLayoutParams?.y = initialY + deltaY.toInt()
-                        windowManager?.updateViewLayout(overlayView, currentLayoutParams)
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        touchStartTime = System.currentTimeMillis()
+                        initialX = currentLayoutParams!!.x
+                        initialY = currentLayoutParams!!.y
+                        initialTouchX = event.rawX
+                        initialTouchY = event.rawY
+                        isDragging = false
+                        return true
                     }
-                    return true
-                }
-                MotionEvent.ACTION_UP -> {
-                    val touchDuration = System.currentTimeMillis() - touchStartTime
-                    if (!isDragging && touchDuration < 200) {
-                        isHidden = !isHidden
-                        updateTimerVisibility()
-                        if (isHidden) {
-                            handler.postDelayed({
-                                isHidden = false
-                                updateTimerVisibility()
-                            }, 5000)
+                    MotionEvent.ACTION_MOVE -> {
+                        val deltaX = event.rawX - initialTouchX
+                        val deltaY = event.rawY - initialTouchY
+                        if (abs(deltaX) > CLICK_THRESHOLD || abs(deltaY) > CLICK_THRESHOLD) {
+                            isDragging = true
+                            currentLayoutParams?.gravity = Gravity.TOP or Gravity.START
+                            currentLayoutParams?.x = initialX + deltaX.toInt()
+                            currentLayoutParams?.y = initialY + deltaY.toInt()
+                            windowManager?.updateViewLayout(overlayView, currentLayoutParams)
                         }
-                    } else if (isDragging) {
-                        saveCustomPositionForLevel(
-                            getCurrentLevel(),
-                            currentLayoutParams!!.x,
-                            currentLayoutParams!!.y
-                        )
+                        return true
                     }
-                    isDragging = false
-                    return true
+                    MotionEvent.ACTION_UP -> {
+                        val touchDuration = System.currentTimeMillis() - touchStartTime
+                        if (!isDragging && touchDuration < 200) {
+                            isHidden = !isHidden
+                            updateTimerVisibility()
+                            if (isHidden) {
+                                handler.postDelayed({
+                                    isHidden = false
+                                    updateTimerVisibility()
+                                }, TAP_HIDE_DURATION_MS)
+                            }
+                        } else if (isDragging) {
+                            saveCustomPositionForLevel(
+                                currentLevel,
+                                currentLayoutParams!!.x,
+                                currentLayoutParams!!.y
+                            )
+                        }
+                        isDragging = false
+                        return true
+                    }
                 }
+                return false
             }
-            return false
         }
-    }
 }

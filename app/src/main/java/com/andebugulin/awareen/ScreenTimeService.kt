@@ -11,14 +11,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.graphics.Color
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
-import android.util.TypedValue
 import androidx.core.app.NotificationCompat
 import java.util.Calendar
 
@@ -64,11 +62,16 @@ class ScreenTimeService : Service() {
 
     private val TAG = "ScreenTimeService"
 
-    private fun getPositionForLevel(level: Int): String = when (level) {
-        1 -> level1Position
-        2 -> level2Position
-        else -> level3Position
-    }
+    private fun currentOverlaySettings(): OverlaySettings = OverlaySettings(
+        level1 = LevelSettings(level1Color, level1Position, level1FontSize, level1BlinkingEnabled),
+        level1MaxTimeSeconds = level1MaxTimeSeconds,
+        level2 = LevelSettings(level2Color, level2Position, level2FontSize, level2BlinkingEnabled),
+        level2DurationSeconds = level2DurationSeconds,
+        level3 = LevelSettings(level3Color, level3Position, level3FontSize, level3BlinkingEnabled),
+        timerDisplayMode = timerDisplayMode,
+        timerDisplayIntervalMinutes = timerDisplayIntervalMinutes,
+        timerDisplayDurationSeconds = timerDisplayDurationSeconds,
+    )
 
     // =========================================================================
     // CORE TIMER LOOP
@@ -76,13 +79,12 @@ class ScreenTimeService : Service() {
 
     private val screenTimeUpdateRunnable = object : Runnable {
         override fun run() {
-            // Always check for missed resets on every tick
-            // :REVIEW we check reset on every resume activity, possible that this is not needed
+            // :REVIEW we check reset on every resume activity, possibly redundant here
             checkAndPerformResetIfNeeded()
 
             // Periodically verify the overlay is still attached (every 30s)
             if (screenTimeSeconds % 30 == 0) {
-                overlayController.ensureAttached(level1Position)
+                overlayController.ensureAttached(screenTimeSeconds, currentOverlaySettings())
             }
 
             val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
@@ -93,13 +95,7 @@ class ScreenTimeService : Service() {
 
                 screenTimeSeconds++
 
-                if (timerDisplayMode == "interval") {
-                    val currentMinute = (screenTimeSeconds / 60) % timerDisplayIntervalMinutes
-                    val shouldShow = currentMinute == 0 && (screenTimeSeconds % 60) < timerDisplayDurationSeconds
-                    overlayController.setIntervalVisible(shouldShow)
-                }
-
-                updateTimeDisplay()
+                overlayController.render(screenTimeSeconds, currentOverlaySettings())
                 saveScreenTime()
                 saveAnalyticsData()
 
@@ -238,7 +234,8 @@ class ScreenTimeService : Service() {
                 .build()
             startForeground(1, notification)
 
-            overlayController.create(handler, level1Position, ::getCurrentLevel) { updateTimeDisplay() }
+            overlayController.create(handler, level1Position)
+            overlayController.render(screenTimeSeconds, currentOverlaySettings())
 
             val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
             isDeviceUnlocked = !keyguardManager.isKeyguardLocked
@@ -282,7 +279,7 @@ class ScreenTimeService : Service() {
         loadSettings()
         applySettingsToOverlay()
 
-        overlayController.ensureAttached(level1Position)
+        overlayController.ensureAttached(screenTimeSeconds, currentOverlaySettings())
 
         // Make sure the timer loop is running
         handler.removeCallbacks(screenTimeUpdateRunnable)
@@ -394,7 +391,9 @@ class ScreenTimeService : Service() {
                 .putLong("last_actual_reset_timestamp", now)
                 .apply()
 
-            updateTimeDisplay()
+            if (overlayController.isCreated()) {
+                overlayController.render(screenTimeSeconds, currentOverlaySettings())
+            }
             Log.d(TAG, "Reset complete. Next reset at ${getNextResetTimeMillis()}")
         }
     }
@@ -487,14 +486,8 @@ class ScreenTimeService : Service() {
     }
 
     private fun applySettingsToOverlay() {
-        overlayController.timerDisplayMode = timerDisplayMode
-        overlayController.level1Color = level1Color
-        overlayController.level2Color = level2Color
-        overlayController.level3Color = level3Color
         if (overlayController.isCreated()) {
-            overlayController.setPositionForLevel(getCurrentLevel(), getCurrentPositionString())
-            updateTimeDisplay()
-            overlayController.updateTimerVisibility()
+            overlayController.render(screenTimeSeconds, currentOverlaySettings())
         }
     }
 
@@ -514,26 +507,6 @@ class ScreenTimeService : Service() {
         val existingDates = prefs.getStringSet("analytics_dates", mutableSetOf()) ?: mutableSetOf()
         existingDates.add(dateKey)
         prefs.edit().putStringSet("analytics_dates", existingDates).apply()
-    }
-
-    // =========================================================================
-    // POSITION / LEVEL HELPERS
-    // =========================================================================
-
-    private fun getCurrentPositionString(): String {
-        return when {
-            screenTimeSeconds < level1MaxTimeSeconds -> level1Position
-            screenTimeSeconds < level2EndTimeSeconds -> level2Position
-            else -> level3Position
-        }
-    }
-
-    private fun getCurrentLevel(): Int {
-        return when {
-            screenTimeSeconds < level1MaxTimeSeconds -> 1
-            screenTimeSeconds < level2EndTimeSeconds -> 2
-            else -> 3
-        }
     }
 
     // =========================================================================
@@ -575,66 +548,6 @@ class ScreenTimeService : Service() {
     private fun getTodayDateKey(): String {
         val calendar = Calendar.getInstance()
         return "screen_time_${calendar.get(Calendar.YEAR)}_${calendar.get(Calendar.DAY_OF_YEAR)}"
-    }
-
-    // =========================================================================
-    // DISPLAY UPDATE
-    // =========================================================================
-
-    private fun updateTimeDisplay() {
-        // :REVIEW also checked every tick — may be redundant here
-        checkAndPerformResetIfNeeded()
-
-        val hours = screenTimeSeconds / 3600
-        val minutes = (screenTimeSeconds % 3600) / 60
-        val seconds = screenTimeSeconds % 60
-        overlayController.timeTextView?.text = String.format("%02d:%02d:%02d", hours, minutes, seconds)
-
-        val newLevel = getCurrentLevel()
-        if (newLevel != overlayController.currentLevel) {
-            overlayController.currentLevel = newLevel
-            overlayController.applyPositionForLevel(newLevel, getPositionForLevel(newLevel))
-            overlayController.updateLayout()
-        }
-
-        // Font size + blink enable/disable per level.
-        // When blinking is enabled, the colors are applied by applyBlinkForSecond
-        // below — keyed to screenTimeSeconds parity so the flip lands exactly on
-        // the second boundary, in sync with the text update above.
-        when {
-            screenTimeSeconds < level1MaxTimeSeconds -> {
-                overlayController.timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level1FontSize)
-                if (level1BlinkingEnabled) {
-                    overlayController.startBlinking()
-                } else {
-                    overlayController.stopBlinking()
-                    overlayController.timeTextView?.setTextColor(level1Color)
-                    overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
-                }
-            }
-            screenTimeSeconds < level2EndTimeSeconds -> {
-                overlayController.timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level2FontSize)
-                if (level2BlinkingEnabled) {
-                    overlayController.startBlinking()
-                } else {
-                    overlayController.stopBlinking()
-                    overlayController.timeTextView?.setTextColor(level2Color)
-                    overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
-                }
-            }
-            else -> {
-                overlayController.timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level3FontSize)
-                if (level3BlinkingEnabled) {
-                    overlayController.startBlinking()
-                } else {
-                    overlayController.stopBlinking()
-                    overlayController.timeTextView?.setTextColor(level3Color)
-                    overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
-                }
-            }
-        }
-
-        overlayController.applyBlinkForSecond(screenTimeSeconds)
     }
 
     // =========================================================================
