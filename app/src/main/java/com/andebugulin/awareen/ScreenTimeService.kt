@@ -82,7 +82,7 @@ class ScreenTimeService : Service() {
 
             // Periodically verify the overlay is still attached (every 30s)
             if (screenTimeSeconds % 30 == 0) {
-                ensureOverlayAttached()
+                overlayController.ensureAttached(level1Position)
             }
 
             val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
@@ -258,7 +258,6 @@ class ScreenTimeService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(screenTimeUpdateRunnable)
-        handler.removeCallbacks(blinkingRunnable)
         saveScreenTime()
 
         cancelAlarm()
@@ -283,7 +282,7 @@ class ScreenTimeService : Service() {
         loadSettings()
         applySettingsToOverlay()
 
-        ensureOverlayAttached()
+        overlayController.ensureAttached(level1Position)
 
         // Make sure the timer loop is running
         handler.removeCallbacks(screenTimeUpdateRunnable)
@@ -489,8 +488,11 @@ class ScreenTimeService : Service() {
 
     private fun applySettingsToOverlay() {
         overlayController.timerDisplayMode = timerDisplayMode
+        overlayController.level1Color = level1Color
+        overlayController.level2Color = level2Color
+        overlayController.level3Color = level3Color
         if (overlayController.isCreated()) {
-            updateOverlayLayoutParams(getCurrentPositionString(), true)
+            overlayController.setPositionForLevel(getCurrentLevel(), getCurrentPositionString())
             updateTimeDisplay()
             overlayController.updateTimerVisibility()
         }
@@ -551,37 +553,6 @@ class ScreenTimeService : Service() {
     }
 
     // =========================================================================
-    // OVERLAY HEALTH — detect and recover from system-detached overlays
-    // =========================================================================
-
-    /**
-     * Checks whether the overlay view is still attached to WindowManager.
-     * If not (system removed it during Doze, config change, memory pressure,
-     * or task removal), re-creates it. This is the single most important
-     * defence against the "timer disappears after days" bug.
-     */
-    private fun ensureOverlayAttached() {
-        try {
-            if (overlayController.overlayView?.parent != null && overlayController.isCreated()) {
-                return
-            }
-            Log.w(TAG, "Overlay detached — re-creating")
-            overlayController.destroy()
-            overlayController.create(handler, level1Position, ::getCurrentLevel) { updateTimeDisplay() }
-        } catch (e: Exception) {
-            Log.e(TAG, "ensureOverlayAttached failed: ${e.message}", e)
-        }
-    }
-
-    private fun updateOverlayLayoutParams(positionString: String, forceUpdate: Boolean = false) {
-        if (forceUpdate) {
-            val level = getCurrentLevel()
-            overlayController.applyPositionForLevel(level, positionString)
-            overlayController.updateLayout()
-        }
-    }
-
-    // =========================================================================
     // SCREEN TIME PERSISTENCE
     // =========================================================================
 
@@ -626,26 +597,44 @@ class ScreenTimeService : Service() {
             overlayController.updateLayout()
         }
 
+        // Font size + blink enable/disable per level.
+        // When blinking is enabled, the colors are applied by applyBlinkForSecond
+        // below — keyed to screenTimeSeconds parity so the flip lands exactly on
+        // the second boundary, in sync with the text update above.
         when {
             screenTimeSeconds < level1MaxTimeSeconds -> {
-                overlayController.timeTextView?.setTextColor(level1Color)
-                overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 overlayController.timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level1FontSize)
-                if (level1BlinkingEnabled) startBlinking() else stopBlinking()
+                if (level1BlinkingEnabled) {
+                    overlayController.startBlinking()
+                } else {
+                    overlayController.stopBlinking()
+                    overlayController.timeTextView?.setTextColor(level1Color)
+                    overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
+                }
             }
             screenTimeSeconds < level2EndTimeSeconds -> {
-                overlayController.timeTextView?.setTextColor(level2Color)
-                overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 overlayController.timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level2FontSize)
-                if (level2BlinkingEnabled) startBlinking() else stopBlinking()
+                if (level2BlinkingEnabled) {
+                    overlayController.startBlinking()
+                } else {
+                    overlayController.stopBlinking()
+                    overlayController.timeTextView?.setTextColor(level2Color)
+                    overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
+                }
             }
             else -> {
-                overlayController.timeTextView?.setTextColor(level3Color)
-                overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
                 overlayController.timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, level3FontSize)
-                if (level3BlinkingEnabled) startBlinking() else stopBlinking()
+                if (level3BlinkingEnabled) {
+                    overlayController.startBlinking()
+                } else {
+                    overlayController.stopBlinking()
+                    overlayController.timeTextView?.setTextColor(level3Color)
+                    overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
+                }
             }
         }
+
+        overlayController.applyBlinkForSecond(screenTimeSeconds)
     }
 
     // =========================================================================
@@ -668,63 +657,4 @@ class ScreenTimeService : Service() {
         return isScreenOn && !isLocked
     }
 
-    // =========================================================================
-    // BLINKING
-    // =========================================================================
-
-    private var isBlinking = false
-    private val blinkingRunnable = object : Runnable {
-        override fun run() {
-            val shouldBlink = when {
-                screenTimeSeconds < level1MaxTimeSeconds -> level1BlinkingEnabled
-                screenTimeSeconds < level2EndTimeSeconds -> level2BlinkingEnabled
-                else -> level3BlinkingEnabled
-            }
-
-            if (shouldBlink && isBlinking) {
-                val isEvenSecond = (screenTimeSeconds % 60) % 2 == 0
-                if (isEvenSecond) {
-                    overlayController.timeTextView?.setTextColor(Color.BLACK)
-                    overlayController.overlayView?.setBackgroundColor(when {
-                        screenTimeSeconds < level1MaxTimeSeconds -> level1Color
-                        screenTimeSeconds < level2EndTimeSeconds -> level2Color
-                        else -> level3Color
-                    })
-                } else {
-                    val currentColor = when {
-                        screenTimeSeconds < level1MaxTimeSeconds -> level1Color
-                        screenTimeSeconds < level2EndTimeSeconds -> level2Color
-                        else -> level3Color
-                    }
-                    overlayController.timeTextView?.setTextColor(currentColor)
-                    overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
-                }
-                handler.postDelayed(this, 500)
-            } else {
-                stopBlinking()
-            }
-        }
-    }
-
-    private fun startBlinking() {
-        if (!isBlinking) {
-            isBlinking = true
-            handler.removeCallbacks(blinkingRunnable)
-            handler.post(blinkingRunnable)
-        }
-    }
-
-    private fun stopBlinking() {
-        if (isBlinking) {
-            isBlinking = false
-            handler.removeCallbacks(blinkingRunnable)
-            val currentColor = when {
-                screenTimeSeconds < level1MaxTimeSeconds -> level1Color
-                screenTimeSeconds < level2EndTimeSeconds -> level2Color
-                else -> level3Color
-            }
-            overlayController.timeTextView?.setTextColor(currentColor)
-            overlayController.overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
-        }
-    }
 }

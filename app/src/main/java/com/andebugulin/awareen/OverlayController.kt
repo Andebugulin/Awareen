@@ -2,6 +2,7 @@ package com.andebugulin.awareen
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
@@ -61,6 +62,18 @@ class OverlayController(
     var timerDisplayMode: String = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
     private var isIntervalVisible = true
 
+    // Per-level colors — used by blinking. Will move into a settings object in step 4.
+    var level1Color: Int = AppSettings.DEFAULT_LEVEL_1_COLOR
+    var level2Color: Int = AppSettings.DEFAULT_LEVEL_2_COLOR
+    var level3Color: Int = AppSettings.DEFAULT_LEVEL_3_COLOR
+
+    // Saved create() callbacks so ensureAttached can recreate the overlay without re-plumbing.
+    private var savedHandler: Handler? = null
+    private var savedGetCurrentLevel: (() -> Int)? = null
+    private var savedOnRenderNeeded: (() -> Unit)? = null
+
+    private var isBlinking = false
+
     // =========================================================================
     // LIFECYCLE
     // =========================================================================
@@ -73,6 +86,10 @@ class OverlayController(
         getCurrentLevel: () -> Int,
         onRenderNeeded: () -> Unit,
     ) {
+        savedHandler = handler
+        savedGetCurrentLevel = getCurrentLevel
+        savedOnRenderNeeded = onRenderNeeded
+
         windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         currentLayoutParams = WindowManager.LayoutParams(
@@ -106,6 +123,7 @@ class OverlayController(
     }
 
     fun destroy() {
+        stopBlinking()
         if (overlayView != null && windowManager != null) {
             try {
                 windowManager?.removeView(overlayView)
@@ -116,6 +134,20 @@ class OverlayController(
         overlayView = null
         timeTextView = null
         windowManager = null
+    }
+
+    fun ensureAttached(level1Position: String) {
+        try {
+            if (overlayView?.parent != null && isCreated()) return
+            Log.w(TAG, "Overlay detached — re-creating")
+            destroy()
+            val handler = savedHandler ?: return
+            val getCurrentLevel = savedGetCurrentLevel ?: return
+            val onRenderNeeded = savedOnRenderNeeded ?: return
+            create(handler, level1Position, getCurrentLevel, onRenderNeeded)
+        } catch (e: Exception) {
+            Log.e(TAG, "ensureAttached failed: ${e.message}", e)
+        }
     }
 
     // =========================================================================
@@ -168,6 +200,56 @@ class OverlayController(
                 Log.e(TAG, "Error updating overlay layout: ${e.message}", e)
             }
         }
+    }
+
+    fun setPositionForLevel(level: Int, positionString: String) {
+        applyPositionForLevel(level, positionString)
+        updateLayout()
+    }
+
+    // =========================================================================
+    // BLINKING
+    //
+    // Driven by the service's per-second tick (not a self-scheduled runnable).
+    // This guarantees the color flip happens at the exact instant the displayed
+    // second changes, so the user never sees the background appear/disappear
+    // in the middle of a second.
+    // =========================================================================
+
+    fun startBlinking() {
+        isBlinking = true
+    }
+
+    fun stopBlinking() {
+        if (!isBlinking) return
+        isBlinking = false
+        timeTextView?.setTextColor(colorForCurrentLevel())
+        overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
+    }
+
+    /**
+     * Called by the service once per second after [updateTimeDisplay] updates
+     * the visible text. Applies the blink phase for [seconds] so the color
+     * change is synchronized with the second change.
+     *
+     * No-op when not blinking.
+     */
+    fun applyBlinkForSecond(seconds: Int) {
+        if (!isBlinking) return
+        val color = colorForCurrentLevel()
+        if (seconds % 2 == 0) {
+            timeTextView?.setTextColor(Color.BLACK)
+            overlayView?.setBackgroundColor(color)
+        } else {
+            timeTextView?.setTextColor(color)
+            overlayView?.setBackgroundColor(Color.parseColor("#80000000"))
+        }
+    }
+
+    private fun colorForCurrentLevel(): Int = when (currentLevel) {
+        1 -> level1Color
+        2 -> level2Color
+        else -> level3Color
     }
 
     private fun getGravityForPosition(positionString: String): Int = when (positionString) {
