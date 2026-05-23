@@ -88,28 +88,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * :Solve problem (The logic is not unique, and SERVICE has similar logic)
-     *  if logic is changed in one place, it should be changed in the other likewise. Should be examined!
-     * :View
+     * Safety-net reset check that runs every time the user opens the app:
+     * catches missed resets when the service was killed, the alarm didn't
+     * fire, and the boot receiver didn't run.
      *
-     * Standalone reset check that runs every time the user opens the app.
-     *
-     * This is the safety net: if the service was killed, the alarm didn't fire,
-     * and the boot receiver didn't run — this catches it the moment the user
-     * opens the app.
-     *
-     * Uses the exact same deterministic logic as ScreenTimeService:
-     *   "Did a scheduled reset moment pass since the last actual reset?"
+     * The write path is shared with the service via ScreenTimeRepository.
+     * The wall-clock math below still duplicates ScreenTimeService's
+     * shouldReset() — that duplication will be removed once the reset
+     * scheduling logic is extracted into its own class.
      */
     private fun performDefensiveResetCheck() {
         try {
             val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+            val repo = ScreenTimeRepository(prefs)
 
             val resetHour = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
             val resetMinute = prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
-            val lastReset = prefs.getLong("last_actual_reset_timestamp", 0L)
+            val lastReset = repo.getLastResetTimestamp()
 
-            // Compute the most recent wall-clock time matching reset hour:minute
             val now = System.currentTimeMillis()
             val cal = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, resetHour)
@@ -124,19 +120,8 @@ class MainActivity : AppCompatActivity() {
 
             if (lastReset < mostRecentScheduled) {
                 Log.d(TAG, "Defensive reset: lastReset=$lastReset < scheduled=$mostRecentScheduled — resetting")
-
-                // Build today's date key
-                val todayCal = Calendar.getInstance()
-                val todayKey = "screen_time_${todayCal.get(Calendar.YEAR)}_${todayCal.get(Calendar.DAY_OF_YEAR)}"
-
-                prefs.edit()
-                    .putString("last_date_key", todayKey)
-                    .putInt(todayKey, 0)
-                    .putLong("last_save_timestamp", now)
-                    .putLong("last_actual_reset_timestamp", now)
-                    .apply()
-
-                Log.d(TAG, "Defensive reset complete — screen time zeroed for $todayKey")
+                repo.markReset()
+                Log.d(TAG, "Defensive reset complete — screen time zeroed")
             } else {
                 Log.d(TAG, "Defensive reset: no reset needed (lastReset=$lastReset >= scheduled=$mostRecentScheduled)")
             }
