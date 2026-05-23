@@ -23,6 +23,7 @@ import java.util.Calendar
 class ScreenTimeService : Service() {
     private lateinit var overlayController: OverlayController
     private lateinit var prefs: SharedPreferences
+    private lateinit var repo: ScreenTimeRepository
     private var screenTimeSeconds = 0
     private var isScreenOn = true
     private var isDeviceUnlocked = false
@@ -186,6 +187,7 @@ class ScreenTimeService : Service() {
         super.onCreate()
         try {
             prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+            repo = ScreenTimeRepository(prefs)
             overlayController = OverlayController(this, prefs)
             loadSettings()
 
@@ -360,7 +362,7 @@ class ScreenTimeService : Service() {
      * Simply: did a scheduled reset moment pass since the last actual reset?
      */
     private fun shouldReset(): Boolean {
-        val lastReset = prefs.getLong("last_actual_reset_timestamp", 0L)
+        val lastReset = repo.getLastResetTimestamp()
         val mostRecentScheduled = getMostRecentResetTimeMillis()
 
         // Reset if last reset happened before the most recent scheduled reset
@@ -378,16 +380,7 @@ class ScreenTimeService : Service() {
         if (shouldReset()) {
             Log.d(TAG, "Performing reset — clearing screen time to 0")
             screenTimeSeconds = 0
-
-            val todayKey = getTodayDateKey()
-            val now = System.currentTimeMillis()
-
-            prefs.edit()
-                .putString("last_date_key", todayKey)
-                .putInt(todayKey, 0)
-                .putLong("last_save_timestamp", now)
-                .putLong("last_actual_reset_timestamp", now)
-                .apply()
+            repo.markReset()
 
             if (overlayController.isCreated()) {
                 overlayController.render(screenTimeSeconds, currentOverlaySettings())
@@ -493,17 +486,7 @@ class ScreenTimeService : Service() {
     // =========================================================================
 
     private fun saveAnalyticsData() {
-        val calendar = Calendar.getInstance()
-        val dateKey = "analytics_${calendar.get(Calendar.YEAR)}_${calendar.get(Calendar.MONTH)}_${calendar.get(Calendar.DAY_OF_MONTH)}"
-        val hourKey = "${dateKey}_hour_${calendar.get(Calendar.HOUR_OF_DAY)}"
-
-        prefs.edit().putInt(dateKey, screenTimeSeconds).apply()
-        val currentHourTime = prefs.getInt(hourKey, 0)
-        prefs.edit().putInt(hourKey, currentHourTime + 1).apply()
-
-        val existingDates = prefs.getStringSet("analytics_dates", mutableSetOf()) ?: mutableSetOf()
-        existingDates.add(dateKey)
-        prefs.edit().putStringSet("analytics_dates", existingDates).apply()
+        repo.recordAnalyticsTick(screenTimeSeconds)
     }
 
     // =========================================================================
@@ -527,24 +510,11 @@ class ScreenTimeService : Service() {
     // =========================================================================
 
     private fun saveScreenTime() {
-        val todayKey = getTodayDateKey()
-        val now = System.currentTimeMillis()
-
-        prefs.edit()
-            .putInt(todayKey, screenTimeSeconds)
-            .putString("last_date_key", todayKey)
-            .putLong("last_save_timestamp", now)
-            .apply()
+        repo.saveTodayScreenTime(screenTimeSeconds)
     }
 
     private fun loadScreenTime() {
-        val todayKey = getTodayDateKey()
-        screenTimeSeconds = prefs.getInt(todayKey, 0)
-    }
-
-    private fun getTodayDateKey(): String {
-        val calendar = Calendar.getInstance()
-        return "screen_time_${calendar.get(Calendar.YEAR)}_${calendar.get(Calendar.DAY_OF_YEAR)}"
+        screenTimeSeconds = repo.getTodayScreenTime()
     }
 
     // =========================================================================
