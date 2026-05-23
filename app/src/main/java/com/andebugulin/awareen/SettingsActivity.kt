@@ -53,6 +53,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private lateinit var prefs: SharedPreferences
+    private lateinit var settingsRepository: SettingsRepository
 
     // UI Elements for Preview
     private lateinit var previewLayout: ConstraintLayout
@@ -162,6 +163,7 @@ class SettingsActivity : AppCompatActivity() {
         window.navigationBarColor = android.graphics.Color.parseColor("#121212")
 
         prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+        settingsRepository = SettingsRepository(this, prefs)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Settings"
@@ -177,11 +179,7 @@ class SettingsActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             if (validateSettings()) {
                 saveSettings()
-
-                val intent = Intent(AppSettings.ACTION_SETTINGS_UPDATED).apply {
-                    setPackage(packageName)
-                }
-                sendBroadcast(intent)
+                settingsRepository.notifySettingsUpdated()
 
                 Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show()
 
@@ -268,8 +266,7 @@ class SettingsActivity : AppCompatActivity() {
             onSave = {
                 if (validateSettings()) {
                     saveSettings()
-                    val intent = Intent(AppSettings.ACTION_SETTINGS_UPDATED)
-                    sendBroadcast(intent)
+                    settingsRepository.notifySettingsUpdated()
 
                     val serviceIntent = Intent(this, ScreenTimeService::class.java)
                     stopService(serviceIntent)
@@ -561,78 +558,62 @@ class SettingsActivity : AppCompatActivity() {
 
             val s = root.getJSONObject("settings")
 
-            // Apply to prefs — use opt* for backward compatibility with older exports
-            prefs.edit().apply {
-                // Level 1
-                s.optString("level_1_color", "").takeIf { it.isNotEmpty() }?.let {
-                    putInt(AppSettings.LEVEL_1_COLOR, Color.parseColor(it))
+            // Merge JSON over current values — preserves any field the JSON omits
+            // (backward-compat with older exports).
+            val current = settingsRepository.loadOverlaySettings()
+            val merged = OverlaySettings(
+                level1 = LevelSettings(
+                    color = s.optString("level_1_color").takeIf { it.isNotEmpty() }
+                        ?.let { Color.parseColor(it) } ?: current.level1.color,
+                    position = s.optString("level_1_position").takeIf { it.isNotEmpty() && it != "Custom" }
+                        ?: current.level1.position,
+                    fontSize = if (s.has("level_1_font_size")) s.getInt("level_1_font_size").toFloat() else current.level1.fontSize,
+                    blinkingEnabled = if (s.has("level_1_blinking_enabled")) s.getBoolean("level_1_blinking_enabled") else current.level1.blinkingEnabled,
+                ),
+                level1MaxTimeSeconds = if (s.has("level_1_max_time_minutes")) s.getInt("level_1_max_time_minutes") * 60 else current.level1MaxTimeSeconds,
+                level2 = LevelSettings(
+                    color = s.optString("level_2_color").takeIf { it.isNotEmpty() }
+                        ?.let { Color.parseColor(it) } ?: current.level2.color,
+                    position = s.optString("level_2_position").takeIf { it.isNotEmpty() && it != "Custom" }
+                        ?: current.level2.position,
+                    fontSize = if (s.has("level_2_font_size")) s.getInt("level_2_font_size").toFloat() else current.level2.fontSize,
+                    blinkingEnabled = if (s.has("level_2_blinking_enabled")) s.getBoolean("level_2_blinking_enabled") else current.level2.blinkingEnabled,
+                ),
+                level2DurationSeconds = if (s.has("level_2_duration_minutes")) s.getInt("level_2_duration_minutes") * 60 else current.level2DurationSeconds,
+                level3 = LevelSettings(
+                    color = s.optString("level_3_color").takeIf { it.isNotEmpty() }
+                        ?.let { Color.parseColor(it) } ?: current.level3.color,
+                    position = s.optString("level_3_position").takeIf { it.isNotEmpty() && it != "Custom" }
+                        ?: current.level3.position,
+                    fontSize = if (s.has("level_3_font_size")) s.getInt("level_3_font_size").toFloat() else current.level3.fontSize,
+                    blinkingEnabled = if (s.has("level_3_blinking_enabled")) s.getBoolean("level_3_blinking_enabled") else current.level3.blinkingEnabled,
+                ),
+                timerDisplayMode = s.optString("timer_display_mode").takeIf { it.isNotEmpty() } ?: current.timerDisplayMode,
+                timerDisplayIntervalMinutes = if (s.has("timer_display_interval_minutes")) s.getInt("timer_display_interval_minutes") else current.timerDisplayIntervalMinutes,
+                timerDisplayDurationSeconds = if (s.has("timer_display_duration_seconds")) s.getInt("timer_display_duration_seconds") else current.timerDisplayDurationSeconds,
+            )
+            settingsRepository.saveOverlaySettings(merged)
+
+            settingsRepository.saveResetTime(
+                if (s.has("reset_hour")) s.getInt("reset_hour") else settingsRepository.getResetHour(),
+                if (s.has("reset_minute")) s.getInt("reset_minute") else settingsRepository.getResetMinute(),
+            )
+
+            // Custom drag positions (v2+)
+            val positions = s.optJSONObject("custom_positions")
+            for (level in 1..3) {
+                val posObj = positions?.optJSONObject("level_$level")
+                if (posObj != null) {
+                    settingsRepository.setCustomPosition(level, posObj.getInt("x"), posObj.getInt("y"))
+                } else {
+                    settingsRepository.clearCustomPosition(level)
                 }
-                val l1Pos = s.optString("level_1_position", "")
-                if (l1Pos.isNotEmpty() && l1Pos != "Custom") putString(AppSettings.LEVEL_1_POSITION, l1Pos)
-                if (s.has("level_1_font_size")) putInt(AppSettings.LEVEL_1_FONT_SIZE, s.getInt("level_1_font_size"))
-                if (s.has("level_1_max_time_minutes")) putInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, s.getInt("level_1_max_time_minutes") * 60)
-                if (s.has("level_1_blinking_enabled")) putBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, s.getBoolean("level_1_blinking_enabled"))
-
-                // Level 2
-                s.optString("level_2_color", "").takeIf { it.isNotEmpty() }?.let {
-                    putInt(AppSettings.LEVEL_2_COLOR, Color.parseColor(it))
-                }
-                val l2Pos = s.optString("level_2_position", "")
-                if (l2Pos.isNotEmpty() && l2Pos != "Custom") putString(AppSettings.LEVEL_2_POSITION, l2Pos)
-                if (s.has("level_2_font_size")) putInt(AppSettings.LEVEL_2_FONT_SIZE, s.getInt("level_2_font_size"))
-                if (s.has("level_2_duration_minutes")) putInt(AppSettings.LEVEL_2_DURATION_SECONDS, s.getInt("level_2_duration_minutes") * 60)
-                if (s.has("level_2_blinking_enabled")) putBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, s.getBoolean("level_2_blinking_enabled"))
-
-                // Level 3
-                s.optString("level_3_color", "").takeIf { it.isNotEmpty() }?.let {
-                    putInt(AppSettings.LEVEL_3_COLOR, Color.parseColor(it))
-                }
-                val l3Pos = s.optString("level_3_position", "")
-                if (l3Pos.isNotEmpty() && l3Pos != "Custom") putString(AppSettings.LEVEL_3_POSITION, l3Pos)
-                if (s.has("level_3_font_size")) putInt(AppSettings.LEVEL_3_FONT_SIZE, s.getInt("level_3_font_size"))
-                if (s.has("level_3_blinking_enabled")) putBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, s.getBoolean("level_3_blinking_enabled"))
-
-                // Reset time
-                if (s.has("reset_hour")) putInt(AppSettings.RESET_HOUR, s.getInt("reset_hour"))
-                if (s.has("reset_minute")) putInt(AppSettings.RESET_MINUTE, s.getInt("reset_minute"))
-
-                // Timer display
-                s.optString("timer_display_mode", "").takeIf { it.isNotEmpty() }?.let {
-                    putString(AppSettings.TIMER_DISPLAY_MODE, it)
-                }
-                if (s.has("timer_display_interval_minutes")) putInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, s.getInt("timer_display_interval_minutes"))
-                if (s.has("timer_display_duration_seconds")) putInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, s.getInt("timer_display_duration_seconds"))
-
-                // Custom drag positions (v2+)
-                val positions = s.optJSONObject("custom_positions")
-                for (level in 1..3) {
-                    val (useKey, xKey, yKey) = when (level) {
-                        1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_X, OverlayController.LEVEL_1_CUSTOM_Y)
-                        2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_X, OverlayController.LEVEL_2_CUSTOM_Y)
-                        else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_X, OverlayController.LEVEL_3_CUSTOM_Y)
-                    }
-                    val posObj = positions?.optJSONObject("level_$level")
-                    if (posObj != null) {
-                        putBoolean(useKey, true)
-                        putInt(xKey, posObj.getInt("x"))
-                        putInt(yKey, posObj.getInt("y"))
-                    } else {
-                        putBoolean(useKey, false)
-                        remove(xKey)
-                        remove(yKey)
-                    }
-                }
-
-                commit() // synchronous — prefs must be written before we notify the service
             }
 
             // Notify the running service to reload settings.
             // Belt-and-suspenders: broadcast + startService (triggers onStartCommand
             // which calls loadSettings on an already-running service, no restart).
-            val updateIntent = Intent(AppSettings.ACTION_SETTINGS_UPDATED).apply {
-                setPackage(packageName)
-            }
-            sendBroadcast(updateIntent)
+            settingsRepository.notifySettingsUpdated()
 
             // Poke the service directly — onStartCommand reloads settings + ensures overlay
             try {
@@ -670,10 +651,10 @@ class SettingsActivity : AppCompatActivity() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, positionOptionsWithCustom)
         spinner.adapter = adapter
 
-        val (useCustomKey, xKey, yKey) = when (level) {
-            1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_X, OverlayController.LEVEL_1_CUSTOM_Y)
-            2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_X, OverlayController.LEVEL_2_CUSTOM_Y)
-            else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_X, OverlayController.LEVEL_3_CUSTOM_Y)
+        val useCustomKey = when (level) {
+            1 -> OverlayController.LEVEL_1_USE_CUSTOM
+            2 -> OverlayController.LEVEL_2_USE_CUSTOM
+            else -> OverlayController.LEVEL_3_USE_CUSTOM
         }
 
         val hasCustomPosition = prefs.getBoolean(useCustomKey, false)
@@ -689,11 +670,7 @@ class SettingsActivity : AppCompatActivity() {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (!isInitialSetup && position > 0) {
-                    prefs.edit()
-                        .putBoolean(useCustomKey, false)
-                        .remove(xKey)
-                        .remove(yKey)
-                        .apply()
+                    settingsRepository.clearCustomPosition(level)
                     Toast.makeText(this@SettingsActivity, "Custom position cleared for Level $level", Toast.LENGTH_SHORT).show()
                 }
                 updatePreview()
@@ -907,43 +884,46 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun saveSettings() {
-        with(prefs.edit()) {
-            putInt(AppSettings.LEVEL_1_COLOR, currentLevel1Color)
-            val level1Pos = level1PositionSpinner.selectedItem.toString()
-            if (level1Pos != "Custom") {
-                putString(AppSettings.LEVEL_1_POSITION, level1Pos)
-            }
-            putInt(AppSettings.LEVEL_1_FONT_SIZE, (MIN_FONT_SIZE_SP + level1FontSizeSeekBar.progress).toInt())
-            putInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, currentLevel1MaxTimeMinutes * 60)
-            putBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, currentLevel1BlinkingEnabled)
+        val level1Pos = level1PositionSpinner.selectedItem.toString()
+        val level2Pos = level2PositionSpinner.selectedItem.toString()
+        val level3Pos = level3PositionSpinner.selectedItem.toString()
 
-            putInt(AppSettings.LEVEL_2_COLOR, currentLevel2Color)
-            val level2Pos = level2PositionSpinner.selectedItem.toString()
-            if (level2Pos != "Custom") {
-                putString(AppSettings.LEVEL_2_POSITION, level2Pos)
-            }
-            putInt(AppSettings.LEVEL_2_FONT_SIZE, (MIN_FONT_SIZE_SP + level2FontSizeSeekBar.progress).toInt())
-            putInt(AppSettings.LEVEL_2_DURATION_SECONDS, currentLevel2DurationMinutes * 60)
-            putBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, currentLevel2BlinkingEnabled)
+        val snapshot = OverlaySettings(
+            level1 = LevelSettings(
+                color = currentLevel1Color,
+                position = level1Pos,
+                fontSize = MIN_FONT_SIZE_SP + level1FontSizeSeekBar.progress,
+                blinkingEnabled = currentLevel1BlinkingEnabled,
+            ),
+            level1MaxTimeSeconds = currentLevel1MaxTimeMinutes * 60,
+            level2 = LevelSettings(
+                color = currentLevel2Color,
+                position = level2Pos,
+                fontSize = MIN_FONT_SIZE_SP + level2FontSizeSeekBar.progress,
+                blinkingEnabled = currentLevel2BlinkingEnabled,
+            ),
+            level2DurationSeconds = currentLevel2DurationMinutes * 60,
+            level3 = LevelSettings(
+                color = currentLevel3Color,
+                position = level3Pos,
+                fontSize = MIN_FONT_SIZE_SP + level3FontSizeSeekBar.progress,
+                blinkingEnabled = level3BlinkingSwitch.isChecked,
+            ),
+            timerDisplayMode = if (timerDisplayModeSpinner.selectedItemPosition == 0) "always" else "interval",
+            timerDisplayIntervalMinutes = currentDisplayIntervalMinutes,
+            timerDisplayDurationSeconds = currentDisplayDurationSeconds,
+        )
 
-            putInt(AppSettings.LEVEL_3_COLOR, currentLevel3Color)
-            val level3Pos = level3PositionSpinner.selectedItem.toString()
-            if (level3Pos != "Custom") {
-                putString(AppSettings.LEVEL_3_POSITION, level3Pos)
-            }
-            putInt(AppSettings.LEVEL_3_FONT_SIZE, (MIN_FONT_SIZE_SP + level3FontSizeSeekBar.progress).toInt())
-            putBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, level3BlinkingSwitch.isChecked)
-
-            putInt(AppSettings.RESET_HOUR, resetHourSpinner.selectedItemPosition)
-            putInt(AppSettings.RESET_MINUTE, resetMinuteSpinner.selectedItemPosition)
-
-            val selectedMode = if (timerDisplayModeSpinner.selectedItemPosition == 0) "always" else "interval"
-            putString(AppSettings.TIMER_DISPLAY_MODE, selectedMode)
-            putInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, currentDisplayIntervalMinutes)
-            putInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, currentDisplayDurationSeconds)
-
-            apply()
-        }
+        settingsRepository.saveOverlaySettings(
+            snapshot,
+            writeLevel1Position = level1Pos != "Custom",
+            writeLevel2Position = level2Pos != "Custom",
+            writeLevel3Position = level3Pos != "Custom",
+        )
+        settingsRepository.saveResetTime(
+            hour = resetHourSpinner.selectedItemPosition,
+            minute = resetMinuteSpinner.selectedItemPosition,
+        )
     }
 
     @Deprecated("Deprecated in Java")

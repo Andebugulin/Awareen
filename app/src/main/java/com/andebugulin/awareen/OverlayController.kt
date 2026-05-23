@@ -76,6 +76,12 @@ class OverlayController(
 
     private var currentLevel = 1
 
+    // Encodes the position we last pushed to the window manager. Lets render()
+    // detect when settings change (preset → another preset, custom → preset,
+    // or a fresh drag) and re-apply without calling updateViewLayout every
+    // tick when nothing's changed. Null until the first render.
+    private var lastAppliedPositionKey: String? = null
+
     private var initialX = 0
     private var initialY = 0
     private var initialTouchX = 0f
@@ -191,9 +197,13 @@ class OverlayController(
             else -> settings.level3
         }
 
-        // 3. Apply position on level change
-        if (newLevel != currentLevel) {
+        // 3. Apply position when the level changes OR the position descriptor
+        // for the current level changes (Settings save → new preset, switch
+        // from custom → preset, fresh drag x/y, etc).
+        val positionKey = positionKeyFor(newLevel, levelSettings.position)
+        if (newLevel != currentLevel || positionKey != lastAppliedPositionKey) {
             currentLevel = newLevel
+            lastAppliedPositionKey = positionKey
             applyPositionForLevel(newLevel, levelSettings.position)
             updateLayout()
         }
@@ -260,6 +270,25 @@ class OverlayController(
             currentLayoutParams?.gravity = getGravityForPosition(positionString)
             currentLayoutParams?.x = 0
             currentLayoutParams?.y = 0
+        }
+    }
+
+    /**
+     * Compact string descriptor of "where the overlay should sit right now" —
+     * used by render() to decide if updateViewLayout needs to be called.
+     * Two descriptors compare equal iff applying them would produce identical
+     * layout params.
+     */
+    private fun positionKeyFor(level: Int, positionString: String): String {
+        val (useKey, xKey, yKey) = when (level) {
+            1 -> Triple(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_X, LEVEL_1_CUSTOM_Y)
+            2 -> Triple(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_X, LEVEL_2_CUSTOM_Y)
+            else -> Triple(LEVEL_3_USE_CUSTOM, LEVEL_3_CUSTOM_X, LEVEL_3_CUSTOM_Y)
+        }
+        return if (prefs.getBoolean(useKey, false)) {
+            "custom:${prefs.getInt(xKey, 0)}:${prefs.getInt(yKey, 0)}"
+        } else {
+            "preset:$positionString"
         }
     }
 
