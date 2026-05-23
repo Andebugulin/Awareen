@@ -1,7 +1,5 @@
 package com.andebugulin.awareen
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -30,7 +28,7 @@ class AnalyticsActivity : AppCompatActivity() {
         private const val TAG = "AnalyticsActivity"
     }
 
-    private lateinit var prefs: SharedPreferences
+    private lateinit var repo: ScreenTimeRepository
     private lateinit var recyclerView: RecyclerView
     private lateinit var averageTextView: TextView
     private lateinit var trendTextView: TextView
@@ -56,7 +54,7 @@ class AnalyticsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_analytics)
         window.navigationBarColor = android.graphics.Color.parseColor("#121212")
 
-        prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+        repo = ScreenTimeRepository(this)
 
         initializeViews()
         loadAnalyticsData()
@@ -97,17 +95,13 @@ class AnalyticsActivity : AppCompatActivity() {
     }
 
     private fun getAnalyticsData(): List<DayData> {
-        val analyticsDates = prefs.getStringSet("analytics_dates", mutableSetOf()) ?: mutableSetOf()
         val dayDataList = ArrayList<DayData>()
-
-        analyticsDates.forEach { dateKey ->
-            val screenTime = prefs.getInt(dateKey, 0)
+        repo.getAnalyticsDateKeys().forEach { dateKey ->
+            val screenTime = repo.getDailyScreenTime(dateKey)
             if (screenTime > 0) {
-                val date = parseDateKey(dateKey)
-                dayDataList.add(DayData(date, screenTime))
+                dayDataList.add(DayData(parseDateKey(dateKey), screenTime))
             }
         }
-
         dayDataList.sortByDescending { it.date }
         return dayDataList
     }
@@ -138,11 +132,9 @@ class AnalyticsActivity : AppCompatActivity() {
             root.put("type", "analytics")
             root.put("exported_at", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()))
 
-            val analyticsDates = prefs.getStringSet("analytics_dates", mutableSetOf()) ?: mutableSetOf()
             val daysArray = JSONArray()
-
-            analyticsDates.forEach { dateKey ->
-                val screenTime = prefs.getInt(dateKey, 0)
+            repo.getAnalyticsDateKeys().forEach { dateKey ->
+                val screenTime = repo.getDailyScreenTime(dateKey)
                 if (screenTime > 0) {
                     val dayObj = JSONObject()
                     dayObj.put("date_key", dateKey)
@@ -157,12 +149,8 @@ class AnalyticsActivity : AppCompatActivity() {
                     dayObj.put("screen_time_seconds", screenTime)
 
                     val hourly = JSONObject()
-                    for (h in 0..23) {
-                        val hourKey = "${dateKey}_hour_$h"
-                        val hourVal = prefs.getInt(hourKey, 0)
-                        if (hourVal > 0) {
-                            hourly.put(h.toString(), hourVal)
-                        }
+                    repo.getHourlyBreakdown(dateKey).forEach { (h, v) ->
+                        hourly.put(h.toString(), v)
                     }
                     if (hourly.length() > 0) {
                         dayObj.put("hourly_breakdown", hourly)
@@ -203,9 +191,6 @@ class AnalyticsActivity : AppCompatActivity() {
             }
 
             val daysArray = root.getJSONArray("analytics")
-            val existingDates = prefs.getStringSet("analytics_dates", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
-
-            val editor = prefs.edit()
             var importedCount = 0
 
             for (i in 0 until daysArray.length()) {
@@ -213,24 +198,20 @@ class AnalyticsActivity : AppCompatActivity() {
                 val dateKey = dayObj.getString("date_key")
                 val screenTime = dayObj.getInt("screen_time_seconds")
 
-                val existing = prefs.getInt(dateKey, 0)
-                if (screenTime > existing) {
-                    editor.putInt(dateKey, screenTime)
-                    existingDates.add(dateKey)
-
+                if (screenTime > repo.getDailyScreenTime(dateKey)) {
+                    val hourly = mutableMapOf<Int, Int>()
                     if (dayObj.has("hourly_breakdown")) {
-                        val hourly = dayObj.getJSONObject("hourly_breakdown")
-                        hourly.keys().forEach { hour ->
-                            editor.putInt("${dateKey}_hour_$hour", hourly.getInt(hour))
+                        val hourlyObj = dayObj.getJSONObject("hourly_breakdown")
+                        hourlyObj.keys().forEach { hour ->
+                            hour.toIntOrNull()?.let { h ->
+                                hourly[h] = hourlyObj.getInt(hour)
+                            }
                         }
                     }
-
+                    repo.importDay(dateKey, screenTime, hourly)
                     importedCount++
                 }
             }
-
-            editor.putStringSet("analytics_dates", existingDates)
-            editor.apply()
 
             Toast.makeText(this, "Imported $importedCount days of data", Toast.LENGTH_SHORT).show()
             loadAnalyticsData()
