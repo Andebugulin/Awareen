@@ -19,7 +19,6 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import android.app.ActivityManager
 import android.util.Log
-import java.util.Calendar
 
 class MainActivity : AppCompatActivity() {
 
@@ -88,43 +87,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Safety-net reset check that runs every time the user opens the app:
-     * catches missed resets when the service was killed, the alarm didn't
-     * fire, and the boot receiver didn't run.
-     *
-     * The write path is shared with the service via ScreenTimeRepository.
-     * The wall-clock math below still duplicates ScreenTimeService's
-     * shouldReset() — that duplication will be removed once the reset
-     * scheduling logic is extracted into its own class.
+     * Safety-net reset check: catches missed resets when the service was
+     * killed, the alarm didn't fire, and the boot receiver didn't run.
      */
     private fun performDefensiveResetCheck() {
         try {
             val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
-            val repo = ScreenTimeRepository(prefs)
-
-            val resetHour = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
-            val resetMinute = prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
-            val lastReset = repo.getLastResetTimestamp()
-
-            val now = System.currentTimeMillis()
-            val cal = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, resetHour)
-                set(Calendar.MINUTE, resetMinute)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            if (cal.timeInMillis > now) {
-                cal.add(Calendar.DAY_OF_YEAR, -1)
-            }
-            val mostRecentScheduled = cal.timeInMillis
-
-            if (lastReset < mostRecentScheduled) {
-                Log.d(TAG, "Defensive reset: lastReset=$lastReset < scheduled=$mostRecentScheduled — resetting")
-                repo.markReset()
-                Log.d(TAG, "Defensive reset complete — screen time zeroed")
-            } else {
-                Log.d(TAG, "Defensive reset: no reset needed (lastReset=$lastReset >= scheduled=$mostRecentScheduled)")
-            }
+            val scheduler = ResetScheduler(this, prefs, ScreenTimeRepository(prefs))
+            scheduler.checkAndReset()
         } catch (e: Exception) {
             Log.e(TAG, "Error in defensive reset check: ${e.message}", e)
         }
