@@ -4,7 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import android.util.Log
 import java.util.Calendar
@@ -18,13 +17,13 @@ import java.util.Calendar
  *   - MainActivity.performDefensiveResetCheck — runs on every onResume as a
  *     safety net for when the service was killed and the alarm didn't fire.
  *
- * Reset hour/minute are read from [prefs] on each call rather than cached, so
- * the scheduler stays correct across settings changes without an explicit
- * reconfigure step.
+ * Reset hour/minute are read from [settingsRepository] on each call rather
+ * than cached, so the scheduler stays correct across settings changes without
+ * an explicit reconfigure step.
  */
 class ResetScheduler(
     private val context: Context,
-    private val prefs: SharedPreferences,
+    private val settingsRepository: SettingsRepository,
     private val repo: ScreenTimeRepository,
 ) {
     companion object {
@@ -148,7 +147,7 @@ class ResetScheduler(
     }
 
     private fun readResetTime(): Pair<Int, Int> = Pair(
-        prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR),
-        prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
+        settingsRepository.getResetHour(),
+        settingsRepository.getResetMinute()
     )
 }

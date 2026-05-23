@@ -21,46 +21,20 @@ class ScreenTimeService : Service() {
     private lateinit var overlayController: OverlayController
     private lateinit var prefs: SharedPreferences
     private lateinit var repo: ScreenTimeRepository
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var resetScheduler: ResetScheduler
     private lateinit var screenStateMonitor: ScreenStateMonitor
     private var screenTimeSeconds = 0
     private val handler = Handler(Looper.getMainLooper())
 
-    // Timer display settings
-    private var timerDisplayMode: String = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
-    private var timerDisplayIntervalMinutes: Int = AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES
-    private var timerDisplayDurationSeconds: Int = AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS
-
-    // Per-level settings
-    private var level1MaxTimeSeconds: Int = AppSettings.DEFAULT_LEVEL_1_MAX_TIME_SECONDS
-    private var level1Color: Int = AppSettings.DEFAULT_LEVEL_1_COLOR
-    private var level1Position: String = AppSettings.DEFAULT_LEVEL_1_POSITION
-    private var level1FontSize: Float = AppSettings.DEFAULT_LEVEL_1_FONT_SIZE.toFloat()
-    private var level1BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED
-
-    private var level2DurationSeconds: Int = AppSettings.DEFAULT_LEVEL_2_DURATION_SECONDS
-    private var level2Color: Int = AppSettings.DEFAULT_LEVEL_2_COLOR
-    private var level2Position: String = AppSettings.DEFAULT_LEVEL_2_POSITION
-    private var level2FontSize: Float = AppSettings.DEFAULT_LEVEL_2_FONT_SIZE.toFloat()
-    private var level2BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED
-
-    private var level3Color: Int = AppSettings.DEFAULT_LEVEL_3_COLOR
-    private var level3Position: String = AppSettings.DEFAULT_LEVEL_3_POSITION
-    private var level3FontSize: Float = AppSettings.DEFAULT_LEVEL_3_FONT_SIZE.toFloat()
-    private var level3BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_3_BLINKING_ENABLED
+    /**
+     * The full overlay-settings snapshot. Reloaded fresh from the repo on
+     * every settings change broadcast; passed straight to render() each tick.
+     * Lateinit because the prefs/repo aren't available until onCreate.
+     */
+    private lateinit var settings: OverlaySettings
 
     private val TAG = "ScreenTimeService"
-
-    private fun currentOverlaySettings(): OverlaySettings = OverlaySettings(
-        level1 = LevelSettings(level1Color, level1Position, level1FontSize, level1BlinkingEnabled),
-        level1MaxTimeSeconds = level1MaxTimeSeconds,
-        level2 = LevelSettings(level2Color, level2Position, level2FontSize, level2BlinkingEnabled),
-        level2DurationSeconds = level2DurationSeconds,
-        level3 = LevelSettings(level3Color, level3Position, level3FontSize, level3BlinkingEnabled),
-        timerDisplayMode = timerDisplayMode,
-        timerDisplayIntervalMinutes = timerDisplayIntervalMinutes,
-        timerDisplayDurationSeconds = timerDisplayDurationSeconds,
-    )
 
     // =========================================================================
     // CORE TIMER LOOP
@@ -73,13 +47,13 @@ class ScreenTimeService : Service() {
 
             // Periodically verify the overlay is still attached (every 30s)
             if (screenTimeSeconds % 30 == 0) {
-                overlayController.ensureAttached(screenTimeSeconds, currentOverlaySettings())
+                overlayController.ensureAttached(screenTimeSeconds, settings)
             }
 
             if (screenStateMonitor.isActive()) {
                 screenTimeSeconds++
 
-                overlayController.render(screenTimeSeconds, currentOverlaySettings())
+                overlayController.render(screenTimeSeconds, settings)
                 saveScreenTime()
                 saveAnalyticsData()
 
@@ -164,7 +138,8 @@ class ScreenTimeService : Service() {
         try {
             prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
             repo = ScreenTimeRepository(prefs)
-            resetScheduler = ResetScheduler(this, prefs, repo)
+            settingsRepository = SettingsRepository(this, prefs)
+            resetScheduler = ResetScheduler(this, settingsRepository, repo)
             screenStateMonitor = ScreenStateMonitor(this)
             overlayController = OverlayController(this, prefs)
             loadSettings()
@@ -212,8 +187,8 @@ class ScreenTimeService : Service() {
                 .build()
             startForeground(1, notification)
 
-            overlayController.create(handler, level1Position)
-            overlayController.render(screenTimeSeconds, currentOverlaySettings())
+            overlayController.create(handler, settings.level1.position)
+            overlayController.render(screenTimeSeconds, settings)
 
             handler.removeCallbacks(screenTimeUpdateRunnable)
             handler.post(screenTimeUpdateRunnable)
@@ -254,7 +229,7 @@ class ScreenTimeService : Service() {
         loadSettings()
         applySettingsToOverlay()
 
-        overlayController.ensureAttached(screenTimeSeconds, currentOverlaySettings())
+        overlayController.ensureAttached(screenTimeSeconds, settings)
 
         // Make sure the timer loop is running
         handler.removeCallbacks(screenTimeUpdateRunnable)
@@ -297,7 +272,7 @@ class ScreenTimeService : Service() {
         if (resetScheduler.checkAndReset()) {
             screenTimeSeconds = 0
             if (overlayController.isCreated()) {
-                overlayController.render(screenTimeSeconds, currentOverlaySettings())
+                overlayController.render(screenTimeSeconds, settings)
             }
         }
     }
@@ -307,33 +282,13 @@ class ScreenTimeService : Service() {
     // =========================================================================
 
     private fun loadSettings() {
-        level1MaxTimeSeconds = prefs.getInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, AppSettings.DEFAULT_LEVEL_1_MAX_TIME_SECONDS)
-        level1Color = prefs.getInt(AppSettings.LEVEL_1_COLOR, AppSettings.DEFAULT_LEVEL_1_COLOR)
-        level1Position = prefs.getString(AppSettings.LEVEL_1_POSITION, AppSettings.DEFAULT_LEVEL_1_POSITION) ?: AppSettings.DEFAULT_LEVEL_1_POSITION
-        level1FontSize = prefs.getInt(AppSettings.LEVEL_1_FONT_SIZE, AppSettings.DEFAULT_LEVEL_1_FONT_SIZE).toFloat()
-        level1BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED)
-
-        level2DurationSeconds = prefs.getInt(AppSettings.LEVEL_2_DURATION_SECONDS, AppSettings.DEFAULT_LEVEL_2_DURATION_SECONDS)
-        level2Color = prefs.getInt(AppSettings.LEVEL_2_COLOR, AppSettings.DEFAULT_LEVEL_2_COLOR)
-        level2Position = prefs.getString(AppSettings.LEVEL_2_POSITION, AppSettings.DEFAULT_LEVEL_2_POSITION) ?: AppSettings.DEFAULT_LEVEL_2_POSITION
-        level2FontSize = prefs.getInt(AppSettings.LEVEL_2_FONT_SIZE, AppSettings.DEFAULT_LEVEL_2_FONT_SIZE).toFloat()
-        level2BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED)
-
-        level3Color = prefs.getInt(AppSettings.LEVEL_3_COLOR, AppSettings.DEFAULT_LEVEL_3_COLOR)
-        level3Position = prefs.getString(AppSettings.LEVEL_3_POSITION, AppSettings.DEFAULT_LEVEL_3_POSITION) ?: AppSettings.DEFAULT_LEVEL_3_POSITION
-        level3FontSize = prefs.getInt(AppSettings.LEVEL_3_FONT_SIZE, AppSettings.DEFAULT_LEVEL_3_FONT_SIZE).toFloat()
-        level3BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_3_BLINKING_ENABLED)
-
-        timerDisplayMode = prefs.getString(AppSettings.TIMER_DISPLAY_MODE, AppSettings.DEFAULT_TIMER_DISPLAY_MODE) ?: AppSettings.DEFAULT_TIMER_DISPLAY_MODE
-        timerDisplayIntervalMinutes = prefs.getInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES)
-        timerDisplayDurationSeconds = prefs.getInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS)
-
-        Log.d(TAG, "Settings loaded: displayMode=$timerDisplayMode")
+        settings = settingsRepository.loadOverlaySettings()
+        Log.d(TAG, "Settings loaded: displayMode=${settings.timerDisplayMode}")
     }
 
     private fun applySettingsToOverlay() {
         if (overlayController.isCreated()) {
-            overlayController.render(screenTimeSeconds, currentOverlaySettings())
+            overlayController.render(screenTimeSeconds, settings)
         }
     }
 

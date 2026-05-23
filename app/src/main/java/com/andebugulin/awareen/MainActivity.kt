@@ -83,7 +83,11 @@ class MainActivity : AppCompatActivity() {
     private fun performDefensiveResetCheck() {
         try {
             val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
-            val scheduler = ResetScheduler(this, prefs, ScreenTimeRepository(prefs))
+            val scheduler = ResetScheduler(
+                this,
+                SettingsRepository(this, prefs),
+                ScreenTimeRepository(prefs),
+            )
             scheduler.checkAndReset()
         } catch (e: Exception) {
             Log.e(TAG, "Error in defensive reset check: ${e.message}", e)
