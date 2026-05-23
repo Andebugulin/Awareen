@@ -18,21 +18,16 @@ import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import java.util.Calendar
 
 class ScreenTimeService : Service() {
     private lateinit var overlayController: OverlayController
     private lateinit var prefs: SharedPreferences
     private lateinit var repo: ScreenTimeRepository
+    private lateinit var resetScheduler: ResetScheduler
     private var screenTimeSeconds = 0
     private var isScreenOn = true
     private var isDeviceUnlocked = false
     private val handler = Handler(Looper.getMainLooper())
-
-    companion object {
-        const val ACTION_ALARM_RESET = "com.andebugulin.awareen.ALARM_RESET"
-        private const val ALARM_REQUEST_CODE = 1001
-    }
 
     // Timer display settings
     private var timerDisplayMode: String = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
@@ -56,9 +51,6 @@ class ScreenTimeService : Service() {
     private var level3Position: String = AppSettings.DEFAULT_LEVEL_3_POSITION
     private var level3FontSize: Float = AppSettings.DEFAULT_LEVEL_3_FONT_SIZE.toFloat()
     private var level3BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_3_BLINKING_ENABLED
-
-    private var currentResetHour: Int = AppSettings.DEFAULT_RESET_HOUR
-    private var currentResetMinute: Int = AppSettings.DEFAULT_RESET_MINUTE
 
     private val TAG = "ScreenTimeService"
 
@@ -147,7 +139,7 @@ class ScreenTimeService : Service() {
                 Log.d(TAG, "Received settings update broadcast, reloading settings.")
                 loadSettings()
                 applySettingsToOverlay()
-                scheduleExactAlarm()
+                resetScheduler.scheduleNextAlarm()
             }
         }
     }
@@ -159,7 +151,7 @@ class ScreenTimeService : Service() {
                     Log.d(TAG, "Time or date changed, reloading settings and rescheduling")
                     loadSettings()
                     applySettingsToOverlay()
-                    scheduleExactAlarm()
+                    resetScheduler.scheduleNextAlarm()
                     checkAndPerformResetIfNeeded()
                 }
             }
@@ -171,10 +163,10 @@ class ScreenTimeService : Service() {
      */
     private val alarmResetReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == ACTION_ALARM_RESET) {
+            if (intent?.action == ResetScheduler.ACTION_ALARM_RESET) {
                 Log.d(TAG, "AlarmManager reset fired")
                 checkAndPerformResetIfNeeded()
-                scheduleExactAlarm() // schedule the next one
+                resetScheduler.scheduleNextAlarm() // schedule the next one
             }
         }
     }
@@ -188,6 +180,7 @@ class ScreenTimeService : Service() {
         try {
             prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
             repo = ScreenTimeRepository(prefs)
+            resetScheduler = ResetScheduler(this, prefs, repo)
             overlayController = OverlayController(this, prefs)
             loadSettings()
 
@@ -223,7 +216,7 @@ class ScreenTimeService : Service() {
             val settingsFilter = IntentFilter(AppSettings.ACTION_SETTINGS_UPDATED)
             registerReceiver(settingsUpdateReceiver, settingsFilter, RECEIVER_NOT_EXPORTED)
 
-            val alarmFilter = IntentFilter(ACTION_ALARM_RESET)
+            val alarmFilter = IntentFilter(ResetScheduler.ACTION_ALARM_RESET)
             registerReceiver(alarmResetReceiver, alarmFilter, RECEIVER_NOT_EXPORTED)
 
             createNotificationChannel()
@@ -244,7 +237,7 @@ class ScreenTimeService : Service() {
             handler.post(screenTimeUpdateRunnable)
 
             // Schedule Doze-proof alarm for the next reset time
-            scheduleExactAlarm()
+            resetScheduler.scheduleNextAlarm()
 
             Log.d(TAG, "Service created successfully. Initial screenTimeSeconds: $screenTimeSeconds")
         } catch (e: Exception) {
@@ -257,7 +250,7 @@ class ScreenTimeService : Service() {
         handler.removeCallbacks(screenTimeUpdateRunnable)
         saveScreenTime()
 
-        cancelAlarm()
+        resetScheduler.cancelAlarm()
 
         try {
             unregisterReceiver(keyEventReceiver)
@@ -311,135 +304,20 @@ class ScreenTimeService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     // =========================================================================
-    // RESET LOGIC — deterministic, Doze-proof
+    // RESET — thin wrapper around ResetScheduler
     //
-    // Core idea: on every check, compute the most recent wall-clock time that
-    // matches the configured reset hour:minute and is <= now. If the last
-    // actual reset happened BEFORE that moment, a reset is overdue.
-    //
-    // This works whether the phone was asleep 8 hours or 8 seconds.
+    // The scheduler owns the wall-clock math, the alarm, and the prefs write.
+    // The service still owns the in-memory screenTimeSeconds counter and the
+    // overlay, so the wrapper exists to keep both in sync after a reset.
     // =========================================================================
 
-    /**
-     * Returns the most recent wall-clock instant matching
-     * [currentResetHour]:[currentResetMinute] that is <= now.
-     */
-    private fun getMostRecentResetTimeMillis(): Long {
-        val now = System.currentTimeMillis()
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, currentResetHour)
-            set(Calendar.MINUTE, currentResetMinute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        // If that time hasn't happened yet today, the most recent one was yesterday
-        if (cal.timeInMillis > now) {
-            cal.add(Calendar.DAY_OF_YEAR, -1)
-        }
-        return cal.timeInMillis
-    }
-
-    /**
-     * Returns the next future wall-clock instant matching
-     * [currentResetHour]:[currentResetMinute] that is > now.
-     */
-    private fun getNextResetTimeMillis(): Long {
-        val now = System.currentTimeMillis()
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, currentResetHour)
-            set(Calendar.MINUTE, currentResetMinute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        if (cal.timeInMillis <= now) {
-            cal.add(Calendar.DAY_OF_YEAR, 1)
-        }
-        return cal.timeInMillis
-    }
-
-    /**
-     * Deterministic reset check. No grace periods, no minimum-time guards.
-     * Simply: did a scheduled reset moment pass since the last actual reset?
-     */
-    private fun shouldReset(): Boolean {
-        val lastReset = repo.getLastResetTimestamp()
-        val mostRecentScheduled = getMostRecentResetTimeMillis()
-
-        // Reset if last reset happened before the most recent scheduled reset
-        val needed = lastReset < mostRecentScheduled
-        if (needed) {
-            Log.d(TAG, "Reset needed: lastReset=$lastReset < scheduledAt=$mostRecentScheduled")
-        }
-        return needed
-    }
-
-    /**
-     * Single entry point for all reset checks throughout the service.
-     */
     private fun checkAndPerformResetIfNeeded() {
-        if (shouldReset()) {
-            Log.d(TAG, "Performing reset — clearing screen time to 0")
+        if (resetScheduler.checkAndReset()) {
             screenTimeSeconds = 0
-            repo.markReset()
-
             if (overlayController.isCreated()) {
                 overlayController.render(screenTimeSeconds, currentOverlaySettings())
             }
-            Log.d(TAG, "Reset complete. Next reset at ${getNextResetTimeMillis()}")
         }
-    }
-
-    // =========================================================================
-    // ALARM MANAGER — fires even through Doze
-    // =========================================================================
-
-    /**
-     * Schedules an exact alarm for the next reset time.
-     * This ensures the reset fires even if the Handler is suspended.
-     */
-    private fun scheduleExactAlarm() {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(ACTION_ALARM_RESET).apply {
-            setPackage(packageName)
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            this,
-            ALARM_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val nextReset = getNextResetTimeMillis()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                nextReset,
-                pendingIntent
-            )
-        } else {
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                nextReset,
-                pendingIntent
-            )
-        }
-
-        Log.d(TAG, "Exact alarm scheduled for $nextReset (in ${(nextReset - System.currentTimeMillis()) / 1000 / 60} min)")
-    }
-
-    private fun cancelAlarm() {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(ACTION_ALARM_RESET).apply {
-            setPackage(packageName)
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            this,
-            ALARM_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
     }
 
     // =========================================================================
@@ -462,17 +340,13 @@ class ScreenTimeService : Service() {
         level3Color = prefs.getInt(AppSettings.LEVEL_3_COLOR, AppSettings.DEFAULT_LEVEL_3_COLOR)
         level3Position = prefs.getString(AppSettings.LEVEL_3_POSITION, AppSettings.DEFAULT_LEVEL_3_POSITION) ?: AppSettings.DEFAULT_LEVEL_3_POSITION
         level3FontSize = prefs.getInt(AppSettings.LEVEL_3_FONT_SIZE, AppSettings.DEFAULT_LEVEL_3_FONT_SIZE).toFloat()
-
-        currentResetHour = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
-        currentResetMinute = prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
-
         level3BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_3_BLINKING_ENABLED)
 
         timerDisplayMode = prefs.getString(AppSettings.TIMER_DISPLAY_MODE, AppSettings.DEFAULT_TIMER_DISPLAY_MODE) ?: AppSettings.DEFAULT_TIMER_DISPLAY_MODE
         timerDisplayIntervalMinutes = prefs.getInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES)
         timerDisplayDurationSeconds = prefs.getInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS)
 
-        Log.d(TAG, "Settings loaded: reset=${currentResetHour}:${currentResetMinute}, displayMode=$timerDisplayMode")
+        Log.d(TAG, "Settings loaded: displayMode=$timerDisplayMode")
     }
 
     private fun applySettingsToOverlay() {
