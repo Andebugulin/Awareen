@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.ui
 
 import android.graphics.Color
 import android.net.Uri
@@ -15,6 +15,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import com.andebugulin.awareen.R
+import com.andebugulin.awareen.data.ScreenTimeRepository
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat

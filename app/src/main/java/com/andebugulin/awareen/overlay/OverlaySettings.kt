@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.overlay
 
 /**
  * Visual configuration for a single level (color, position, font size, blink).

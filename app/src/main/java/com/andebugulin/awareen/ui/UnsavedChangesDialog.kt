@@ -1,4 +1,4 @@
-package com.andebugulin.awareen // Adjust package as needed
+package com.andebugulin.awareen.ui
 
 import android.app.Dialog
 import android.content.Context

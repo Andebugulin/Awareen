@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.ui
 
 import android.content.Context
 import android.graphics.*

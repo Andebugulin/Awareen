@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.service
 
 import android.content.BroadcastReceiver
 import android.content.Context

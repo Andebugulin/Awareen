@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.service
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import com.andebugulin.awareen.data.ScreenTimeRepository
+import com.andebugulin.awareen.data.SettingsRepository
 import java.util.Calendar
 
 /**

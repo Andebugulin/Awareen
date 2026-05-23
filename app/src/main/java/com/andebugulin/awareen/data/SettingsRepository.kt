@@ -1,8 +1,11 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.data
 
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import com.andebugulin.awareen.overlay.LevelSettings
+import com.andebugulin.awareen.overlay.OverlayController
+import com.andebugulin.awareen.overlay.OverlaySettings
 
 /**
  * Single I/O layer for user-configurable settings: per-level overlay style

@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.ui
 
 import android.content.ComponentName
 import android.content.Context
@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import com.andebugulin.awareen.R
 
 /**
  * Walks the user through the four permission steps needed for the screen-time

@@ -105,17 +105,31 @@
 
 ## Project Structure
 
+The code is split into four packages by responsibility — `ui` talks to `service`, `service` talks to `data`, and `overlay` is a small shared domain used by both.
+
 ```
 app/src/main/
-├── java/com/example/screentimetracker/
-│   ├── MainActivity.kt              # Main app entry point
-│   ├── ScreenTimeService.kt         # Core service for tracking
-│   ├── SettingsActivity.kt          # Settings configuration
-│   ├── AnalyticsActivity.kt         # Usage analytics display
-│   ├── InfoActivity.kt              # About/info screen
-│   ├── AppSettings.kt               # Constants and defaults
-│   ├── BootReceiver.kt              # For auto-start on boot
-│   └── UnsavedChangesDialog.kt      # Settings dialog
+├── java/com/andebugulin/awareen/
+│   ├── data/
+│   │   ├── AppSettings.kt           # Pref keys + defaults + broadcast action
+│   │   ├── ScreenTimeRepository.kt  # Daily totals, reset bookkeeping, analytics I/O
+│   │   └── SettingsRepository.kt    # Per-level settings I/O + settings-updated broadcast
+│   ├── overlay/
+│   │   ├── OverlayController.kt     # WindowManager overlay, touch handler, render()
+│   │   └── OverlaySettings.kt       # Immutable view-config data classes
+│   ├── service/
+│   │   ├── ScreenTimeService.kt     # Foreground service + 1s tick loop coordinator
+│   │   ├── ResetScheduler.kt        # Wall-clock math + AlarmManager (Doze-proof)
+│   │   ├── ScreenStateMonitor.kt    # PowerManager + KeyguardManager wrapper
+│   │   └── BootReceiver.kt          # Starts the service on BOOT_COMPLETED
+│   └── ui/
+│       ├── MainActivity.kt          # Start/stop + navigation + defensive reset check
+│       ├── PermissionWizard.kt      # 4-step permission state machine
+│       ├── SettingsActivity.kt      # Per-level UI + JSON export/import
+│       ├── AnalyticsActivity.kt     # Daily/hourly RecyclerView + JSON export/import
+│       ├── InfoActivity.kt          # About screen
+│       ├── UnsavedChangesDialog.kt  # Custom dialog used by SettingsActivity
+│       └── Colorpickerview.kt       # HSV color picker custom view
 ├── res/
 │   ├── layout/                      # UI layouts
 │   ├── drawable/                    # Icons and graphics
@@ -123,6 +137,8 @@ app/src/main/
 │   └── xml/                         # Backup and data rules
 └── AndroidManifest.xml              # App permissions and components
 ```
+
+See `CLAUDE.md` for a fuller walkthrough of the architecture, the settings broadcast flow, and SharedPreferences key conventions.
 
 ## Permissions
 

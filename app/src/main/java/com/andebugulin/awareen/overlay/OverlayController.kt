@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.overlay
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import com.andebugulin.awareen.R
 import kotlin.math.abs
 
 class OverlayController(

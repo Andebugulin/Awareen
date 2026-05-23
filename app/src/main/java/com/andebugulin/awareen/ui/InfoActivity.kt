@@ -1,4 +1,4 @@
-package com.andebugulin.awareen // Use your actual package name
+package com.andebugulin.awareen.ui
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -6,6 +6,7 @@ import androidx.appcompat.widget.Toolbar // For the top bar
 import android.content.Intent
 import android.net.Uri
 import android.widget.TextView
+import com.andebugulin.awareen.R
 
 class InfoActivity : AppCompatActivity() {
 

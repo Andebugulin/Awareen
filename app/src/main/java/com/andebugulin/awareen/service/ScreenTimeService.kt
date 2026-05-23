@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.service
 
 import android.app.AlarmManager
 import android.app.NotificationChannel
@@ -16,6 +16,12 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.andebugulin.awareen.R
+import com.andebugulin.awareen.data.AppSettings
+import com.andebugulin.awareen.data.ScreenTimeRepository
+import com.andebugulin.awareen.data.SettingsRepository
+import com.andebugulin.awareen.overlay.OverlayController
+import com.andebugulin.awareen.overlay.OverlaySettings
 
 class ScreenTimeService : Service() {
     private lateinit var overlayController: OverlayController

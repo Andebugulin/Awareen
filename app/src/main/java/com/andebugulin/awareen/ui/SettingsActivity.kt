@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.ui
 
 import android.content.Context
 import android.content.Intent
@@ -31,6 +31,13 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
+import com.andebugulin.awareen.R
+import com.andebugulin.awareen.data.AppSettings
+import com.andebugulin.awareen.data.SettingsRepository
+import com.andebugulin.awareen.overlay.LevelSettings
+import com.andebugulin.awareen.overlay.OverlayController
+import com.andebugulin.awareen.overlay.OverlaySettings
+import com.andebugulin.awareen.service.ScreenTimeService
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date

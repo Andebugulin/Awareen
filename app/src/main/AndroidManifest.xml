@@ -48,39 +48,39 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SettingsActivity" />
+        <activity android:name=".ui.SettingsActivity" />
         <activity
-            android:name=".InfoActivity"
+            android:name=".ui.InfoActivity"
             android:label="About Awareen"
-            android:parentActivityName=".MainActivity"> <meta-data
+            android:parentActivityName=".ui.MainActivity"> <meta-data
             android:name="android.support.PARENT_ACTIVITY"
-            android:value=".MainActivity" />
+            android:value=".ui.MainActivity" />
         </activity>
-        <activity android:name=".AnalyticsActivity"
+        <activity android:name=".ui.AnalyticsActivity"
             android:label="Analytics"
-            android:parentActivityName=".MainActivity">
+            android:parentActivityName=".ui.MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".MainActivity" />
+                android:value=".ui.MainActivity" />
         </activity>
 
 
 
         <service
-            android:name=".ScreenTimeService"
+            android:name=".service.ScreenTimeService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" >
         </service>
 
-        <receiver android:name=".BootReceiver"
+        <receiver android:name=".service.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter android:priority="1000">

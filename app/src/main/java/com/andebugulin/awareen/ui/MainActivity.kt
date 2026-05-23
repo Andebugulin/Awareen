@@ -1,4 +1,4 @@
-package com.andebugulin.awareen
+package com.andebugulin.awareen.ui
 
 import android.app.ActivityManager
 import android.content.Context
@@ -14,6 +14,12 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.andebugulin.awareen.R
+import com.andebugulin.awareen.data.AppSettings
+import com.andebugulin.awareen.data.ScreenTimeRepository
+import com.andebugulin.awareen.data.SettingsRepository
+import com.andebugulin.awareen.service.ResetScheduler
+import com.andebugulin.awareen.service.ScreenTimeService
 
 class MainActivity : AppCompatActivity() {
 
