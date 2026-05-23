@@ -49,7 +49,6 @@ class ScreenTimeService : Service() {
     private var level2Color: Int = AppSettings.DEFAULT_LEVEL_2_COLOR
     private var level2Position: String = AppSettings.DEFAULT_LEVEL_2_POSITION
     private var level2FontSize: Float = AppSettings.DEFAULT_LEVEL_2_FONT_SIZE.toFloat()
-    private var level2EndTimeSeconds: Int = 0
     private var level2BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED
 
     private var level3Color: Int = AppSettings.DEFAULT_LEVEL_3_COLOR
@@ -189,7 +188,6 @@ class ScreenTimeService : Service() {
             prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
             overlayController = OverlayController(this, prefs)
             loadSettings()
-            applySettingsToOverlay()
 
             // Check for any missed resets (e.g. phone was off overnight)
             checkAndPerformResetIfNeeded()
@@ -466,7 +464,6 @@ class ScreenTimeService : Service() {
         level2Color = prefs.getInt(AppSettings.LEVEL_2_COLOR, AppSettings.DEFAULT_LEVEL_2_COLOR)
         level2Position = prefs.getString(AppSettings.LEVEL_2_POSITION, AppSettings.DEFAULT_LEVEL_2_POSITION) ?: AppSettings.DEFAULT_LEVEL_2_POSITION
         level2FontSize = prefs.getInt(AppSettings.LEVEL_2_FONT_SIZE, AppSettings.DEFAULT_LEVEL_2_FONT_SIZE).toFloat()
-        level2EndTimeSeconds = level1MaxTimeSeconds + level2DurationSeconds
         level2BlinkingEnabled = prefs.getBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED)
 
         level3Color = prefs.getInt(AppSettings.LEVEL_3_COLOR, AppSettings.DEFAULT_LEVEL_3_COLOR)
