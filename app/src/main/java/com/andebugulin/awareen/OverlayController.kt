@@ -16,32 +16,6 @@ import android.view.WindowManager
 import android.widget.TextView
 import kotlin.math.abs
 
-/**
- * Visual configuration for a single level (color, position, font size, blink).
- */
-data class LevelSettings(
-    val color: Int,
-    val position: String,
-    val fontSize: Float,
-    val blinkingEnabled: Boolean,
-)
-
-/**
- * Full snapshot of overlay-related settings. Built fresh by the service on
- * every render call — cheap to allocate, keeps the controller stateless w.r.t.
- * configuration.
- */
-data class OverlaySettings(
-    val level1: LevelSettings,
-    val level1MaxTimeSeconds: Int,
-    val level2: LevelSettings,
-    val level2DurationSeconds: Int,
-    val level3: LevelSettings,
-    val timerDisplayMode: String,
-    val timerDisplayIntervalMinutes: Int,
-    val timerDisplayDurationSeconds: Int,
-)
-
 class OverlayController(
     private val context: Context,
     private val prefs: SharedPreferences,
