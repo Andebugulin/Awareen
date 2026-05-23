@@ -1,7 +1,6 @@
 package com.andebugulin.awareen
 
 import android.app.AlarmManager
-import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -15,7 +14,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -24,9 +22,8 @@ class ScreenTimeService : Service() {
     private lateinit var prefs: SharedPreferences
     private lateinit var repo: ScreenTimeRepository
     private lateinit var resetScheduler: ResetScheduler
+    private lateinit var screenStateMonitor: ScreenStateMonitor
     private var screenTimeSeconds = 0
-    private var isScreenOn = true
-    private var isDeviceUnlocked = false
     private val handler = Handler(Looper.getMainLooper())
 
     // Timer display settings
@@ -79,12 +76,7 @@ class ScreenTimeService : Service() {
                 overlayController.ensureAttached(screenTimeSeconds, currentOverlaySettings())
             }
 
-            val actuallyUnlocked = isScreenActuallyOnAndUnlocked()
-
-            if (actuallyUnlocked) {
-                isScreenOn = true
-                isDeviceUnlocked = true
-
+            if (screenStateMonitor.isActive()) {
                 screenTimeSeconds++
 
                 overlayController.render(screenTimeSeconds, currentOverlaySettings())
@@ -93,8 +85,6 @@ class ScreenTimeService : Service() {
 
                 handler.postDelayed(this, 1000)
             } else {
-                isScreenOn = false
-                isDeviceUnlocked = false
                 saveScreenTime()
                 handler.postDelayed(this, 2000)
             }
@@ -109,22 +99,16 @@ class ScreenTimeService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_OFF -> {
-                    isScreenOn = false
-                    isDeviceUnlocked = false
                     saveScreenTime()
                 }
 
                 Intent.ACTION_SCREEN_ON -> {
-                    isScreenOn = true
                     checkAndPerformResetIfNeeded()
                 }
 
                 Intent.ACTION_USER_PRESENT -> {
                     // User just unlocked — critical reset check point
                     checkAndPerformResetIfNeeded()
-
-                    isDeviceUnlocked = true
-                    isScreenOn = true
                     handler.removeCallbacks(screenTimeUpdateRunnable)
                     handler.post(screenTimeUpdateRunnable)
                 }
@@ -181,6 +165,7 @@ class ScreenTimeService : Service() {
             prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
             repo = ScreenTimeRepository(prefs)
             resetScheduler = ResetScheduler(this, prefs, repo)
+            screenStateMonitor = ScreenStateMonitor(this)
             overlayController = OverlayController(this, prefs)
             loadSettings()
 
@@ -229,9 +214,6 @@ class ScreenTimeService : Service() {
 
             overlayController.create(handler, level1Position)
             overlayController.render(screenTimeSeconds, currentOverlaySettings())
-
-            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-            isDeviceUnlocked = !keyguardManager.isKeyguardLocked
 
             handler.removeCallbacks(screenTimeUpdateRunnable)
             handler.post(screenTimeUpdateRunnable)
@@ -389,26 +371,6 @@ class ScreenTimeService : Service() {
 
     private fun loadScreenTime() {
         screenTimeSeconds = repo.getTodayScreenTime()
-    }
-
-    // =========================================================================
-    // SCREEN STATE CHECK
-    // =========================================================================
-
-    private fun isScreenActuallyOnAndUnlocked(): Boolean {
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-
-        val isScreenOn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
-            powerManager.isInteractive
-        } else {
-            @Suppress("DEPRECATION")
-            powerManager.isScreenOn
-        }
-
-        val isLocked = keyguardManager.isKeyguardLocked
-
-        return isScreenOn && !isLocked
     }
 
 }
