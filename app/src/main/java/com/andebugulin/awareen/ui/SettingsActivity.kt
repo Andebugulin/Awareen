@@ -184,6 +184,7 @@ class SettingsActivity : AppCompatActivity() {
         initializeViews()
         setupCloseButton()
         setupExportImportButtons()
+        setupHelpButtons()
 
         setupClickablePreviewHeaders()
         loadAndSetupControls()
@@ -266,6 +267,61 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Button>(R.id.importSettingsButton).setOnClickListener {
             importSettingsLauncher.launch(arrayOf("application/json", "*/*"))
         }
+    }
+
+    private fun setupHelpButtons() {
+        findViewById<ImageButton>(R.id.helpTimerDisplay).setOnClickListener {
+            showHelpDialog(
+                "Timer Display",
+                "Controls when the floating timer overlay appears on top of other apps.\n\n" +
+                    "• Always — visible whenever the screen is on.\n" +
+                    "• Interval — appears briefly at a fixed interval (e.g. every 1 min for 5 sec).\n" +
+                    "• Never — tracking stays on but the overlay is hidden. Pick this if you only want the home-screen widget."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpLevel1).setOnClickListener {
+            showHelpDialog(
+                "Level 1",
+                "Levels group your day into stages, each with its own color, position, font size, and blink behavior.\n\n" +
+                    "Level 1 is the first stage — from 0 minutes up to the threshold you set below. Customize how it looks and how long it lasts."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpLevel2).setOnClickListener {
+            showHelpDialog(
+                "Level 2",
+                "Level 2 starts the moment Level 1's threshold is reached, and lasts for the duration you configure. Same styling options as Level 1."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpLevel3).setOnClickListener {
+            showHelpDialog(
+                "Level 3",
+                "Level 3 takes over after Level 1 and Level 2 are exhausted, and stays for the rest of the day until the daily reset. Often paired with red plus blinking to signal \"too much.\""
+            )
+        }
+        findViewById<ImageButton>(R.id.helpResetTime).setOnClickListener {
+            showHelpDialog(
+                "Daily Reset Time",
+                "The time of day when your screen-time counter resets to zero. Reset is enforced even when the app is asleep or the device is in Doze."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpImportExport).setOnClickListener {
+            showHelpDialog(
+                "Import & Export",
+                "Save all your settings (levels, colors, positions, reset time, timer display mode) to a JSON file, or restore them from one. Useful for backing up your setup or moving to a new device."
+            )
+        }
+    }
+
+    private fun showHelpDialog(title: String, body: String) {
+        AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .setTitle(title)
+            .setMessage(body)
+            .setPositiveButton("Got it", null)
+            .create()
+            .apply {
+                show()
+                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#FFA500"))
+            }
     }
 
     private fun handleClose() {

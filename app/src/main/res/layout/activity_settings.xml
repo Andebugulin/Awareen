@@ -104,10 +104,31 @@
         </LinearLayout>
 
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Timer Display Settings"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Timer Display Settings"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpTimerDisplay"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What does Timer Display do?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -191,10 +212,31 @@
             </GridLayout>
         </LinearLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Level 1 Settings (0 - X min)"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Level 1 Settings (0 - X min)"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpLevel1"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What is Level 1?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
 
         <GridLayout
             style="@style/SettingsGrid"
@@ -250,10 +292,31 @@
             </LinearLayout>
         </GridLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Level 2 Settings (Level 1 Max - Y min)"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Level 2 Settings (Level 1 Max - Y min)"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpLevel2"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What is Level 2?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
@@ -307,10 +370,31 @@
             </LinearLayout>
         </GridLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Level 3 Settings (Above Level 2 Max)"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Level 3 Settings (Above Level 2 Max)"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpLevel3"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What is Level 3?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
@@ -351,10 +435,31 @@
                 tools:checked="true" />
         </GridLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Daily Reset Time"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Daily Reset Time"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpResetTime"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What does Daily Reset do?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
@@ -372,10 +477,31 @@
         </GridLayout>
 
         <!-- Import / Export Section -->
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Import &amp; Export"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Import &amp; Export"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpImportExport"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What does Import &amp; Export do?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
