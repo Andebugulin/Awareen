@@ -14,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.widget.TextView
 import com.andebugulin.awareen.R
@@ -52,6 +53,13 @@ class OverlayController(
         private const val TAG = "OverlayController"
         private const val TAP_HIDE_DURATION_MS = 5000L
         private const val TRANSLUCENT_BG = "#80000000"
+
+        // If a drag ends within this many dp of an edge, the corresponding
+        // axis is snapped flush with that edge. Catches "I meant the edge"
+        // gestures that fingers can't fully reach because of system bars
+        // (status bar ≈ 24dp on most devices). Without this, a 3–5% saved
+        // fraction becomes a small but visible gap after rotation.
+        private const val EDGE_SNAP_DP = 32f
     }
 
     // Platform-canonical "user definitely meant to drag" threshold. Density-
@@ -134,6 +142,23 @@ class OverlayController(
         } catch (e: Exception) {
             Log.e(TAG, "Error adding overlay view: ${e.message}", e)
         }
+
+        // The initial applyPositionForLevel above ran with overlayView.width
+        // and .height = 0, so for custom positions it had to fall back to
+        // using just screen size as the denominator. Once the first layout
+        // pass completes we know the overlay's real measured size — migrate
+        // any legacy absolute-pixel prefs and re-apply with the correct math.
+        overlayView?.viewTreeObserver?.addOnGlobalLayoutListener(
+            object : ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    overlayView?.viewTreeObserver?.removeOnGlobalLayoutListener(this)
+                    if (!isCreated()) return
+                    migrateLegacyIfNeeded()
+                    applyPositionForLevel(currentLevel, currentPositionString)
+                    updateLayout()
+                }
+            }
+        )
     }
 
     fun destroy() {
@@ -261,11 +286,19 @@ class OverlayController(
     // =========================================================================
     // POSITION (internal)
     //
-    // Custom drag positions are stored as a fraction [0f, 1f] of the screen
-    // dimensions, NOT absolute pixels. That way they survive a rotation: a
-    // timer dragged 80% across a portrait screen still sits 80% across the
-    // landscape one. Old absolute-pixel prefs (LEGACY_LEVEL_*_X/Y) are
-    // migrated lazily on first read inside [loadCustomFraction].
+    // Custom drag positions are stored as a fraction [0f, 1f] of the *available
+    // range* — the screen size minus the overlay's own size — so fx=1.0 means
+    // "the overlay's right edge sits flush with the screen's right edge" in
+    // any orientation. Storing as a fraction of just the screen would leave
+    // a corner-pinned overlay short by overlay-width pixels when rotated to
+    // a wider screen (the right edge of the overlay no longer reaches the
+    // right edge of the screen).
+    //
+    // Legacy prefs migration:
+    //   • [LEGACY_LEVEL_*_X/_Y] — absolute pixels from the pre-rotation-fix
+    //     versions; migrated to the new fraction format in
+    //     [migrateLegacyIfNeeded], which runs from the first layout pass when
+    //     the overlay's measured width/height is finally known.
     // =========================================================================
 
     private data class CustomPosKeys(
@@ -304,43 +337,73 @@ class OverlayController(
     }
 
     /**
-     * Read the stored fraction for [level]. If a legacy absolute-pixel pref
-     * is present (pre-rotation-fix data), convert it to a fraction using the
-     * current screen size and rewrite the prefs in the new format. This is a
-     * one-shot migration per level.
+     * One-shot per-level migration of legacy absolute-pixel prefs
+     * ([LEGACY_LEVEL_*_X/_Y]) into the new fraction format. Requires the
+     * overlay to be laid out so that overlay.width/height are non-zero —
+     * called from the first-layout listener in [create].
+     *
+     * If overlay isn't measured yet, this is a no-op; legacy values stay in
+     * prefs and [applyPositionForLevel] uses them directly until the next
+     * layout pass picks them up.
      */
-    private fun loadCustomFraction(level: Int): Pair<Float, Float> {
-        val keys = customKeysFor(level)
-        if (!prefs.contains(keys.fxKey) && prefs.contains(keys.legacyXKey)) {
-            val (sw, sh) = currentScreenSize()
-            val oldX = prefs.getInt(keys.legacyXKey, 0)
-            val oldY = prefs.getInt(keys.legacyYKey, 0)
-            val fx = (oldX.toFloat() / sw).coerceIn(0f, 1f)
-            val fy = (oldY.toFloat() / sh).coerceIn(0f, 1f)
-            prefs.edit()
-                .putFloat(keys.fxKey, fx)
-                .putFloat(keys.fyKey, fy)
-                .remove(keys.legacyXKey)
-                .remove(keys.legacyYKey)
-                .apply()
-            return fx to fy
+    private fun migrateLegacyIfNeeded() {
+        val ow = overlayView?.width ?: 0
+        val oh = overlayView?.height ?: 0
+        if (ow == 0 || oh == 0) return
+        val (sw, sh) = currentScreenSize()
+        val rangeW = (sw - ow).coerceAtLeast(1)
+        val rangeH = (sh - oh).coerceAtLeast(1)
+        val editor = prefs.edit()
+        var dirty = false
+        for (level in 1..3) {
+            val keys = customKeysFor(level)
+            if (!prefs.contains(keys.fxKey) && prefs.contains(keys.legacyXKey)) {
+                val oldX = prefs.getInt(keys.legacyXKey, 0)
+                val oldY = prefs.getInt(keys.legacyYKey, 0)
+                val fx = (oldX.toFloat() / rangeW).coerceIn(0f, 1f)
+                val fy = (oldY.toFloat() / rangeH).coerceIn(0f, 1f)
+                editor.putFloat(keys.fxKey, fx)
+                    .putFloat(keys.fyKey, fy)
+                    .remove(keys.legacyXKey)
+                    .remove(keys.legacyYKey)
+                dirty = true
+            }
         }
-        return prefs.getFloat(keys.fxKey, 0f) to prefs.getFloat(keys.fyKey, 0f)
+        if (dirty) editor.apply()
     }
 
     private fun applyPositionForLevel(level: Int, positionString: String) {
         val keys = customKeysFor(level)
         if (prefs.getBoolean(keys.useKey, false)) {
-            val (fx, fy) = loadCustomFraction(level)
             val (sw, sh) = currentScreenSize()
-            var px = (fx * sw).toInt()
-            var py = (fy * sh).toInt()
-            // Clamp so the overlay stays visible after rotation when an
-            // edge-of-screen fraction (e.g. fx=0.98 in landscape) would map
-            // to a coordinate that pushes the overlay off-screen in portrait.
-            // overlayView width/height are 0 until first layout — skip then.
             val ow = overlayView?.width ?: 0
             val oh = overlayView?.height ?: 0
+            val rangeW = (sw - ow).coerceAtLeast(1)
+            val rangeH = (sh - oh).coerceAtLeast(1)
+
+            var px: Int
+            var py: Int
+            if (prefs.contains(keys.fxKey)) {
+                // Current format: fraction of (screen − overlay).
+                val fx = prefs.getFloat(keys.fxKey, 0f)
+                val fy = prefs.getFloat(keys.fyKey, 0f)
+                px = (fx * rangeW).toInt()
+                py = (fy * rangeH).toInt()
+            } else if (prefs.contains(keys.legacyXKey)) {
+                // Legacy absolute pixels from older app versions. Apply
+                // directly so the position stays visually stable until
+                // [migrateLegacyIfNeeded] converts them on first layout.
+                px = prefs.getInt(keys.legacyXKey, 0)
+                py = prefs.getInt(keys.legacyYKey, 0)
+            } else {
+                px = 0
+                py = 0
+            }
+
+            // Clamp so the overlay stays on-screen if its measured size has
+            // changed (e.g. larger font on a higher level pushes the right
+            // edge past the screen edge). overlayView dimensions are 0 until
+            // first layout — skip clamping then.
             if (ow > 0) px = px.coerceIn(0, (sw - ow).coerceAtLeast(0))
             if (oh > 0) py = py.coerceIn(0, (sh - oh).coerceAtLeast(0))
             currentLayoutParams?.gravity = Gravity.TOP or Gravity.START
@@ -412,8 +475,28 @@ class OverlayController(
 
     private fun saveCustomPositionForLevel(level: Int, x: Int, y: Int) {
         val (sw, sh) = currentScreenSize()
-        val fx = if (sw > 0) (x.toFloat() / sw).coerceIn(0f, 1f) else 0f
-        val fy = if (sh > 0) (y.toFloat() / sh).coerceIn(0f, 1f) else 0f
+        // Use (screen − overlay) as the denominator so fx=1.0 means the
+        // overlay's right edge is flush with the screen's right edge — the
+        // invariant that keeps corner-pinned positions corner-pinned across
+        // rotation. overlayView is laid out by the time the user drags it,
+        // so ow/oh are non-zero here.
+        val ow = overlayView?.width ?: 0
+        val oh = overlayView?.height ?: 0
+        val rangeW = (sw - ow).coerceAtLeast(1)
+        val rangeH = (sh - oh).coerceAtLeast(1)
+
+        val snapPx = (EDGE_SNAP_DP * context.resources.displayMetrics.density).toInt()
+        val fx = when {
+            x < snapPx -> 0f
+            x > rangeW - snapPx -> 1f
+            else -> (x.toFloat() / rangeW).coerceIn(0f, 1f)
+        }
+        val fy = when {
+            y < snapPx -> 0f
+            y > rangeH - snapPx -> 1f
+            else -> (y.toFloat() / rangeH).coerceIn(0f, 1f)
+        }
+
         val keys = customKeysFor(level)
         prefs.edit()
             .putBoolean(keys.useKey, true)
@@ -486,6 +569,14 @@ class OverlayController(
                                 currentLayoutParams!!.x,
                                 currentLayoutParams!!.y
                             )
+                            // The save may have snapped to an edge — re-apply
+                            // immediately so the overlay visually moves to the
+                            // snap point on release instead of waiting up to a
+                            // second for the next render tick to notice.
+                            applyPositionForLevel(currentLevel, currentPositionString)
+                            lastAppliedPositionKey =
+                                positionKeyFor(currentLevel, currentPositionString)
+                            updateLayout()
                         }
                         isDragging = false
                         return true
