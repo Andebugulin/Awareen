@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
+import android.util.DisplayMetrics
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -23,16 +24,29 @@ class OverlayController(
 ) {
     companion object {
         const val LEVEL_1_USE_CUSTOM = "level_1_use_custom_position"
-        const val LEVEL_1_CUSTOM_X = "level_1_custom_position_x"
-        const val LEVEL_1_CUSTOM_Y = "level_1_custom_position_y"
+        // Fraction of screen [0f, 1f]. Survives rotation because it scales with
+        // the screen instead of being pinned to a pixel coordinate. Legacy keys
+        // [LEGACY_LEVEL_*_X / _Y] hold the old absolute-pixel format and are
+        // migrated to fractions on first read (see [loadCustomFraction]).
+        const val LEVEL_1_CUSTOM_FX = "level_1_custom_position_fx"
+        const val LEVEL_1_CUSTOM_FY = "level_1_custom_position_fy"
 
         const val LEVEL_2_USE_CUSTOM = "level_2_use_custom_position"
-        const val LEVEL_2_CUSTOM_X = "level_2_custom_position_x"
-        const val LEVEL_2_CUSTOM_Y = "level_2_custom_position_y"
+        const val LEVEL_2_CUSTOM_FX = "level_2_custom_position_fx"
+        const val LEVEL_2_CUSTOM_FY = "level_2_custom_position_fy"
 
         const val LEVEL_3_USE_CUSTOM = "level_3_use_custom_position"
-        const val LEVEL_3_CUSTOM_X = "level_3_custom_position_x"
-        const val LEVEL_3_CUSTOM_Y = "level_3_custom_position_y"
+        const val LEVEL_3_CUSTOM_FX = "level_3_custom_position_fx"
+        const val LEVEL_3_CUSTOM_FY = "level_3_custom_position_fy"
+
+        // Legacy absolute-pixel keys; read once for one-shot migration then
+        // wiped. New code never writes these.
+        private const val LEGACY_LEVEL_1_X = "level_1_custom_position_x"
+        private const val LEGACY_LEVEL_1_Y = "level_1_custom_position_y"
+        private const val LEGACY_LEVEL_2_X = "level_2_custom_position_x"
+        private const val LEGACY_LEVEL_2_Y = "level_2_custom_position_y"
+        private const val LEGACY_LEVEL_3_X = "level_3_custom_position_x"
+        private const val LEGACY_LEVEL_3_Y = "level_3_custom_position_y"
 
         private const val TAG = "OverlayController"
         private const val CLICK_THRESHOLD = 10f
@@ -50,6 +64,11 @@ class OverlayController(
     private var currentLayoutParams: WindowManager.LayoutParams? = null
 
     private var currentLevel = 1
+
+    // The preset position string for [currentLevel]. Cached so the rotation
+    // hook can re-apply without re-deriving the level from a fresh settings
+    // snapshot.
+    private var currentPositionString: String = ""
 
     // Encodes the position we last pushed to the window manager. Lets render()
     // detect when settings change (preset → another preset, custom → preset,
@@ -92,6 +111,7 @@ class OverlayController(
             PixelFormat.TRANSLUCENT
         )
 
+        currentPositionString = level1Position
         applyPositionForLevel(1, level1Position)
 
         overlayView = LayoutInflater.from(context).inflate(R.layout.overlay_layout, null)
@@ -178,9 +198,14 @@ class OverlayController(
         val positionKey = positionKeyFor(newLevel, levelSettings.position)
         if (newLevel != currentLevel || positionKey != lastAppliedPositionKey) {
             currentLevel = newLevel
+            currentPositionString = levelSettings.position
             lastAppliedPositionKey = positionKey
             applyPositionForLevel(newLevel, levelSettings.position)
             updateLayout()
+        } else {
+            // Keep the cached preset string in sync even when we skip the
+            // re-apply (e.g. a settings save that only flipped color/font).
+            currentPositionString = levelSettings.position
         }
 
         // 4. Font size
@@ -228,19 +253,92 @@ class OverlayController(
 
     // =========================================================================
     // POSITION (internal)
+    //
+    // Custom drag positions are stored as a fraction [0f, 1f] of the screen
+    // dimensions, NOT absolute pixels. That way they survive a rotation: a
+    // timer dragged 80% across a portrait screen still sits 80% across the
+    // landscape one. Old absolute-pixel prefs (LEGACY_LEVEL_*_X/Y) are
+    // migrated lazily on first read inside [loadCustomFraction].
     // =========================================================================
 
-    private fun applyPositionForLevel(level: Int, positionString: String) {
-        val (useCustomKey, xKey, yKey) = when (level) {
-            1 -> Triple(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_X, LEVEL_1_CUSTOM_Y)
-            2 -> Triple(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_X, LEVEL_2_CUSTOM_Y)
-            else -> Triple(LEVEL_3_USE_CUSTOM, LEVEL_3_CUSTOM_X, LEVEL_3_CUSTOM_Y)
-        }
+    private data class CustomPosKeys(
+        val useKey: String,
+        val fxKey: String,
+        val fyKey: String,
+        val legacyXKey: String,
+        val legacyYKey: String,
+    )
 
-        if (prefs.getBoolean(useCustomKey, false)) {
+    private fun customKeysFor(level: Int): CustomPosKeys = when (level) {
+        1 -> CustomPosKeys(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_FX, LEVEL_1_CUSTOM_FY, LEGACY_LEVEL_1_X, LEGACY_LEVEL_1_Y)
+        2 -> CustomPosKeys(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_FX, LEVEL_2_CUSTOM_FY, LEGACY_LEVEL_2_X, LEGACY_LEVEL_2_Y)
+        else -> CustomPosKeys(LEVEL_3_USE_CUSTOM, LEVEL_3_CUSTOM_FX, LEVEL_3_CUSTOM_FY, LEGACY_LEVEL_3_X, LEGACY_LEVEL_3_Y)
+    }
+
+    /**
+     * Current screen dimensions. Uses [WindowManager.currentWindowMetrics] on
+     * API 30+ and [Display.getRealMetrics] on older versions. Returns (1, 1)
+     * if the window manager isn't available — caller is responsible for
+     * gating on isCreated() if needed.
+     */
+    private fun currentScreenSize(): Pair<Int, Int> {
+        val wm = windowManager ?: return 1 to 1
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val b = wm.currentWindowMetrics.bounds
+            b.width() to b.height()
+        } else {
+            @Suppress("DEPRECATION")
+            val display = wm.defaultDisplay
+            val metrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            display.getRealMetrics(metrics)
+            metrics.widthPixels to metrics.heightPixels
+        }
+    }
+
+    /**
+     * Read the stored fraction for [level]. If a legacy absolute-pixel pref
+     * is present (pre-rotation-fix data), convert it to a fraction using the
+     * current screen size and rewrite the prefs in the new format. This is a
+     * one-shot migration per level.
+     */
+    private fun loadCustomFraction(level: Int): Pair<Float, Float> {
+        val keys = customKeysFor(level)
+        if (!prefs.contains(keys.fxKey) && prefs.contains(keys.legacyXKey)) {
+            val (sw, sh) = currentScreenSize()
+            val oldX = prefs.getInt(keys.legacyXKey, 0)
+            val oldY = prefs.getInt(keys.legacyYKey, 0)
+            val fx = (oldX.toFloat() / sw).coerceIn(0f, 1f)
+            val fy = (oldY.toFloat() / sh).coerceIn(0f, 1f)
+            prefs.edit()
+                .putFloat(keys.fxKey, fx)
+                .putFloat(keys.fyKey, fy)
+                .remove(keys.legacyXKey)
+                .remove(keys.legacyYKey)
+                .apply()
+            return fx to fy
+        }
+        return prefs.getFloat(keys.fxKey, 0f) to prefs.getFloat(keys.fyKey, 0f)
+    }
+
+    private fun applyPositionForLevel(level: Int, positionString: String) {
+        val keys = customKeysFor(level)
+        if (prefs.getBoolean(keys.useKey, false)) {
+            val (fx, fy) = loadCustomFraction(level)
+            val (sw, sh) = currentScreenSize()
+            var px = (fx * sw).toInt()
+            var py = (fy * sh).toInt()
+            // Clamp so the overlay stays visible after rotation when an
+            // edge-of-screen fraction (e.g. fx=0.98 in landscape) would map
+            // to a coordinate that pushes the overlay off-screen in portrait.
+            // overlayView width/height are 0 until first layout — skip then.
+            val ow = overlayView?.width ?: 0
+            val oh = overlayView?.height ?: 0
+            if (ow > 0) px = px.coerceIn(0, (sw - ow).coerceAtLeast(0))
+            if (oh > 0) py = py.coerceIn(0, (sh - oh).coerceAtLeast(0))
             currentLayoutParams?.gravity = Gravity.TOP or Gravity.START
-            currentLayoutParams?.x = prefs.getInt(xKey, 0)
-            currentLayoutParams?.y = prefs.getInt(yKey, 0)
+            currentLayoutParams?.x = px
+            currentLayoutParams?.y = py
         } else {
             currentLayoutParams?.gravity = getGravityForPosition(positionString)
             currentLayoutParams?.x = 0
@@ -252,19 +350,34 @@ class OverlayController(
      * Compact string descriptor of "where the overlay should sit right now" —
      * used by render() to decide if updateViewLayout needs to be called.
      * Two descriptors compare equal iff applying them would produce identical
-     * layout params.
+     * layout params *for the current screen size*. Rotation does not change
+     * the descriptor, so [onConfigurationChanged] forces an explicit re-apply.
      */
     private fun positionKeyFor(level: Int, positionString: String): String {
-        val (useKey, xKey, yKey) = when (level) {
-            1 -> Triple(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_X, LEVEL_1_CUSTOM_Y)
-            2 -> Triple(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_X, LEVEL_2_CUSTOM_Y)
-            else -> Triple(LEVEL_3_USE_CUSTOM, LEVEL_3_CUSTOM_X, LEVEL_3_CUSTOM_Y)
-        }
-        return if (prefs.getBoolean(useKey, false)) {
-            "custom:${prefs.getInt(xKey, 0)}:${prefs.getInt(yKey, 0)}"
+        val keys = customKeysFor(level)
+        return if (prefs.getBoolean(keys.useKey, false)) {
+            val fx = prefs.getFloat(keys.fxKey, 0f)
+            val fy = prefs.getFloat(keys.fyKey, 0f)
+            "custom:$fx:$fy"
         } else {
             "preset:$positionString"
         }
+    }
+
+    // =========================================================================
+    // CONFIGURATION CHANGE (rotation, multi-window, foldable fold/unfold)
+    //
+    // Called by ScreenTimeService.onConfigurationChanged. Gravity-anchored
+    // presets *should* re-position automatically, but updateViewLayout makes
+    // it deterministic; for custom positions the fraction → pixel conversion
+    // MUST happen here since the cached lastAppliedPositionKey doesn't change.
+    // =========================================================================
+
+    fun onConfigurationChanged() {
+        if (!isCreated()) return
+        applyPositionForLevel(currentLevel, currentPositionString)
+        lastAppliedPositionKey = positionKeyFor(currentLevel, currentPositionString)
+        updateLayout()
     }
 
     private fun updateLayout() {
@@ -291,15 +404,18 @@ class OverlayController(
     }
 
     private fun saveCustomPositionForLevel(level: Int, x: Int, y: Int) {
-        val (useCustomKey, xKey, yKey) = when (level) {
-            1 -> Triple(LEVEL_1_USE_CUSTOM, LEVEL_1_CUSTOM_X, LEVEL_1_CUSTOM_Y)
-            2 -> Triple(LEVEL_2_USE_CUSTOM, LEVEL_2_CUSTOM_X, LEVEL_2_CUSTOM_Y)
-            else -> Triple(LEVEL_3_USE_CUSTOM, LEVEL_3_CUSTOM_X, LEVEL_3_CUSTOM_Y)
-        }
+        val (sw, sh) = currentScreenSize()
+        val fx = if (sw > 0) (x.toFloat() / sw).coerceIn(0f, 1f) else 0f
+        val fy = if (sh > 0) (y.toFloat() / sh).coerceIn(0f, 1f) else 0f
+        val keys = customKeysFor(level)
         prefs.edit()
-            .putBoolean(useCustomKey, true)
-            .putInt(xKey, x)
-            .putInt(yKey, y)
+            .putBoolean(keys.useKey, true)
+            .putFloat(keys.fxKey, fx)
+            .putFloat(keys.fyKey, fy)
+            // Clean up any legacy absolute-pixel values left over from older
+            // app versions so they can't shadow the new format later.
+            .remove(keys.legacyXKey)
+            .remove(keys.legacyYKey)
             .apply()
     }
 

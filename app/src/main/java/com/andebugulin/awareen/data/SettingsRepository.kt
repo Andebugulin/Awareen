@@ -126,30 +126,34 @@ class SettingsRepository(
     // also writes them; this is the same set of keys, just exposed here so
     // SettingsActivity (import + spinner-switch-from-Custom) doesn't have to
     // know the layout.
+    //
+    // Positions are stored as fractions [0f, 1f] of the screen dimensions so
+    // they survive rotation. See OverlayController for the migration of any
+    // legacy absolute-pixel data left over from older app versions.
     // =========================================================================
 
-    fun setCustomPosition(level: Int, x: Int, y: Int) {
-        val (useKey, xKey, yKey) = customPositionKeys(level)
+    fun setCustomPosition(level: Int, fx: Float, fy: Float) {
+        val (useKey, fxKey, fyKey) = customPositionKeys(level)
         prefs.edit()
             .putBoolean(useKey, true)
-            .putInt(xKey, x)
-            .putInt(yKey, y)
+            .putFloat(fxKey, fx.coerceIn(0f, 1f))
+            .putFloat(fyKey, fy.coerceIn(0f, 1f))
             .apply()
     }
 
     fun clearCustomPosition(level: Int) {
-        val (useKey, xKey, yKey) = customPositionKeys(level)
+        val (useKey, fxKey, fyKey) = customPositionKeys(level)
         prefs.edit()
             .putBoolean(useKey, false)
-            .remove(xKey)
-            .remove(yKey)
+            .remove(fxKey)
+            .remove(fyKey)
             .apply()
     }
 
     private fun customPositionKeys(level: Int): Triple<String, String, String> = when (level) {
-        1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_X, OverlayController.LEVEL_1_CUSTOM_Y)
-        2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_X, OverlayController.LEVEL_2_CUSTOM_Y)
-        else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_X, OverlayController.LEVEL_3_CUSTOM_Y)
+        1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_FX, OverlayController.LEVEL_1_CUSTOM_FY)
+        2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_FX, OverlayController.LEVEL_2_CUSTOM_FY)
+        else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_FX, OverlayController.LEVEL_3_CUSTOM_FY)
     }
 
     // =========================================================================
