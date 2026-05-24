@@ -7,8 +7,10 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.util.Log
 import android.util.TypedValue
+import android.view.WindowManager
 import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
@@ -482,9 +484,26 @@ class SettingsActivity : AppCompatActivity() {
     // EXPORT / IMPORT SETTINGS
     // =========================================================================
 
+    private fun currentScreenSize(): Pair<Int, Int> {
+        val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val b = wm.currentWindowMetrics.bounds
+            b.width() to b.height()
+        } else {
+            @Suppress("DEPRECATION")
+            val display = wm.defaultDisplay
+            val metrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            display.getRealMetrics(metrics)
+            metrics.widthPixels to metrics.heightPixels
+        }
+    }
+
     private fun buildSettingsJson(): JSONObject {
         val root = JSONObject()
-        root.put("version", 2)
+        // v3: custom_positions store fractions (fx/fy) instead of pixels.
+        // Import still accepts the v2 absolute-pixel format for backward compat.
+        root.put("version", 3)
         root.put("app", "awareen")
         root.put("type", "settings")
         root.put("exported_at", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()))
@@ -515,18 +534,18 @@ class SettingsActivity : AppCompatActivity() {
         s.put("timer_display_interval_minutes", currentDisplayIntervalMinutes)
         s.put("timer_display_duration_seconds", currentDisplayDurationSeconds)
 
-        // Custom per-level drag positions
+        // Custom per-level drag positions as fractions of screen [0f, 1f].
         val positions = JSONObject()
         for (level in 1..3) {
-            val (useKey, xKey, yKey) = when (level) {
-                1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_X, OverlayController.LEVEL_1_CUSTOM_Y)
-                2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_X, OverlayController.LEVEL_2_CUSTOM_Y)
-                else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_X, OverlayController.LEVEL_3_CUSTOM_Y)
+            val (useKey, fxKey, fyKey) = when (level) {
+                1 -> Triple(OverlayController.LEVEL_1_USE_CUSTOM, OverlayController.LEVEL_1_CUSTOM_FX, OverlayController.LEVEL_1_CUSTOM_FY)
+                2 -> Triple(OverlayController.LEVEL_2_USE_CUSTOM, OverlayController.LEVEL_2_CUSTOM_FX, OverlayController.LEVEL_2_CUSTOM_FY)
+                else -> Triple(OverlayController.LEVEL_3_USE_CUSTOM, OverlayController.LEVEL_3_CUSTOM_FX, OverlayController.LEVEL_3_CUSTOM_FY)
             }
             if (prefs.getBoolean(useKey, false)) {
                 val posObj = JSONObject()
-                posObj.put("x", prefs.getInt(xKey, 0))
-                posObj.put("y", prefs.getInt(yKey, 0))
+                posObj.put("fx", prefs.getFloat(fxKey, 0f).toDouble())
+                posObj.put("fy", prefs.getFloat(fyKey, 0f).toDouble())
                 positions.put("level_$level", posObj)
             }
         }
@@ -606,12 +625,27 @@ class SettingsActivity : AppCompatActivity() {
                 if (s.has("reset_minute")) s.getInt("reset_minute") else settingsRepository.getResetMinute(),
             )
 
-            // Custom drag positions (v2+)
+            // Custom drag positions. v3 stores fractions (fx/fy); v2 stored
+            // absolute pixels (x/y) — convert those using the current screen
+            // size so old export files still import meaningfully.
             val positions = s.optJSONObject("custom_positions")
+            val (importScreenW, importScreenH) = currentScreenSize()
             for (level in 1..3) {
                 val posObj = positions?.optJSONObject("level_$level")
                 if (posObj != null) {
-                    settingsRepository.setCustomPosition(level, posObj.getInt("x"), posObj.getInt("y"))
+                    val fx: Float
+                    val fy: Float
+                    if (posObj.has("fx") && posObj.has("fy")) {
+                        fx = posObj.getDouble("fx").toFloat()
+                        fy = posObj.getDouble("fy").toFloat()
+                    } else {
+                        // Legacy v2 absolute pixels — convert to fractions.
+                        val x = posObj.optInt("x", 0)
+                        val y = posObj.optInt("y", 0)
+                        fx = if (importScreenW > 0) x.toFloat() / importScreenW else 0f
+                        fy = if (importScreenH > 0) y.toFloat() / importScreenH else 0f
+                    }
+                    settingsRepository.setCustomPosition(level, fx, fy)
                 } else {
                     settingsRepository.clearCustomPosition(level)
                 }
@@ -676,10 +710,9 @@ class SettingsActivity : AppCompatActivity() {
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                if (!isInitialSetup && position > 0) {
-                    settingsRepository.clearCustomPosition(level)
-                    Toast.makeText(this@SettingsActivity, "Custom position cleared for Level $level", Toast.LENGTH_SHORT).show()
-                }
+                // No prefs writes here — the user hasn't saved yet. Picking a
+                // preset while a dragged custom position is active will clear
+                // that custom in saveSettings(); backing out preserves it.
                 updatePreview()
                 markChanged()
             }
@@ -927,6 +960,16 @@ class SettingsActivity : AppCompatActivity() {
             writeLevel2Position = level2Pos != "Custom",
             writeLevel3Position = level3Pos != "Custom",
         )
+
+        // For any level whose spinner is on a preset (not "Custom"), drop any
+        // previously-dragged custom position so the preset takes effect.
+        // Spinner left on "Custom" preserves the drag. Doing this here rather
+        // than in the spinner listener means changes only persist when the
+        // user actually saves.
+        if (level1Pos != "Custom") settingsRepository.clearCustomPosition(1)
+        if (level2Pos != "Custom") settingsRepository.clearCustomPosition(2)
+        if (level3Pos != "Custom") settingsRepository.clearCustomPosition(3)
+
         settingsRepository.saveResetTime(
             hour = resetHourSpinner.selectedItemPosition,
             minute = resetMinuteSpinner.selectedItemPosition,

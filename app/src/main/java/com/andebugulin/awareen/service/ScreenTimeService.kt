@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -265,6 +266,18 @@ class ScreenTimeService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * The system delivers this whenever the device configuration changes
+     * (rotation, multi-window resize, foldable fold/unfold, …). The overlay
+     * window's gravity-anchored presets re-position automatically, but
+     * fraction-based custom positions need an explicit re-apply against the
+     * new screen size — see [OverlayController.onConfigurationChanged].
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        overlayController.onConfigurationChanged()
+    }
 
     // =========================================================================
     // RESET — thin wrapper around ResetScheduler
