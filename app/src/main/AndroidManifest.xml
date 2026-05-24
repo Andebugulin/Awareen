@@ -12,7 +12,7 @@
 
     <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Alarm permissions (Doze-proof reset) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -77,7 +77,10 @@
             android:name=".service.ScreenTimeService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" >
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Continuous on-device screen-time awareness overlay. The service must run while the device is interactive to keep an always-visible system overlay (the user's accumulated daily screen time) on screen, and to drive a once-per-second timer used to detect daily resets even from Doze. Predefined foreground service types (dataSync, location, mediaPlayback, etc.) do not match this use case." />
         </service>
 
         <receiver android:name=".service.BootReceiver"
