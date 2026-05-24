@@ -106,6 +106,93 @@
 
         <TextView
             style="@style/SettingsHeader"
+            android:text="Timer Display Settings"
+            android:textColor="#FFA500" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/rounded_background"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Display Mode"
+                android:textColor="#E0E0E0"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/timerDisplayModeToggleGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <Button
+                    android:id="@+id/timerDisplayModeAlways"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Always" />
+
+                <Button
+                    android:id="@+id/timerDisplayModeInterval"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Interval" />
+
+                <Button
+                    android:id="@+id/timerDisplayModeNever"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Never" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <GridLayout
+                style="@style/SettingsGrid"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="0dp">
+
+                <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="#E0E0E0" />
+                <LinearLayout style="@style/SettingsControlLayout">
+                    <SeekBar
+                        android:id="@+id/timerDisplayIntervalSeekBar"
+                        style="@style/SettingsSeekBar"
+                        android:progressTint="#FFA500"
+                        android:thumbTint="#FFA500" />
+                    <TextView
+                        android:id="@+id/timerDisplayIntervalValue"
+                        style="@style/SettingsSeekBarValue"
+                        android:text="1 min"
+                        android:textColor="#E0E0E0" />
+                </LinearLayout>
+
+                <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
+                <LinearLayout style="@style/SettingsControlLayout">
+                    <SeekBar
+                        android:id="@+id/timerDisplayDurationSeekBar"
+                        style="@style/SettingsSeekBar"
+                        android:progressTint="#FFA500"
+                        android:thumbTint="#FFA500" />
+                    <TextView
+                        android:id="@+id/timerDisplayDurationValue"
+                        style="@style/SettingsSeekBarValue"
+                        android:text="5 sec"
+                        android:textColor="#E0E0E0" />
+                </LinearLayout>
+            </GridLayout>
+        </LinearLayout>
+
+        <TextView
+            style="@style/SettingsHeader"
             android:text="Level 1 Settings (0 - X min)"
             android:textColor="#FFA500" />
 
@@ -283,93 +370,6 @@
                 style="@style/SettingsControl"
                 android:backgroundTint="#333333" />
         </GridLayout>
-
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Timer Display Settings"
-            android:textColor="#FFA500" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/rounded_background"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Display Mode"
-                android:textColor="#E0E0E0"
-                android:layout_marginBottom="8dp" />
-
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/timerDisplayModeToggleGroup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:selectionRequired="true">
-
-                <Button
-                    android:id="@+id/timerDisplayModeAlways"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Always" />
-
-                <Button
-                    android:id="@+id/timerDisplayModeInterval"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Interval" />
-
-                <Button
-                    android:id="@+id/timerDisplayModeNever"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Never" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            <GridLayout
-                style="@style/SettingsGrid"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="0dp">
-
-                <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="#E0E0E0" />
-                <LinearLayout style="@style/SettingsControlLayout">
-                    <SeekBar
-                        android:id="@+id/timerDisplayIntervalSeekBar"
-                        style="@style/SettingsSeekBar"
-                        android:progressTint="#FFA500"
-                        android:thumbTint="#FFA500" />
-                    <TextView
-                        android:id="@+id/timerDisplayIntervalValue"
-                        style="@style/SettingsSeekBarValue"
-                        android:text="1 min"
-                        android:textColor="#E0E0E0" />
-                </LinearLayout>
-
-                <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
-                <LinearLayout style="@style/SettingsControlLayout">
-                    <SeekBar
-                        android:id="@+id/timerDisplayDurationSeekBar"
-                        style="@style/SettingsSeekBar"
-                        android:progressTint="#FFA500"
-                        android:thumbTint="#FFA500" />
-                    <TextView
-                        android:id="@+id/timerDisplayDurationValue"
-                        style="@style/SettingsSeekBarValue"
-                        android:text="5 sec"
-                        android:textColor="#E0E0E0" />
-                </LinearLayout>
-            </GridLayout>
-        </LinearLayout>
 
         <!-- Import / Export Section -->
         <TextView
