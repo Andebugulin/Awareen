@@ -5,10 +5,12 @@
 ## Features
 
 - **Persistent Overlay Timer**: Always-visible screen time counter that works across all apps
+- **Home-Screen Widget**: A glanceable 2×1 widget showing today's accumulated screen time, color-coded by the same level system as the overlay. Tapping it opens the app.
 - **Customizable Display**: Adjustable colors, positions, and font sizes for each level
-- **Smart Display Modes**: Choose between always-on or interval-based timer display
+- **Three Display Modes**: Always-on, periodic interval, or never (widget-only)
 - **Analytics Dashboard**: Track your daily screen time patterns and trends
 - **Auto-Reset**: Configurable daily reset time for screen time tracking
+- **In-Settings Help**: Tap the small (i) icon next to any settings section for a plain-English explanation of what it controls
 
 ## Screenshots
 
@@ -32,7 +34,8 @@
 ### Display Modes
 
 - **Always Mode**: Timer constantly visible on screen
-- **Interval Mode**: Timer appears periodically (configurable intervals)
+- **Interval Mode**: Timer appears periodically (configurable interval and duration)
+- **Never Mode**: Overlay hidden — tracking continues silently in the background. Pair with the home-screen widget for awareness without the floating timer.
 
 ## Technical Stack
 
@@ -81,8 +84,14 @@
    - Configure display modes and reset times
 
 3. **View Analytics**:
+
    - Check your usage patterns in the Analytics section
    - Track daily screen time trends
+
+4. **(Optional) Add the Home-Screen Widget**:
+   - Long-press an empty area of your home screen → Widgets → pick "Awareen"
+   - The widget mirrors the same level-based coloring as the overlay
+   - Especially handy in combination with the **Never** display mode if you'd rather not see the floating timer
 
 ## Configuration
 
@@ -122,6 +131,8 @@ app/src/main/
 │   │   ├── ResetScheduler.kt        # Wall-clock math + AlarmManager (Doze-proof)
 │   │   ├── ScreenStateMonitor.kt    # PowerManager + KeyguardManager wrapper
 │   │   └── BootReceiver.kt          # Starts the service on BOOT_COMPLETED
+│   ├── widget/
+│   │   └── ScreenTimeWidgetProvider.kt  # Home-screen widget (level-colored, pushed every 30s by the service)
 │   └── ui/
 │       ├── MainActivity.kt          # Start/stop + navigation + defensive reset check
 │       ├── PermissionWizard.kt      # 4-step permission state machine
@@ -131,10 +142,10 @@ app/src/main/
 │       ├── UnsavedChangesDialog.kt  # Custom dialog used by SettingsActivity
 │       └── Colorpickerview.kt       # HSV color picker custom view
 ├── res/
-│   ├── layout/                      # UI layouts
-│   ├── drawable/                    # Icons and graphics
+│   ├── layout/                      # UI layouts (incl. widget_screen_time.xml)
+│   ├── drawable/                    # Icons and graphics (incl. widget_background.xml)
 │   ├── values/                      # Strings, colors, themes
-│   └── xml/                         # Backup and data rules
+│   └── xml/                         # Backup/data rules + widget_screen_time_info.xml
 └── AndroidManifest.xml              # App permissions and components
 ```
 
@@ -151,7 +162,7 @@ See `CLAUDE.md` for a fuller walkthrough of the architecture, the settings broad
 
     <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Doze-proof daily reset -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
