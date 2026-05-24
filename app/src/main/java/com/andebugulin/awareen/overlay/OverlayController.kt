@@ -13,6 +13,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.TextView
 import com.andebugulin.awareen.R
@@ -49,10 +50,16 @@ class OverlayController(
         private const val LEGACY_LEVEL_3_Y = "level_3_custom_position_y"
 
         private const val TAG = "OverlayController"
-        private const val CLICK_THRESHOLD = 10f
         private const val TAP_HIDE_DURATION_MS = 5000L
         private const val TRANSLUCENT_BG = "#80000000"
     }
+
+    // Platform-canonical "user definitely meant to drag" threshold. Density-
+    // aware and calibrated per device (~8dp on most phones), so a stray
+    // fingertip wobble during a tap-to-hide won't flip the level into custom
+    // position mode. Was a hard-coded 10 raw pixels, which is ~3dp on a 3x
+    // device — effectively no threshold at all.
+    private val touchSlop: Int = ViewConfiguration.get(context).scaledTouchSlop
 
     // =========================================================================
     // OVERLAY STATE
@@ -443,7 +450,7 @@ class OverlayController(
                     MotionEvent.ACTION_MOVE -> {
                         val deltaX = event.rawX - initialTouchX
                         val deltaY = event.rawY - initialTouchY
-                        if (abs(deltaX) > CLICK_THRESHOLD || abs(deltaY) > CLICK_THRESHOLD) {
+                        if (abs(deltaX) > touchSlop || abs(deltaY) > touchSlop) {
                             isDragging = true
                             currentLayoutParams?.gravity = Gravity.TOP or Gravity.START
                             currentLayoutParams?.x = initialX + deltaX.toInt()

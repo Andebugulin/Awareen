@@ -710,10 +710,9 @@ class SettingsActivity : AppCompatActivity() {
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                if (!isInitialSetup && position > 0) {
-                    settingsRepository.clearCustomPosition(level)
-                    Toast.makeText(this@SettingsActivity, "Custom position cleared for Level $level", Toast.LENGTH_SHORT).show()
-                }
+                // No prefs writes here — the user hasn't saved yet. Picking a
+                // preset while a dragged custom position is active will clear
+                // that custom in saveSettings(); backing out preserves it.
                 updatePreview()
                 markChanged()
             }
@@ -961,6 +960,16 @@ class SettingsActivity : AppCompatActivity() {
             writeLevel2Position = level2Pos != "Custom",
             writeLevel3Position = level3Pos != "Custom",
         )
+
+        // For any level whose spinner is on a preset (not "Custom"), drop any
+        // previously-dragged custom position so the preset takes effect.
+        // Spinner left on "Custom" preserves the drag. Doing this here rather
+        // than in the spinner listener means changes only persist when the
+        // user actually saves.
+        if (level1Pos != "Custom") settingsRepository.clearCustomPosition(1)
+        if (level2Pos != "Custom") settingsRepository.clearCustomPosition(2)
+        if (level3Pos != "Custom") settingsRepository.clearCustomPosition(3)
+
         settingsRepository.saveResetTime(
             hour = resetHourSpinner.selectedItemPosition,
             minute = resetMinuteSpinner.selectedItemPosition,
