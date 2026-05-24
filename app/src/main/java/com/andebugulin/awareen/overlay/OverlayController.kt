@@ -440,8 +440,18 @@ class OverlayController(
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         touchStartTime = System.currentTimeMillis()
-                        initialX = currentLayoutParams!!.x
-                        initialY = currentLayoutParams!!.y
+                        // Use the overlay's actual on-screen position rather
+                        // than the raw layout-params x/y. For preset gravities
+                        // (e.g. TOP|END "Top Right") the params hold x=0/y=0
+                        // and the visible position is derived from gravity, so
+                        // using them directly would teleport the overlay to
+                        // (0, 0) the moment ACTION_MOVE switches gravity to
+                        // TOP|START. getLocationOnScreen gives the true pixel
+                        // offset, which converts cleanly.
+                        val loc = IntArray(2)
+                        overlayView?.getLocationOnScreen(loc)
+                        initialX = loc[0]
+                        initialY = loc[1]
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
                         isDragging = false
