@@ -33,9 +33,16 @@ object AppSettings {
     const val LEVEL_3_BLINKING_ENABLED = "level_3_blinking_enabled"
 
     // --- Timer Display Settings ---
-    const val TIMER_DISPLAY_MODE = "timer_display_mode" // "always" or "interval"
+    const val TIMER_DISPLAY_MODE = "timer_display_mode" // MODE_ALWAYS / MODE_INTERVAL / MODE_NEVER
     const val TIMER_DISPLAY_INTERVAL_MINUTES = "timer_display_interval_minutes" // How often to show (in minutes)
     const val TIMER_DISPLAY_DURATION_SECONDS = "timer_display_duration_seconds" // How long to show (in seconds)
+
+    // Timer display mode values. MODE_NEVER hides the overlay entirely while the
+    // service keeps tracking — used by users who rely on the home-screen widget
+    // and don't want the floating timer.
+    const val MODE_ALWAYS = "always"
+    const val MODE_INTERVAL = "interval"
+    const val MODE_NEVER = "never"
 
     // --- Reset Time Settings ---
     const val RESET_HOUR = "reset_hour" // Integer (0-23)
@@ -64,7 +71,7 @@ object AppSettings {
     const val DEFAULT_LEVEL_3_BLINKING_ENABLED = true
 
     // Default timer display settings
-    const val DEFAULT_TIMER_DISPLAY_MODE = "interval" // "always" or "interval"
+    const val DEFAULT_TIMER_DISPLAY_MODE = MODE_INTERVAL
     const val DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES = 1 // Show every 1 minute
     const val DEFAULT_TIMER_DISPLAY_DURATION_SECONDS = 5 // Show for 5 seconds
 

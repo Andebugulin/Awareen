@@ -258,12 +258,15 @@ class OverlayController(
             overlayView?.setBackgroundColor(Color.parseColor(TRANSLUCENT_BG))
         }
 
-        // 6. Interval visibility
-        val shouldShow = if (settings.timerDisplayMode == "interval") {
-            val currentMinute = (seconds / 60) % settings.timerDisplayIntervalMinutes
-            currentMinute == 0 && (seconds % 60) < settings.timerDisplayDurationSeconds
-        } else {
-            true
+        // 6. Display-mode visibility. NEVER hides the overlay entirely; the
+        // service keeps ticking so the widget and analytics stay accurate.
+        val shouldShow = when (settings.timerDisplayMode) {
+            "never" -> false
+            "interval" -> {
+                val currentMinute = (seconds / 60) % settings.timerDisplayIntervalMinutes
+                currentMinute == 0 && (seconds % 60) < settings.timerDisplayDurationSeconds
+            }
+            else -> true
         }
         setIntervalVisible(shouldShow)
     }
