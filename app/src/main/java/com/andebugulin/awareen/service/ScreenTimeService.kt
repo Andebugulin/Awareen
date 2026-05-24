@@ -23,6 +23,7 @@ import com.andebugulin.awareen.data.ScreenTimeRepository
 import com.andebugulin.awareen.data.SettingsRepository
 import com.andebugulin.awareen.overlay.OverlayController
 import com.andebugulin.awareen.overlay.OverlaySettings
+import com.andebugulin.awareen.widget.ScreenTimeWidgetProvider
 
 class ScreenTimeService : Service() {
     private lateinit var overlayController: OverlayController
@@ -63,6 +64,13 @@ class ScreenTimeService : Service() {
                 overlayController.render(screenTimeSeconds, settings)
                 saveScreenTime()
                 saveAnalyticsData()
+
+                // Push to the home-screen widget on a slower cadence than the
+                // overlay — widgets aren't designed for per-second updates and
+                // RemoteViews rebuilds aren't free.
+                if (screenTimeSeconds % 30 == 0) {
+                    ScreenTimeWidgetProvider.refresh(this@ScreenTimeService, screenTimeSeconds, settings)
+                }
 
                 handler.postDelayed(this, 1000)
             } else {
@@ -293,6 +301,9 @@ class ScreenTimeService : Service() {
             if (overlayController.isCreated()) {
                 overlayController.render(screenTimeSeconds, settings)
             }
+            // Zero the widget immediately so it doesn't sit on yesterday's
+            // value for up to 30 seconds.
+            ScreenTimeWidgetProvider.refresh(this, screenTimeSeconds, settings)
         }
     }
 

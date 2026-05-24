@@ -101,11 +101,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var resetMinuteSpinner: Spinner
 
     // Timer Display Settings
-    private lateinit var timerDisplayModeSpinner: Spinner
+    private lateinit var timerDisplayModeToggleGroup: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var timerDisplayModeAlways: Button
+    private lateinit var timerDisplayModeInterval: Button
+    private lateinit var timerDisplayModeNever: Button
     private lateinit var timerDisplayIntervalSeekBar: SeekBar
     private lateinit var timerDisplayIntervalValue: TextView
     private lateinit var timerDisplayDurationSeekBar: SeekBar
     private lateinit var timerDisplayDurationValue: TextView
+    private var currentDisplayMode: String = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
 
     private var currentDisplayIntervalMinutes = 0
     private var currentDisplayDurationSeconds = 0
@@ -180,6 +184,7 @@ class SettingsActivity : AppCompatActivity() {
         initializeViews()
         setupCloseButton()
         setupExportImportButtons()
+        setupHelpButtons()
 
         setupClickablePreviewHeaders()
         loadAndSetupControls()
@@ -236,7 +241,10 @@ class SettingsActivity : AppCompatActivity() {
         resetMinuteSpinner = findViewById(R.id.resetMinuteSpinner)
 
         // Timer Display controls
-        timerDisplayModeSpinner = findViewById(R.id.timerDisplayModeSpinner)
+        timerDisplayModeToggleGroup = findViewById(R.id.timerDisplayModeToggleGroup)
+        timerDisplayModeAlways = findViewById(R.id.timerDisplayModeAlways)
+        timerDisplayModeInterval = findViewById(R.id.timerDisplayModeInterval)
+        timerDisplayModeNever = findViewById(R.id.timerDisplayModeNever)
         timerDisplayIntervalSeekBar = findViewById(R.id.timerDisplayIntervalSeekBar)
         timerDisplayIntervalValue = findViewById(R.id.timerDisplayIntervalValue)
         timerDisplayDurationSeekBar = findViewById(R.id.timerDisplayDurationSeekBar)
@@ -259,6 +267,61 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Button>(R.id.importSettingsButton).setOnClickListener {
             importSettingsLauncher.launch(arrayOf("application/json", "*/*"))
         }
+    }
+
+    private fun setupHelpButtons() {
+        findViewById<ImageButton>(R.id.helpTimerDisplay).setOnClickListener {
+            showHelpDialog(
+                "Timer Display",
+                "Controls when the floating timer overlay appears on top of other apps.\n\n" +
+                    "• Always — visible whenever the screen is on.\n" +
+                    "• Interval — appears briefly at a fixed interval (e.g. every 1 min for 5 sec).\n" +
+                    "• Never — tracking stays on but the overlay is hidden. Pick this if you only want the home-screen widget."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpLevel1).setOnClickListener {
+            showHelpDialog(
+                "Level 1",
+                "Levels group your day into stages, each with its own color, position, font size, and blink behavior.\n\n" +
+                    "Level 1 is the first stage — from 0 minutes up to the threshold you set below. Customize how it looks and how long it lasts."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpLevel2).setOnClickListener {
+            showHelpDialog(
+                "Level 2",
+                "Level 2 starts the moment Level 1's threshold is reached, and lasts for the duration you configure. Same styling options as Level 1."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpLevel3).setOnClickListener {
+            showHelpDialog(
+                "Level 3",
+                "Level 3 takes over after Level 1 and Level 2 are exhausted, and stays for the rest of the day until the daily reset. Often paired with red plus blinking to signal \"too much.\""
+            )
+        }
+        findViewById<ImageButton>(R.id.helpResetTime).setOnClickListener {
+            showHelpDialog(
+                "Daily Reset Time",
+                "The time of day when your screen-time counter resets to zero. Reset is enforced even when the app is asleep or the device is in Doze."
+            )
+        }
+        findViewById<ImageButton>(R.id.helpImportExport).setOnClickListener {
+            showHelpDialog(
+                "Import & Export",
+                "Save all your settings (levels, colors, positions, reset time, timer display mode) to a JSON file, or restore them from one. Useful for backing up your setup or moving to a new device."
+            )
+        }
+    }
+
+    private fun showHelpDialog(title: String, body: String) {
+        AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .setTitle(title)
+            .setMessage(body)
+            .setPositiveButton("Got it", null)
+            .create()
+            .apply {
+                show()
+                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#FFA500"))
+            }
     }
 
     private fun handleClose() {
@@ -340,21 +403,24 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupTimerDisplayControls() {
-        val displayModes = arrayOf("Always", "Interval")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, displayModes)
-        timerDisplayModeSpinner.adapter = adapter
+        currentDisplayMode = prefs.getString(AppSettings.TIMER_DISPLAY_MODE, AppSettings.DEFAULT_TIMER_DISPLAY_MODE)
+            ?: AppSettings.DEFAULT_TIMER_DISPLAY_MODE
 
-        val currentMode = prefs.getString(AppSettings.TIMER_DISPLAY_MODE, AppSettings.DEFAULT_TIMER_DISPLAY_MODE) ?: AppSettings.DEFAULT_TIMER_DISPLAY_MODE
-        timerDisplayModeSpinner.setSelection(if (currentMode == "always") 0 else 1)
+        // Migrate any stale value to a known mode.
+        if (currentDisplayMode !in setOf(AppSettings.MODE_ALWAYS, AppSettings.MODE_INTERVAL, AppSettings.MODE_NEVER)) {
+            currentDisplayMode = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
+        }
 
-        timerDisplayModeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val isIntervalMode = position == 1
-                timerDisplayIntervalSeekBar.isEnabled = isIntervalMode
-                timerDisplayDurationSeekBar.isEnabled = isIntervalMode
-                markChanged()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        timerDisplayModeToggleGroup.check(buttonIdForMode(currentDisplayMode))
+        applyDisplayModeEnablement(currentDisplayMode)
+
+        timerDisplayModeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val newMode = modeForButtonId(checkedId) ?: return@addOnButtonCheckedListener
+            if (newMode == currentDisplayMode) return@addOnButtonCheckedListener
+            currentDisplayMode = newMode
+            applyDisplayModeEnablement(newMode)
+            markChanged()
         }
 
         currentDisplayIntervalMinutes = prefs.getInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES)
@@ -385,9 +451,26 @@ class SettingsActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        val isIntervalMode = timerDisplayModeSpinner.selectedItemPosition == 1
-        timerDisplayIntervalSeekBar.isEnabled = isIntervalMode
-        timerDisplayDurationSeekBar.isEnabled = isIntervalMode
+        applyDisplayModeEnablement(currentDisplayMode)
+    }
+
+    private fun buttonIdForMode(mode: String): Int = when (mode) {
+        AppSettings.MODE_ALWAYS -> R.id.timerDisplayModeAlways
+        AppSettings.MODE_NEVER -> R.id.timerDisplayModeNever
+        else -> R.id.timerDisplayModeInterval
+    }
+
+    private fun modeForButtonId(id: Int): String? = when (id) {
+        R.id.timerDisplayModeAlways -> AppSettings.MODE_ALWAYS
+        R.id.timerDisplayModeInterval -> AppSettings.MODE_INTERVAL
+        R.id.timerDisplayModeNever -> AppSettings.MODE_NEVER
+        else -> null
+    }
+
+    private fun applyDisplayModeEnablement(mode: String) {
+        val isInterval = mode == AppSettings.MODE_INTERVAL
+        timerDisplayIntervalSeekBar.isEnabled = isInterval
+        timerDisplayDurationSeekBar.isEnabled = isInterval
     }
 
     // =========================================================================
@@ -529,8 +612,7 @@ class SettingsActivity : AppCompatActivity() {
         s.put("reset_hour", resetHourSpinner.selectedItemPosition)
         s.put("reset_minute", resetMinuteSpinner.selectedItemPosition)
 
-        val selectedMode = if (timerDisplayModeSpinner.selectedItemPosition == 0) "always" else "interval"
-        s.put("timer_display_mode", selectedMode)
+        s.put("timer_display_mode", currentDisplayMode)
         s.put("timer_display_interval_minutes", currentDisplayIntervalMinutes)
         s.put("timer_display_duration_seconds", currentDisplayDurationSeconds)
 
@@ -949,7 +1031,7 @@ class SettingsActivity : AppCompatActivity() {
                 fontSize = MIN_FONT_SIZE_SP + level3FontSizeSeekBar.progress,
                 blinkingEnabled = level3BlinkingSwitch.isChecked,
             ),
-            timerDisplayMode = if (timerDisplayModeSpinner.selectedItemPosition == 0) "always" else "interval",
+            timerDisplayMode = currentDisplayMode,
             timerDisplayIntervalMinutes = currentDisplayIntervalMinutes,
             timerDisplayDurationSeconds = currentDisplayDurationSeconds,
         )

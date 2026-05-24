@@ -104,10 +104,139 @@
         </LinearLayout>
 
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Level 1 Settings (0 - X min)"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Timer Display Settings"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpTimerDisplay"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What does Timer Display do?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/rounded_background"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Display Mode"
+                android:textColor="#E0E0E0"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/timerDisplayModeToggleGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <Button
+                    android:id="@+id/timerDisplayModeAlways"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Always" />
+
+                <Button
+                    android:id="@+id/timerDisplayModeInterval"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Interval" />
+
+                <Button
+                    android:id="@+id/timerDisplayModeNever"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Never" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <GridLayout
+                style="@style/SettingsGrid"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="0dp">
+
+                <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="#E0E0E0" />
+                <LinearLayout style="@style/SettingsControlLayout">
+                    <SeekBar
+                        android:id="@+id/timerDisplayIntervalSeekBar"
+                        style="@style/SettingsSeekBar"
+                        android:progressTint="#FFA500"
+                        android:thumbTint="#FFA500" />
+                    <TextView
+                        android:id="@+id/timerDisplayIntervalValue"
+                        style="@style/SettingsSeekBarValue"
+                        android:text="1 min"
+                        android:textColor="#E0E0E0" />
+                </LinearLayout>
+
+                <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
+                <LinearLayout style="@style/SettingsControlLayout">
+                    <SeekBar
+                        android:id="@+id/timerDisplayDurationSeekBar"
+                        style="@style/SettingsSeekBar"
+                        android:progressTint="#FFA500"
+                        android:thumbTint="#FFA500" />
+                    <TextView
+                        android:id="@+id/timerDisplayDurationValue"
+                        style="@style/SettingsSeekBarValue"
+                        android:text="5 sec"
+                        android:textColor="#E0E0E0" />
+                </LinearLayout>
+            </GridLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Level 1 Settings (0 - X min)"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpLevel1"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What is Level 1?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
 
         <GridLayout
             style="@style/SettingsGrid"
@@ -163,10 +292,31 @@
             </LinearLayout>
         </GridLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Level 2 Settings (Level 1 Max - Y min)"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Level 2 Settings (Level 1 Max - Y min)"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpLevel2"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What is Level 2?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
@@ -220,10 +370,31 @@
             </LinearLayout>
         </GridLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Level 3 Settings (Above Level 2 Max)"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Level 3 Settings (Above Level 2 Max)"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpLevel3"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What is Level 3?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
@@ -264,10 +435,31 @@
                 tools:checked="true" />
         </GridLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Daily Reset Time"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Daily Reset Time"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpResetTime"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What does Daily Reset do?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
@@ -284,54 +476,32 @@
                 android:backgroundTint="#333333" />
         </GridLayout>
 
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Timer Display Settings"
-            android:textColor="#FFA500" />
-        <GridLayout
-            style="@style/SettingsGrid"
-            android:background="@drawable/rounded_background">
-
-            <TextView style="@style/SettingsLabel" android:text="Display Mode:" android:textColor="#E0E0E0" />
-            <Spinner
-                android:id="@+id/timerDisplayModeSpinner"
-                style="@style/SettingsControl"
-                android:backgroundTint="#333333" />
-
-            <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="#E0E0E0" />
-            <LinearLayout style="@style/SettingsControlLayout">
-                <SeekBar
-                    android:id="@+id/timerDisplayIntervalSeekBar"
-                    style="@style/SettingsSeekBar"
-                    android:progressTint="#FFA500"
-                    android:thumbTint="#FFA500" />
-                <TextView
-                    android:id="@+id/timerDisplayIntervalValue"
-                    style="@style/SettingsSeekBarValue"
-                    android:text="1 min"
-                    android:textColor="#E0E0E0" />
-            </LinearLayout>
-
-            <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
-            <LinearLayout style="@style/SettingsControlLayout">
-                <SeekBar
-                    android:id="@+id/timerDisplayDurationSeekBar"
-                    style="@style/SettingsSeekBar"
-                    android:progressTint="#FFA500"
-                    android:thumbTint="#FFA500" />
-                <TextView
-                    android:id="@+id/timerDisplayDurationValue"
-                    style="@style/SettingsSeekBarValue"
-                    android:text="5 sec"
-                    android:textColor="#E0E0E0" />
-            </LinearLayout>
-        </GridLayout>
-
         <!-- Import / Export Section -->
-        <TextView
-            style="@style/SettingsHeader"
-            android:text="Import &amp; Export"
-            android:textColor="#FFA500" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="Import &amp; Export"
+                android:textColor="#FFA500" />
+
+            <ImageButton
+                android:id="@+id/helpImportExport"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What does Import &amp; Export do?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

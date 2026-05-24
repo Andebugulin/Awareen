@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Awareen</string>
+    <string name="widget_description">Shows your daily screen time at a glance</string>
 </resources>
