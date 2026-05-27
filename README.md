@@ -2,6 +2,12 @@
 
 **Awareen** (Awareness + Screen) is an Android application that helps users become more aware of their screen time through a persistent overlay timer. The app displays your current screen time in real-time, even when using other applications, promoting mindful device usage.
 
+<div style="text-align: center; margin: 40px 0;">
+  <a href="https://play.google.com/store/apps/details?id=com.andebugulin.awareen2" target="_blank">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" style="height: 80px;">
+  </a>
+</div>
+
 ## Features
 
 - **Persistent Overlay Timer**: Always-visible screen time counter that works across all apps
