@@ -10,8 +10,8 @@ android {
         applicationId = "com.andebugulin.awareen2"
         minSdk = 26
         targetSdk = 35
-        versionCode = 25
-        versionName = "1.23"
+        versionCode = 27
+        versionName = "1.25"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
