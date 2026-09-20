@@ -5,13 +5,13 @@ plugins {
 
 android {
     namespace = "com.andebugulin.awareen"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.andebugulin.awareen2"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 28
-        versionName = "1.26"
+        targetSdk = 36
+        versionCode = 29
+        versionName = "1.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

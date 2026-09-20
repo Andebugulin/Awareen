@@ -47,7 +47,7 @@
 
 - **Language**: Kotlin
 - **Min SDK**: 26 (Android 8.0)
-- **Target SDK**: 35 (Android 15)
+- **Target SDK**: 36 (Android 16)
 - **Architecture**: Service-based with overlay permissions
 
 ## Prerequisites
