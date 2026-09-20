@@ -16,8 +16,8 @@ IzzyOnDroid. Everything here was checked against this repo's actual state on
 | Tracked build outputs | **Done** — `e9e669f` |
 | Release no longer debug-signed | **Done** — `8d92536` |
 | Release signing wired to a real keystore | **Blocked on credentials** — see below |
-| `USE_EXACT_ALARM` removal | **Open decision** |
-| `specialUse` FGS Console declaration | **Open, manual** |
+| `USE_EXACT_ALARM` | **Cleared by Play** — do not remove, see below |
+| `specialUse` FGS Console declaration | **Cleared by Play** |
 | Privacy policy URL | **Open** |
 | Listing screenshots | **Open** — stale package name |
 
@@ -156,7 +156,19 @@ the index (your working tree already deletes them — commit that). Add
 
 ## Policy items — these are what a screen-time app actually gets flagged on
 
-### `USE_EXACT_ALARM` is a restricted permission — most likely rejection
+### `USE_EXACT_ALARM` — RESOLVED, keep it
+
+**Play reviewed this app's declared use of `USE_EXACT_ALARM` and accepted it.**
+The justification was supplied in the Console and approved, along with the
+`specialUse` foreground-service declaration.
+
+**Do not remove either.** Dropping `USE_EXACT_ALARM` now would be an
+unnecessary behaviour change to the reset path, and re-declaring it later
+would mean another review round trip. The analysis below is kept only as the
+record of why it was questioned.
+
+<details>
+<summary>Original concern, superseded by Play's approval</summary>
 
 The manifest declares **both**:
 
@@ -181,15 +193,17 @@ that is what the three independent triggers in `ResetScheduler` are for).
 If you keep it, be ready to justify it in the Play Console declaration form and
 expect a round trip with review.
 
-### `specialUse` foreground service needs a Console declaration
+</details>
+
+### `specialUse` foreground service — declared and accepted
 
 `8d8759d` moved the FGS type from `dataSync` to `specialUse`, which was the
 right call for the crash — but `specialUse` is the one type Play reviews by
 hand. The manifest `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` text is already written
-and is good; it still has to be repeated in **Play Console → App content →
-Foreground service permissions**, and the two should say the same thing.
+and is good, and the matching declaration in **Play Console → App content →
+Foreground service permissions** has been made and accepted.
 
-Expect this to be the slowest part of the first review.
+Keep the two in sync if the manifest subtype text ever changes.
 
 ### `SYSTEM_ALERT_WINDOW`
 

@@ -1,0 +1,10 @@
+Targets Android 16 (API 36).
+
+* Fixed a crash loop: a timer display interval of 0 from an imported settings
+  file divided by zero once per second.
+* Fixed a crash when picking a colour in Settings.
+* Timer digits keep a fixed width, so the overlay no longer drifts sideways as
+  the time grows.
+* Daily reset now handles DST changes, a midnight reset time, and a clock
+  moved backwards correctly.
+* Added a test suite covering the reset, level and analytics logic.
