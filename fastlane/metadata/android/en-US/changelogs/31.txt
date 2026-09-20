@@ -1,0 +1,8 @@
+Fixes readability when your phone is in light mode.
+
+* The app is dark-themed throughout again. Previously, with the system in
+  light mode, most screens drew light text on a light background and were
+  unreadable.
+* System status and navigation bar icons stay visible.
+* The Display Mode buttons (Always / Interval / Never) now show the active
+  option clearly instead of dark-on-dark.
