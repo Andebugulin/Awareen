@@ -18,6 +18,7 @@ import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.widget.TextView
 import com.andebugulin.awareen.R
+import com.andebugulin.awareen.domain.OverlayDecisions
 import kotlin.math.abs
 
 class OverlayController(
@@ -212,12 +213,11 @@ class OverlayController(
         timeTextView?.text = String.format("%02d:%02d:%02d", hours, minutes, secs)
 
         // 2. Determine current level
-        val level2EndSeconds = settings.level1MaxTimeSeconds + settings.level2DurationSeconds
-        val newLevel = when {
-            seconds < settings.level1MaxTimeSeconds -> 1
-            seconds < level2EndSeconds -> 2
-            else -> 3
-        }
+        val newLevel = OverlayDecisions.levelFor(
+            seconds,
+            settings.level1MaxTimeSeconds,
+            settings.level2DurationSeconds
+        )
         val levelSettings = when (newLevel) {
             1 -> settings.level1
             2 -> settings.level2
@@ -260,14 +260,12 @@ class OverlayController(
 
         // 6. Display-mode visibility. NEVER hides the overlay entirely; the
         // service keeps ticking so the widget and analytics stay accurate.
-        val shouldShow = when (settings.timerDisplayMode) {
-            "never" -> false
-            "interval" -> {
-                val currentMinute = (seconds / 60) % settings.timerDisplayIntervalMinutes
-                currentMinute == 0 && (seconds % 60) < settings.timerDisplayDurationSeconds
-            }
-            else -> true
-        }
+        val shouldShow = OverlayDecisions.shouldShowOverlay(
+            settings.timerDisplayMode,
+            seconds,
+            settings.timerDisplayIntervalMinutes,
+            settings.timerDisplayDurationSeconds
+        )
         setIntervalVisible(shouldShow)
     }
 

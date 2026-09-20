@@ -8,7 +8,8 @@ import android.os.Build
 import android.util.Log
 import com.andebugulin.awareen.data.ScreenTimeRepository
 import com.andebugulin.awareen.data.SettingsRepository
-import java.util.Calendar
+import com.andebugulin.awareen.domain.ResetMath
+import java.time.ZoneId
 
 /**
  * Owns daily-reset scheduling and the wall-clock math behind it.
@@ -22,6 +23,9 @@ import java.util.Calendar
  * Reset hour/minute are read from [settingsRepository] on each call rather
  * than cached, so the scheduler stays correct across settings changes without
  * an explicit reconfigure step.
+ *
+ * The wall-clock arithmetic itself lives in [ResetMath]; this class supplies
+ * the current time, the zone and the persistence, and owns the AlarmManager.
  */
 class ResetScheduler(
     private val context: Context,
@@ -121,15 +125,7 @@ class ResetScheduler(
      */
     fun getMostRecentResetMillis(): Long {
         val (h, m) = readResetTime()
-        val now = System.currentTimeMillis()
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, h)
-            set(Calendar.MINUTE, m)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        if (cal.timeInMillis > now) cal.add(Calendar.DAY_OF_YEAR, -1)
-        return cal.timeInMillis
+        return ResetMath.mostRecentReset(System.currentTimeMillis(), h, m, zone())
     }
 
     /**
@@ -137,16 +133,14 @@ class ResetScheduler(
      */
     fun getNextResetMillis(): Long {
         val (h, m) = readResetTime()
-        val now = System.currentTimeMillis()
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, h)
-            set(Calendar.MINUTE, m)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        if (cal.timeInMillis <= now) cal.add(Calendar.DAY_OF_YEAR, 1)
-        return cal.timeInMillis
+        return ResetMath.nextReset(System.currentTimeMillis(), h, m, zone())
     }
+
+    /**
+     * Read per call, never cached: the user can cross a timezone or change the
+     * device zone between two ticks, and the reset must follow local midnight.
+     */
+    private fun zone(): ZoneId = ZoneId.systemDefault()
 
     private fun readResetTime(): Pair<Int, Int> = Pair(
         settingsRepository.getResetHour(),

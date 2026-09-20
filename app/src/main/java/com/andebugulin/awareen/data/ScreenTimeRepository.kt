@@ -2,6 +2,8 @@ package com.andebugulin.awareen.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.andebugulin.awareen.domain.AnalyticsKeys
+import java.time.LocalDate
 import java.util.Calendar
 
 /**
@@ -65,8 +67,8 @@ class ScreenTimeRepository(private val prefs: SharedPreferences) {
      */
     fun recordAnalyticsTick(seconds: Int) {
         val cal = Calendar.getInstance()
-        val dateKey = analyticsDateKey(cal)
-        val hourKey = "${dateKey}_hour_${cal.get(Calendar.HOUR_OF_DAY)}"
+        val dateKey = AnalyticsKeys.analyticsDateKey(LocalDate.now())
+        val hourKey = AnalyticsKeys.hourKey(dateKey, cal.get(Calendar.HOUR_OF_DAY))
         val currentHour = prefs.getInt(hourKey, 0)
         // getStringSet returns a backing set whose mutation is undefined —
         // copy before edit.
@@ -92,7 +94,7 @@ class ScreenTimeRepository(private val prefs: SharedPreferences) {
     fun getHourlyBreakdown(dateKey: String): Map<Int, Int> {
         val result = mutableMapOf<Int, Int>()
         for (h in 0..23) {
-            val v = prefs.getInt("${dateKey}_hour_$h", 0)
+            val v = prefs.getInt(AnalyticsKeys.hourKey(dateKey, h), 0)
             if (v > 0) result[h] = v
         }
         return result
@@ -110,7 +112,7 @@ class ScreenTimeRepository(private val prefs: SharedPreferences) {
             .putInt(dateKey, screenTimeSeconds)
             .putStringSet(KEY_ANALYTICS_DATES, dates)
         hourlyBreakdown.forEach { (hour, value) ->
-            editor.putInt("${dateKey}_hour_$hour", value)
+            editor.putInt(AnalyticsKeys.hourKey(dateKey, hour), value)
         }
         editor.apply()
     }
@@ -119,13 +121,7 @@ class ScreenTimeRepository(private val prefs: SharedPreferences) {
     // KEY HELPERS
     // =========================================================================
 
-    private fun todayDateKey(): String {
-        val cal = Calendar.getInstance()
-        return "screen_time_${cal.get(Calendar.YEAR)}_${cal.get(Calendar.DAY_OF_YEAR)}"
-    }
-
-    private fun analyticsDateKey(cal: Calendar): String =
-        "analytics_${cal.get(Calendar.YEAR)}_${cal.get(Calendar.MONTH)}_${cal.get(Calendar.DAY_OF_MONTH)}"
+    private fun todayDateKey(): String = AnalyticsKeys.dailyScreenTimeKey(LocalDate.now())
 
     companion object {
         private const val KEY_LAST_DATE = "last_date_key"
