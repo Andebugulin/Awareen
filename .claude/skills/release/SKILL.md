@@ -23,12 +23,21 @@ Edit `app/build.gradle.kts`:
 **Never assume this is already done, and never leave it to the user.**
 
 ```bash
-gh release list --limit 1                        # last published version
+gh release list --limit 1                        # last GitHub release
 grep -E "versionCode|versionName" app/build.gradle.kts
 ```
 
-If the working tree already carries a bump, verify it exceeds the latest
-release rather than trusting it.
+**`gh release list` is NOT the authority on versionCode — Play is.** GitHub
+lags: a build can be uploaded to Play from Android Studio without ever being
+tagged here. This bit v1.27: versionCode 29 sat bumped-but-uncommitted in the
+working tree because it had already gone to Play, it cleared the "greater than
+the last GitHub release" check, and Play rejected it as an existing version.
+
+So: **check the highest versionCode in Play Console (Release > App bundle
+explorer) and exceed that**, not the GitHub tag. If Play cannot be checked,
+ask rather than assume — and treat an uncommitted bump in the working tree as
+evidence a build was already shipped from it, not as work someone left for
+you.
 
 ## 2. Preflight
 
