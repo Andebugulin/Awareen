@@ -1,6 +1,7 @@
 # Built application files
 *.apk
 *.aab
+app/release/
 
 # Files for the ART/Dalvik VM
 *.dex
@@ -18,10 +19,10 @@ out/
 build/
 
 # Gradle files
+# NOTE: the wrapper (gradlew, gradlew.bat, gradle/wrapper/) and the version
+# catalog (gradle/libs.versions.toml) are intentionally tracked -- a clone
+# cannot build without them. Only the local build cache is ignored.
 .gradle/
-gradle/
-gradlew
-gradlew.bat
 
 # Local configuration file (sdk path, etc)
 local.properties
