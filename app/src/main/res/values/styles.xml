@@ -49,6 +49,19 @@
         <item name="android:minWidth">50dp</item> <item name="android:layout_gravity">center_vertical</item>
     </style>
 
+    <!--
+        Display Mode toggle (Always / Interval / Never). Explicit text,
+        fill and stroke colours so the checked option reads as a filled
+        orange chip with dark text, and the unchecked ones as orange
+        outlines, on this app's dark surface.
+    -->
+    <style name="DisplayModeToggleButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/toggle_mode_text</item>
+        <item name="backgroundTint">@color/toggle_mode_background</item>
+        <item name="strokeColor">@color/accent_orange</item>
+        <item name="rippleColor">@color/accent_orange</item>
+    </style>
+
     <style name="AlertDialog">
         <item name="android:windowBackground">@color/app_background_dark</item>
         <item name="android:textColorPrimary">@color/dialog_text_light</item>

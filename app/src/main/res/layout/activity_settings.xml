@@ -154,7 +154,7 @@
 
                 <Button
                     android:id="@+id/timerDisplayModeAlways"
-                    style="?attr/materialButtonOutlinedStyle"
+                    style="@style/DisplayModeToggleButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -162,7 +162,7 @@
 
                 <Button
                     android:id="@+id/timerDisplayModeInterval"
-                    style="?attr/materialButtonOutlinedStyle"
+                    style="@style/DisplayModeToggleButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -170,7 +170,7 @@
 
                 <Button
                     android:id="@+id/timerDisplayModeNever"
-                    style="?attr/materialButtonOutlinedStyle"
+                    style="@style/DisplayModeToggleButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"

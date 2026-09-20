@@ -1,19 +1,37 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.Screentimetracker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
-        <item name="android:navigationBarColor">#121212</item>
-        <item name="android:statusBarColor">#121212</item>
+    <!--
+        Awareen is a dark-only app: every layout hardcodes light-on-dark
+        content (#E0E0E0 text on #121212, orange accents). The parent is
+        therefore the DARK Material theme, NOT .DayNight.
+
+        With a DayNight parent the framework handed activities a light window
+        background whenever the system was in light mode, while the layouts
+        went on painting near-white text and icons over it — unreadable on
+        every screen except the few whose root view sets its own #121212.
+
+        windowLightStatusBar / windowLightNavigationBar are both false so the
+        system bar icons stay light against the dark bars. From API 35 the
+        bars are drawn edge-to-edge and statusBarColor / navigationBarColor
+        are ignored, so these two flags are what actually keep the icons
+        visible.
+    -->
+    <style name="Theme.Screentimetracker" parent="Theme.MaterialComponents.NoActionBar">
+        <!--
+            colorPrimary is what unstyled Material widgets draw themselves
+            with - outlined button text and stroke, toggle-group selection,
+            switches, ripples. It must never be the background colour.
+        -->
+        <item name="colorPrimary">@color/accent_orange</item>
+        <item name="colorPrimaryVariant">@color/accent_orange</item>
+        <item name="colorOnPrimary">@color/on_accent</item>
+        <item name="colorSecondary">@color/accent_orange</item>
+        <item name="colorSecondaryVariant">@color/accent_orange</item>
+        <item name="colorOnSecondary">@color/on_accent</item>
+
+        <item name="android:windowBackground">@color/app_background_dark</item>
+        <item name="android:statusBarColor">@color/app_background_dark</item>
+        <item name="android:navigationBarColor">@color/app_background_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>

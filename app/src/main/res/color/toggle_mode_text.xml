@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Text colour for the Display Mode toggle. Stated explicitly rather than
+    inherited: the Material default selector paints the checked button's
+    label in colorOnPrimary while leaving the button's background
+    untinted, which on this dark surface meant the ACTIVE option was the
+    one you could not read.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/on_accent" android:state_checked="true" />
+    <item android:alpha="0.38" android:color="@color/accent_orange" android:state_enabled="false" />
+    <item android:color="@color/accent_orange" />
+</selector>

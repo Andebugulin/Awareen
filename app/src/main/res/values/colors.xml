@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#121212</color>
-    <color name="purple_700">#121212</color>
+    <!--
+        The app's accent. Everything the user reads as "interactive" is this
+        orange: 29 hardcoded uses across the layouts, plus every Material
+        widget that derives from colorPrimary.
+
+        These were previously named purple_* and set to #121212 - the same
+        value as the background - which made colorPrimary invisible, so every
+        outlined MaterialButton drew its text and stroke in the background
+        colour.
+    -->
+    <color name="accent_orange">#FFA500</color>
+    <color name="on_accent">#121212</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
@@ -11,6 +20,6 @@
     <color name="preview_header_not_active">#E0E0E0</color>
     <color name="app_background_dark">#121212</color>
     <color name="dialog_text_light">#FFFFFF</color>
-    <color name="dialog_button_highlight">#FFA500</color>
+    <color name="dialog_button_highlight">@color/accent_orange</color>
 
 </resources>
