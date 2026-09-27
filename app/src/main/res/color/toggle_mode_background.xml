@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Checked option is a filled orange chip; the others stay transparent. -->
+<!-- Checked option is a filled accent chip; the others stay transparent. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="@color/accent_primary" android:state_checked="true" />
     <item android:color="@android:color/transparent" />
