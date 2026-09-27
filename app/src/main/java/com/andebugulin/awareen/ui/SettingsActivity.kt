@@ -290,16 +290,16 @@ class SettingsActivity : AppCompatActivity() {
             showHelpDialog(
                 "Timer Display",
                 "Controls when the floating timer overlay appears on top of other apps.\n\n" +
-                    "• Always — visible whenever the screen is on.\n" +
-                    "• Interval — appears briefly at a fixed interval (e.g. every 1 min for 5 sec).\n" +
-                    "• Never — tracking stays on but the overlay is hidden. Pick this if you only want the home-screen widget."
+                    "• Always: visible whenever the screen is on.\n" +
+                    "• Interval: appears briefly at a fixed interval (e.g. every 1 min for 5 sec).\n" +
+                    "• Never: tracking stays on but the overlay is hidden. Pick this if you only want the home-screen widget."
             )
         }
         findViewById<ImageButton>(R.id.helpLevel1).setOnClickListener {
             showHelpDialog(
                 "Stage 1",
                 "Your day is split into three stages, each with its own color, position, font size, and blink behavior.\n\n" +
-                    "Stage 1 is the first stretch — from 0 minutes up to the threshold you set below. Customize how it looks and how long it lasts."
+                    "Stage 1 is the first stretch: from 0 minutes up to the threshold you set below. Customize how it looks and how long it lasts."
             )
         }
         findViewById<ImageButton>(R.id.helpLevel2).setOnClickListener {
