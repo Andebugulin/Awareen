@@ -4,13 +4,13 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="20dp"
-    android:background="#1E1E1E">
+    android:background="@color/surface_dark">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Choose Color"
-        android:textColor="#FFA500"
+        android:textColor="@color/accent_orange"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_marginBottom="16dp" />
@@ -44,8 +44,8 @@
             android:layout_weight="1"
             android:hint="#RRGGBB"
             android:inputType="text"
-            android:textColor="#E0E0E0"
-            android:textColorHint="#555555"
+            android:textColor="@color/text_primary_dark"
+            android:textColorHint="@color/text_hint_dark"
             android:background="@drawable/rounded_background"
             android:padding="12dp"
             android:textSize="15sp"
@@ -57,12 +57,10 @@
     <!-- Random Color Button -->
     <Button
         android:id="@+id/randomColorButton"
+        style="@style/Widget.Awareen.Button.Flat"
         android:layout_width="match_parent"
         android:layout_height="44dp"
         android:text="Random Color"
-        android:backgroundTint="#2A2A2A"
-        android:textColor="#FFA500"
-        android:textSize="14sp"
-        android:stateListAnimator="@null" />
+        android:textSize="14sp" />
 
 </LinearLayout>

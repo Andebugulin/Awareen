@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="@color/app_background_dark"
     android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
@@ -19,7 +19,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        app:tint="#FFA500" />
+        app:tint="@color/accent_orange" />
 
     <ImageButton
         android:id="@+id/settingsButton"
@@ -32,7 +32,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        app:tint="#FFA500" />
+        app:tint="@color/accent_orange" />
 
     <ImageButton
         android:id="@+id/analyticsButton"
@@ -45,7 +45,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="64dp"
         android:layout_marginEnd="16dp"
-        app:tint="#FFA500" />
+        app:tint="@color/accent_orange" />
 
     <ImageView
         android:id="@+id/logoImageView"
@@ -65,7 +65,7 @@
         android:layout_marginTop="24dp"
         android:fontFamily="sans-serif-medium"
         android:text="Awareen"
-        android:textColor="#FFA500"
+        android:textColor="@color/accent_orange"
         android:textSize="32sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -79,7 +79,7 @@
         android:layout_marginTop="8dp"
         android:fontFamily="sans-serif-light"
         android:text="Screen Awareness"
-        android:textColor="#E0E0E0"
+        android:textColor="@color/text_primary_dark"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -92,7 +92,7 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="40dp"
         android:layout_marginEnd="24dp"
-        app:cardBackgroundColor="#1E1E1E"
+        app:cardBackgroundColor="@color/surface_dark"
         app:cardCornerRadius="16dp"
         app:cardElevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -111,7 +111,7 @@
                 android:layout_gravity="center_horizontal"
                 android:fontFamily="sans-serif-medium"
                 android:text="Interactive Features"
-                android:textColor="#FFA500"
+                android:textColor="@color/accent_orange"
                 android:textSize="20sp"
                 android:layout_marginBottom="12dp" />
 
@@ -127,10 +127,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="03:38:13"
-                    android:textColor="#4CAF50"
+                    android:textColor="@color/status_good"
                     android:textSize="10sp"
                     android:textStyle="bold"
-                    android:background="#80000000"
+                    android:background="@color/scrim_overlay"
                     android:padding="4dp" />
 
                 <TextView
@@ -139,7 +139,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="10dp"
                     android:text="Displays on top of any app"
-                    android:textColor="#E0E0E0"
+                    android:textColor="@color/text_primary_dark"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -165,7 +165,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="16dp"
                     android:text="Tap timer to hide for 5 seconds"
-                    android:textColor="#E0E0E0"
+                    android:textColor="@color/text_primary_dark"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -183,7 +183,7 @@
                     android:layout_marginStart="12dp"
                     android:text="⇅"
                     android:textSize="20sp"
-                    android:textColor="#FFA500"
+                    android:textColor="@color/accent_orange"
                     android:gravity="center" />
 
                 <TextView
@@ -192,7 +192,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
                     android:text="Drag anywhere on the screen"
-                    android:textColor="#E0E0E0"
+                    android:textColor="@color/text_primary_dark"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -213,19 +213,19 @@
                     <View
                         android:layout_width="6dp"
                         android:layout_height="10dp"
-                        android:background="#4CAF50"
+                        android:background="@color/status_good"
                         android:layout_marginEnd="3dp" />
 
                     <View
                         android:layout_width="6dp"
                         android:layout_height="10dp"
-                        android:background="#FFC107"
+                        android:background="@color/status_warning"
                         android:layout_marginEnd="3dp" />
 
                     <View
                         android:layout_width="6dp"
                         android:layout_height="10dp"
-                        android:background="#F44336" />
+                        android:background="@color/status_danger" />
                 </LinearLayout>
 
                 <TextView
@@ -234,7 +234,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="16dp"
                     android:text="Fully customizable timer"
-                    android:textColor="#E0E0E0"
+                    android:textColor="@color/text_primary_dark"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -250,7 +250,7 @@
         android:layout_marginEnd="32dp"
         android:gravity="center"
         android:text="Friendly reminder to touch grass!"
-        android:textColor="#E0E0E0"
+        android:textColor="@color/text_primary_dark"
         android:textSize="16sp"
         android:textStyle="italic"
         app:layout_constraintEnd_toEndOf="parent"
@@ -259,37 +259,33 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/startServiceButton"
+        style="@style/Widget.Awareen.Button.Primary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="44dp"
-        android:backgroundTint="#FFA500"
         android:paddingStart="32dp"
         android:paddingTop="12dp"
         android:paddingEnd="32dp"
         android:paddingBottom="12dp"
         android:text="Start Tracking"
-        android:textColor="#121212"
         android:textSize="16sp"
-        app:cornerRadius="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/reminderTextView" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/stopServiceButton"
+        style="@style/Widget.Awareen.Button.Danger"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="44dp"
-        android:backgroundTint="#490904"
         android:paddingStart="32dp"
         android:paddingTop="12dp"
         android:paddingEnd="32dp"
         android:paddingBottom="12dp"
         android:text="Stop Tracking"
-        android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:visibility="gone"
-        app:cornerRadius="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/startServiceButton" />
@@ -313,7 +309,7 @@
             android:drawableStart="@drawable/ic_github"
             android:drawablePadding="4dp"
             android:focusable="true"
-            android:textColor="#FFA500"
+            android:textColor="@color/accent_orange"
             android:textSize="14sp" />
 
         <TextView
@@ -325,7 +321,7 @@
             android:drawableStart="@drawable/ic_linkedin"
             android:drawablePadding="4dp"
             android:focusable="true"
-            android:textColor="#FFA500"
+            android:textColor="@color/accent_orange"
             android:textSize="14sp" />
 
         <TextView
@@ -337,7 +333,7 @@
             android:drawablePadding="4dp"
             android:focusable="true"
             android:text="Buy Me a Coffee"
-            android:textColor="#FFA500"
+            android:textColor="@color/accent_orange"
             android:textSize="14sp" />
     </LinearLayout>
 

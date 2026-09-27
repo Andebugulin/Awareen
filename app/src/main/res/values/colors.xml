@@ -22,4 +22,28 @@
     <color name="dialog_text_light">#FFFFFF</color>
     <color name="dialog_button_highlight">@color/accent_orange</color>
 
+    <!--
+        Surfaces: everything drawn "on top of" the app background. One shade
+        for cards/dialogs, one lighter shade for controls that sit inside a
+        card (flat buttons, spinners), one for the thin track/hairline layer.
+    -->
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="surface_variant_dark">#2A2A2A</color>
+    <color name="control_track_dark">#333333</color>
+
+    <!-- Text on dark surfaces, in descending emphasis. -->
+    <color name="text_primary_dark">#E0E0E0</color>
+    <color name="text_secondary_dark">#9E9E9E</color>
+    <color name="text_muted_dark">#888888</color>
+    <color name="text_hint_dark">#555555</color>
+
+    <!-- Semantic status colors, independent of the user-configurable level colors. -->
+    <color name="status_good">#4CAF50</color>
+    <color name="status_warning">#FFC107</color>
+    <color name="status_danger">#F44336</color>
+    <color name="danger_button_background">#490904</color>
+
+    <!-- Semi-transparent scrim used behind the floating overlay timer. -->
+    <color name="scrim_overlay">#80000000</color>
+
 </resources>

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="@color/app_background_dark"
     android:fitsSystemWindows="true"
     tools:context=".SettingsActivity">
 
@@ -25,7 +25,7 @@
                 android:text="Preview"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#FFA500"
+                android:textColor="@color/accent_orange"
                 android:layout_centerVertical="true"
                 android:layout_alignParentStart="true" />
 
@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:text="00:12:34"
                 android:textSize="24sp"
-                android:textColor="#4CAF50"
+                android:textColor="@color/status_good"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -77,7 +77,7 @@
                 android:padding="8dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:textColor="#4CAF50"
+                android:textColor="@color/status_good"
                 android:background="?attr/selectableItemBackground"
                 android:layout_marginEnd="8dp"/>
             <TextView
@@ -88,7 +88,7 @@
                 android:padding="8dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:textColor="#E0E0E0"
+                android:textColor="@color/text_primary_dark"
                 android:background="?attr/selectableItemBackground"
                 android:layout_marginEnd="8dp"/>
             <TextView
@@ -99,7 +99,7 @@
                 android:padding="8dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:textColor="#E0E0E0"
+                android:textColor="@color/text_primary_dark"
                 android:background="?attr/selectableItemBackground"/>
         </LinearLayout>
 
@@ -117,7 +117,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Timer Display Settings"
-                android:textColor="#FFA500" />
+                android:textColor="@color/accent_orange" />
 
             <ImageButton
                 android:id="@+id/helpTimerDisplay"
@@ -142,7 +142,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Display Mode"
-                android:textColor="#E0E0E0"
+                android:textColor="@color/text_primary_dark"
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.button.MaterialButtonToggleGroup
@@ -182,32 +182,32 @@
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="0dp">
 
-                <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="#E0E0E0" />
+                <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="@color/text_primary_dark" />
                 <LinearLayout style="@style/SettingsControlLayout">
                     <SeekBar
                         android:id="@+id/timerDisplayIntervalSeekBar"
                         style="@style/SettingsSeekBar"
-                        android:progressTint="#FFA500"
-                        android:thumbTint="#FFA500" />
+                        android:progressTint="@color/accent_orange"
+                        android:thumbTint="@color/accent_orange" />
                     <TextView
                         android:id="@+id/timerDisplayIntervalValue"
                         style="@style/SettingsSeekBarValue"
                         android:text="1 min"
-                        android:textColor="#E0E0E0" />
+                        android:textColor="@color/text_primary_dark" />
                 </LinearLayout>
 
-                <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
+                <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="@color/text_primary_dark" />
                 <LinearLayout style="@style/SettingsControlLayout">
                     <SeekBar
                         android:id="@+id/timerDisplayDurationSeekBar"
                         style="@style/SettingsSeekBar"
-                        android:progressTint="#FFA500"
-                        android:thumbTint="#FFA500" />
+                        android:progressTint="@color/accent_orange"
+                        android:thumbTint="@color/accent_orange" />
                     <TextView
                         android:id="@+id/timerDisplayDurationValue"
                         style="@style/SettingsSeekBarValue"
                         android:text="5 sec"
-                        android:textColor="#E0E0E0" />
+                        android:textColor="@color/text_primary_dark" />
                 </LinearLayout>
             </GridLayout>
         </LinearLayout>
@@ -225,7 +225,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Level 1 Settings (0 - X min)"
-                android:textColor="#FFA500" />
+                android:textColor="@color/accent_orange" />
 
             <ImageButton
                 android:id="@+id/helpLevel1"
@@ -241,54 +241,54 @@
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="@color/text_primary_dark" />
             <Button android:id="@+id/level1ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
 
-            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="@color/text_primary_dark" />
             <Spinner
                 android:id="@+id/level1PositionSpinner"
                 style="@style/SettingsControl"
-                android:backgroundTint="#333333" />
+                android:backgroundTint="@color/control_track_dark" />
 
-            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="@color/text_primary_dark" />
             <LinearLayout style="@style/SettingsControlLayout">
                 <SeekBar
                     android:id="@+id/level1FontSizeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="#FFA500"
-                    android:thumbTint="#FFA500" />
+                    android:progressTint="@color/accent_orange"
+                    android:thumbTint="@color/accent_orange" />
                 <TextView
                     android:id="@+id/level1FontSizeValue"
                     style="@style/SettingsSeekBarValue"
                     android:text="24sp"
-                    android:textColor="#E0E0E0" />
+                    android:textColor="@color/text_primary_dark" />
             </LinearLayout>
 
             <TextView
                 style="@style/SettingsLabel"
                 android:text="Enable Blinking:"
-                android:textColor="#E0E0E0" />
+                android:textColor="@color/text_primary_dark" />
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/level1BlinkingSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|start"
                 android:minHeight="48dp"
-                app:thumbTint="#FFA500"
-                app:trackTint="#333333" />
+                app:thumbTint="@color/accent_orange"
+                app:trackTint="@color/control_track_dark" />
 
-            <TextView style="@style/SettingsLabel" android:text="Max Time:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Max Time:" android:textColor="@color/text_primary_dark" />
             <LinearLayout style="@style/SettingsControlLayout">
                 <SeekBar
                     android:id="@+id/level1TimeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="#FFA500"
-                    android:thumbTint="#FFA500" />
+                    android:progressTint="@color/accent_orange"
+                    android:thumbTint="@color/accent_orange" />
                 <TextView
                     android:id="@+id/level1TimeValue"
                     style="@style/SettingsSeekBarValue"
                     android:text="30 min"
-                    android:textColor="#E0E0E0" />
+                    android:textColor="@color/text_primary_dark" />
             </LinearLayout>
         </GridLayout>
 
@@ -305,7 +305,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Level 2 Settings (Level 1 Max - Y min)"
-                android:textColor="#FFA500" />
+                android:textColor="@color/accent_orange" />
 
             <ImageButton
                 android:id="@+id/helpLevel2"
@@ -320,53 +320,53 @@
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="@color/text_primary_dark" />
             <Button android:id="@+id/level2ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
-            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="@color/text_primary_dark" />
             <Spinner
                 android:id="@+id/level2PositionSpinner"
                 style="@style/SettingsControl"
-                android:backgroundTint="#333333" />
+                android:backgroundTint="@color/control_track_dark" />
 
-            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="@color/text_primary_dark" />
             <LinearLayout style="@style/SettingsControlLayout">
                 <SeekBar
                     android:id="@+id/level2FontSizeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="#FFA500"
-                    android:thumbTint="#FFA500" />
+                    android:progressTint="@color/accent_orange"
+                    android:thumbTint="@color/accent_orange" />
                 <TextView
                     android:id="@+id/level2FontSizeValue"
                     style="@style/SettingsSeekBarValue"
                     android:text="26sp"
-                    android:textColor="#E0E0E0" />
+                    android:textColor="@color/text_primary_dark" />
             </LinearLayout>
 
             <TextView
                 style="@style/SettingsLabel"
                 android:text="Enable Blinking:"
-                android:textColor="#E0E0E0" />
+                android:textColor="@color/text_primary_dark" />
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/level2BlinkingSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|start"
                 android:minHeight="48dp"
-                app:thumbTint="#FFA500"
-                app:trackTint="#333333" />
+                app:thumbTint="@color/accent_orange"
+                app:trackTint="@color/control_track_dark" />
 
-            <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="@color/text_primary_dark" />
             <LinearLayout style="@style/SettingsControlLayout">
                 <SeekBar
                     android:id="@+id/level2TimeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="#FFA500"
-                    android:thumbTint="#FFA500" />
+                    android:progressTint="@color/accent_orange"
+                    android:thumbTint="@color/accent_orange" />
                 <TextView
                     android:id="@+id/level2TimeValue"
                     style="@style/SettingsSeekBarValue"
                     android:text="30 min"
-                    android:textColor="#E0E0E0" />
+                    android:textColor="@color/text_primary_dark" />
             </LinearLayout>
         </GridLayout>
 
@@ -383,7 +383,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Level 3 Settings (Above Level 2 Max)"
-                android:textColor="#FFA500" />
+                android:textColor="@color/accent_orange" />
 
             <ImageButton
                 android:id="@+id/helpLevel3"
@@ -398,40 +398,40 @@
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="@color/text_primary_dark" />
             <Button android:id="@+id/level3ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
-            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="@color/text_primary_dark" />
             <Spinner
                 android:id="@+id/level3PositionSpinner"
                 style="@style/SettingsControl"
-                android:backgroundTint="#333333" />
+                android:backgroundTint="@color/control_track_dark" />
 
-            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="@color/text_primary_dark" />
             <LinearLayout style="@style/SettingsControlLayout">
                 <SeekBar
                     android:id="@+id/level3FontSizeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="#FFA500"
-                    android:thumbTint="#FFA500" />
+                    android:progressTint="@color/accent_orange"
+                    android:thumbTint="@color/accent_orange" />
                 <TextView
                     android:id="@+id/level3FontSizeValue"
                     style="@style/SettingsSeekBarValue"
                     android:text="28sp"
-                    android:textColor="#E0E0E0" />
+                    android:textColor="@color/text_primary_dark" />
             </LinearLayout>
 
             <TextView
                 style="@style/SettingsLabel"
                 android:text="Enable Blinking:"
-                android:textColor="#E0E0E0" />
+                android:textColor="@color/text_primary_dark" />
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/level3BlinkingSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|start"
                 android:minHeight="48dp"
-                app:thumbTint="#FFA500"
-                app:trackTint="#333333"
+                app:thumbTint="@color/accent_orange"
+                app:trackTint="@color/control_track_dark"
                 tools:checked="true" />
         </GridLayout>
 
@@ -448,7 +448,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Daily Reset Time"
-                android:textColor="#FFA500" />
+                android:textColor="@color/accent_orange" />
 
             <ImageButton
                 android:id="@+id/helpResetTime"
@@ -463,17 +463,17 @@
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Hour (24h):" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Hour (24h):" android:textColor="@color/text_primary_dark" />
             <Spinner
                 android:id="@+id/resetHourSpinner"
                 style="@style/SettingsControl"
-                android:backgroundTint="#333333" />
+                android:backgroundTint="@color/control_track_dark" />
 
-            <TextView style="@style/SettingsLabel" android:text="Minute:" android:textColor="#E0E0E0" />
+            <TextView style="@style/SettingsLabel" android:text="Minute:" android:textColor="@color/text_primary_dark" />
             <Spinner
                 android:id="@+id/resetMinuteSpinner"
                 style="@style/SettingsControl"
-                android:backgroundTint="#333333" />
+                android:backgroundTint="@color/control_track_dark" />
         </GridLayout>
 
         <!-- Import / Export Section -->
@@ -490,7 +490,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Import &amp; Export"
-                android:textColor="#FFA500" />
+                android:textColor="@color/accent_orange" />
 
             <ImageButton
                 android:id="@+id/helpImportExport"
@@ -515,7 +515,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Save or restore your settings as a JSON file."
-                android:textColor="#888888"
+                android:textColor="@color/text_muted_dark"
                 android:textSize="13sp"
                 android:layout_marginBottom="12dp" />
 
@@ -526,38 +526,33 @@
 
                 <Button
                     android:id="@+id/exportSettingsButton"
+                    style="@style/Widget.Awareen.Button.Flat"
                     android:layout_width="0dp"
                     android:layout_height="44dp"
                     android:layout_weight="1"
                     android:text="Export"
-                    android:backgroundTint="#2A2A2A"
-                    android:textColor="#FFA500"
                     android:textSize="14sp"
-                    android:layout_marginEnd="8dp"
-                    android:stateListAnimator="@null" />
+                    android:layout_marginEnd="8dp" />
 
                 <Button
                     android:id="@+id/importSettingsButton"
+                    style="@style/Widget.Awareen.Button.Flat"
                     android:layout_width="0dp"
                     android:layout_height="44dp"
                     android:layout_weight="1"
                     android:text="Import"
-                    android:backgroundTint="#2A2A2A"
-                    android:textColor="#FFA500"
-                    android:textSize="14sp"
-                    android:stateListAnimator="@null" />
+                    android:textSize="14sp" />
             </LinearLayout>
         </LinearLayout>
 
         <Button
             android:id="@+id/saveButton"
+            style="@style/Widget.Awareen.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="8dp"
-            android:text="Save Settings"
-            android:backgroundTint="#FFA500"
-            android:textColor="#121212" />
+            android:text="Save Settings" />
 
     </LinearLayout>
 </ScrollView>

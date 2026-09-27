@@ -82,4 +82,33 @@
         <item name="android:textColorSecondary">#CCCCCC</item>
     </style>
 
+    <!--
+        Filled orange call-to-action (Start Tracking, Save Settings). Used
+        wherever a screen's single primary action needs to stand out.
+    -->
+    <style name="Widget.Awareen.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/accent_orange</item>
+        <item name="android:textColor">@color/on_accent</item>
+        <item name="cornerRadius">24dp</item>
+    </style>
+
+    <!-- Destructive action (Stop Tracking). -->
+    <style name="Widget.Awareen.Button.Danger" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/danger_button_background</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">24dp</item>
+    </style>
+
+    <!--
+        Flat, low-emphasis button that sits inside a card (Export / Import /
+        Random Color). No elevation so it doesn't compete with the card it
+        lives on.
+    -->
+    <style name="Widget.Awareen.Button.Flat" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/surface_variant_dark</item>
+        <item name="android:textColor">@color/accent_orange</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="elevation">0dp</item>
+    </style>
+
 </resources>

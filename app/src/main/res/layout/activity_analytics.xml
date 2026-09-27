@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="@color/app_background_dark"
     android:fitsSystemWindows="true"
     tools:context=".AnalyticsActivity">
 
@@ -19,14 +19,14 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        app:tint="#FFA500" />
+        app:tint="@color/accent_orange" />
 
     <TextView
         android:id="@+id/titleTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Screen Time Analytics"
-        android:textColor="#FFA500"
+        android:textColor="@color/accent_orange"
         android:textSize="24sp"
         android:textStyle="bold"
         android:fontFamily="sans-serif-medium"
@@ -42,7 +42,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="24dp"
         android:layout_marginEnd="16dp"
-        app:cardBackgroundColor="#1E1E1E"
+        app:cardBackgroundColor="@color/surface_dark"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -60,7 +60,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Daily Average: Loading..."
-                android:textColor="#E0E0E0"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="16sp"
                 android:layout_marginBottom="8dp" />
 
@@ -69,7 +69,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Trend: Calculating..."
-                android:textColor="#E0E0E0"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="16sp"
                 android:layout_marginBottom="8dp" />
 
@@ -78,7 +78,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Keep tracking for insights!"
-                android:textColor="#E0E0E0"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="16sp"
                 android:textStyle="italic" />
 
@@ -92,7 +92,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        app:cardBackgroundColor="#1E1E1E"
+        app:cardBackgroundColor="@color/surface_dark"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -110,7 +110,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Lifetime Projection"
-                android:textColor="#FFA500"
+                android:textColor="@color/accent_orange"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="16dp" />
@@ -120,7 +120,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0.0 years"
-                android:textColor="#E0E0E0"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="36sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-light"
@@ -131,7 +131,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0 days total"
-                android:textColor="#9E9E9E"
+                android:textColor="@color/text_secondary_dark"
                 android:textSize="14sp" />
 
         </LinearLayout>
@@ -142,7 +142,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Daily History"
-        android:textColor="#FFA500"
+        android:textColor="@color/accent_orange"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_marginStart="16dp"
@@ -172,7 +172,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="#1E1E1E"
+        app:cardBackgroundColor="@color/surface_dark"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -187,26 +187,22 @@
 
             <Button
                 android:id="@+id/exportAnalyticsButton"
+                style="@style/Widget.Awareen.Button.Flat"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
                 android:text="Export"
-                android:textColor="#FFA500"
                 android:textSize="14sp"
-                android:backgroundTint="#2A2A2A"
-                android:layout_marginEnd="8dp"
-                android:stateListAnimator="@null" />
+                android:layout_marginEnd="8dp" />
 
             <Button
                 android:id="@+id/importAnalyticsButton"
+                style="@style/Widget.Awareen.Button.Flat"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
                 android:text="Import"
-                android:textColor="#FFA500"
-                android:textSize="14sp"
-                android:backgroundTint="#2A2A2A"
-                android:stateListAnimator="@null" />
+                android:textSize="14sp" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>

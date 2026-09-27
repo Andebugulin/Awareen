@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="00:00:00"
-        android:textColor="#4CAF50"
+        android:textColor="@color/status_good"
         android:textSize="22sp"
         android:textStyle="bold"
         android:fontFamily="monospace" />
@@ -22,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Screen time today"
-        android:textColor="#888888"
+        android:textColor="@color/text_muted_dark"
         android:textSize="11sp"
         android:layout_marginTop="2dp" />
 </LinearLayout>
