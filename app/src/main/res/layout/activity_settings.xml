@@ -25,7 +25,7 @@
                 android:text="Preview"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@color/accent_orange"
+                android:textColor="@color/text_primary_dark"
                 android:layout_centerVertical="true"
                 android:layout_alignParentStart="true" />
 
@@ -117,7 +117,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Timer Display Settings"
-                android:textColor="@color/accent_orange" />
+                android:textColor="@color/text_primary_dark" />
 
             <ImageButton
                 android:id="@+id/helpTimerDisplay"
@@ -225,7 +225,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Level 1 Settings (0 - X min)"
-                android:textColor="@color/accent_orange" />
+                android:textColor="@color/text_primary_dark" />
 
             <ImageButton
                 android:id="@+id/helpLevel1"
@@ -305,7 +305,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Level 2 Settings (Level 1 Max - Y min)"
-                android:textColor="@color/accent_orange" />
+                android:textColor="@color/text_primary_dark" />
 
             <ImageButton
                 android:id="@+id/helpLevel2"
@@ -383,7 +383,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Level 3 Settings (Above Level 2 Max)"
-                android:textColor="@color/accent_orange" />
+                android:textColor="@color/text_primary_dark" />
 
             <ImageButton
                 android:id="@+id/helpLevel3"
@@ -448,7 +448,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Daily Reset Time"
-                android:textColor="@color/accent_orange" />
+                android:textColor="@color/text_primary_dark" />
 
             <ImageButton
                 android:id="@+id/helpResetTime"
@@ -490,7 +490,7 @@
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
                 android:text="Import &amp; Export"
-                android:textColor="@color/accent_orange" />
+                android:textColor="@color/text_primary_dark" />
 
             <ImageButton
                 android:id="@+id/helpImportExport"

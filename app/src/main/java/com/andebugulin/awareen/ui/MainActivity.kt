@@ -18,6 +18,7 @@ import com.andebugulin.awareen.R
 import com.andebugulin.awareen.data.AppSettings
 import com.andebugulin.awareen.data.ScreenTimeRepository
 import com.andebugulin.awareen.data.SettingsRepository
+import com.andebugulin.awareen.domain.OverlayDecisions
 import com.andebugulin.awareen.service.ResetScheduler
 import com.andebugulin.awareen.service.ScreenTimeService
 
@@ -77,6 +78,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateButtonVisibility()
+        updateHomeCard()
 
         // Defensive reset check — catches missed resets even if service was killed
         performDefensiveResetCheck()
@@ -104,6 +106,54 @@ class MainActivity : AppCompatActivity() {
         val isServiceRunning = isServiceRunning(ScreenTimeService::class.java)
         findViewById<Button>(R.id.startServiceButton).visibility = if (isServiceRunning) View.GONE else View.VISIBLE
         findViewById<Button>(R.id.stopServiceButton).visibility = if (isServiceRunning) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Shows today's real tracked time once there is any — either tracking is
+     * running right now, or there's a leftover total from earlier today.
+     * Otherwise this is a fresh (or never-started) day, so the onboarding
+     * tips stay up instead of a "0h 0m" that would look broken.
+     */
+    private fun updateHomeCard() {
+        val isServiceRunning = isServiceRunning(ScreenTimeService::class.java)
+        val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+        val todaySeconds = ScreenTimeRepository(prefs).getTodayScreenTime()
+
+        val featuresContentView = findViewById<View>(R.id.featuresContentView)
+        val todayContentView = findViewById<View>(R.id.todayContentView)
+
+        if (!isServiceRunning && todaySeconds <= 0) {
+            featuresContentView.visibility = View.VISIBLE
+            todayContentView.visibility = View.GONE
+            return
+        }
+
+        val overlaySettings = SettingsRepository(this, prefs).loadOverlaySettings()
+        val level = OverlayDecisions.levelFor(
+            todaySeconds,
+            overlaySettings.level1MaxTimeSeconds,
+            overlaySettings.level2DurationSeconds,
+        )
+        val (levelColor, statusText) = when (level) {
+            1 -> overlaySettings.level1.color to "Level 1 — staying mindful"
+            2 -> overlaySettings.level2.color to "Level 2 — past your first checkpoint"
+            else -> overlaySettings.level3.color to "Level 3 — well over your limit"
+        }
+
+        findViewById<TextView>(R.id.todayTimeTextView).apply {
+            text = formatHoursMinutes(todaySeconds)
+            setTextColor(levelColor)
+        }
+        findViewById<TextView>(R.id.todayStatusTextView).text = statusText
+
+        featuresContentView.visibility = View.GONE
+        todayContentView.visibility = View.VISIBLE
+    }
+
+    private fun formatHoursMinutes(seconds: Int): String {
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        return "${hours}h ${minutes}m"
     }
 
     private fun isServiceRunning(serviceClass: Class<*>): Boolean {

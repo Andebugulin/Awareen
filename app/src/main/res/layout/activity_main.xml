@@ -100,6 +100,7 @@
         app:layout_constraintTop_toBottomOf="@+id/subtitleTextView">
 
         <LinearLayout
+            android:id="@+id/featuresContentView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -111,7 +112,7 @@
                 android:layout_gravity="center_horizontal"
                 android:fontFamily="sans-serif-medium"
                 android:text="Interactive Features"
-                android:textColor="@color/accent_orange"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="20sp"
                 android:layout_marginBottom="12dp" />
 
@@ -237,6 +238,51 @@
                     android:textColor="@color/text_primary_dark"
                     android:textSize="14sp" />
             </LinearLayout>
+
+        </LinearLayout>
+
+        <!--
+            Live status for a returning user, shown instead of the onboarding
+            tips once there is a today (or currently-running) total. Sits in
+            the same card as featuresContentView so reminderTextView's anchor
+            below never points at a GONE view.
+        -->
+        <LinearLayout
+            android:id="@+id/todayContentView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="24dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TODAY"
+                android:textColor="@color/text_secondary_dark"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.15"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/todayTimeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0h 0m"
+                android:textSize="44sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-light"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/todayStatusTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary_dark"
+                android:textSize="14sp"
+                android:gravity="center" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>

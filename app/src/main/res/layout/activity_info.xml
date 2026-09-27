@@ -50,7 +50,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="What is Awareen?"
-                android:textColor="@color/accent_orange"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
@@ -68,7 +68,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="How the Timer Works"
-                android:textColor="@color/accent_orange"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
@@ -104,7 +104,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Key Features"
-                android:textColor="@color/accent_orange"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
@@ -122,7 +122,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Our Philosophy"
-                android:textColor="@color/accent_orange"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
@@ -140,7 +140,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Open Source"
-                android:textColor="@color/accent_orange"
+                android:textColor="@color/text_primary_dark"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
