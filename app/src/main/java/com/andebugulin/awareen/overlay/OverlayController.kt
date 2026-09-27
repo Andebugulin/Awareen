@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
 import android.util.DisplayMetrics
@@ -17,6 +18,7 @@ import android.view.ViewConfiguration
 import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import com.andebugulin.awareen.R
 import com.andebugulin.awareen.domain.OverlayDecisions
 import kotlin.math.abs
@@ -53,7 +55,6 @@ class OverlayController(
 
         private const val TAG = "OverlayController"
         private const val TAP_HIDE_DURATION_MS = 5000L
-        private const val TRANSLUCENT_BG = "#80000000"
 
         // If a drag ends within this many dp of an edge, the corresponding
         // axis is snapped flush with that edge. Catches "I meant the edge"
@@ -78,6 +79,17 @@ class OverlayController(
     private var timeTextView: TextView? = null
     private var windowManager: WindowManager? = null
     private var currentLayoutParams: WindowManager.LayoutParams? = null
+
+    // Mutable chrome for the overlay itself: a translucent scrim fill with a
+    // ring in the current level's color, so the badge carries the level
+    // identity even at a glance. Corner radius follows the user's square/
+    // rounded choice (0, or oversized so it clips to a pill regardless of the
+    // view's actual size). render() only ever mutates fill/stroke/radius —
+    // never replaced, so this is the one GradientDrawable for the view's life.
+    private var badgeBackground: GradientDrawable? = null
+    private var strokeWidthPx: Int = 0
+    private var scrimColor: Int = 0
+    private var pillCornerRadiusPx: Float = 0f
 
     private var currentLevel = 1
 
@@ -132,6 +144,16 @@ class OverlayController(
 
         overlayView = LayoutInflater.from(context).inflate(R.layout.overlay_layout, null)
         timeTextView = overlayView?.findViewById(R.id.timeTextView)
+
+        val density = context.resources.displayMetrics.density
+        strokeWidthPx = (1.5f * density).toInt()
+        pillCornerRadiusPx = 100f * density // oversized on purpose — clips to a pill at any real badge size
+        scrimColor = ContextCompat.getColor(context, R.color.scrim_overlay)
+        badgeBackground = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(scrimColor)
+        }
+        overlayView?.background = badgeBackground
 
         overlayView?.setOnTouchListener(buildTouchListener(handler))
 
@@ -243,22 +265,33 @@ class OverlayController(
         // 4. Font size
         timeTextView?.setTextSize(TypedValue.COMPLEX_UNIT_SP, levelSettings.fontSize)
 
-        // 5. Colors. Blink parity is keyed to `seconds`, so the color flip lands
-        // on the same instant as the digit change.
+        // 5. Shape. A global square/rounded choice, not per-level — it's a
+        // style preference, not a severity signal the way color/blink are.
+        badgeBackground?.cornerRadius = if (settings.cornerStyle == "rounded") pillCornerRadiusPx else 0f
+
+        // 6. Colors. Blink parity is keyed to `seconds`, so the color flip lands
+        // on the same instant as the digit change. The ring, when the user has
+        // it enabled, always matches the level color; only the fill and text
+        // swap on a blink flash.
+        if (settings.borderEnabled) {
+            badgeBackground?.setStroke(strokeWidthPx, levelSettings.color)
+        } else {
+            badgeBackground?.setStroke(0, Color.TRANSPARENT)
+        }
         if (levelSettings.blinkingEnabled) {
             if (seconds % 2 == 0) {
                 timeTextView?.setTextColor(Color.BLACK)
-                overlayView?.setBackgroundColor(levelSettings.color)
+                badgeBackground?.setColor(levelSettings.color)
             } else {
                 timeTextView?.setTextColor(levelSettings.color)
-                overlayView?.setBackgroundColor(Color.parseColor(TRANSLUCENT_BG))
+                badgeBackground?.setColor(scrimColor)
             }
         } else {
             timeTextView?.setTextColor(levelSettings.color)
-            overlayView?.setBackgroundColor(Color.parseColor(TRANSLUCENT_BG))
+            badgeBackground?.setColor(scrimColor)
         }
 
-        // 6. Display-mode visibility. NEVER hides the overlay entirely; the
+        // 7. Display-mode visibility. NEVER hides the overlay entirely; the
         // service keeps ticking so the widget and analytics stay accurate.
         val shouldShow = OverlayDecisions.shouldShowOverlay(
             settings.timerDisplayMode,

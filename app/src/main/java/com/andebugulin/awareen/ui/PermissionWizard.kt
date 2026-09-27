@@ -3,7 +3,6 @@ package com.andebugulin.awareen.ui
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -12,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import com.andebugulin.awareen.R
 
 /**
@@ -267,7 +267,8 @@ class PermissionWizard(
 
         dialog.show()
 
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#FFA500"))
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#FFA500"))
+        val accentColor = ContextCompat.getColor(activity, R.color.accent_primary)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(accentColor)
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(accentColor)
     }
 }

@@ -1,6 +1,5 @@
 package com.andebugulin.awareen.ui
 
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -15,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import com.andebugulin.awareen.R
 import com.andebugulin.awareen.data.ScreenTimeRepository
 import org.json.JSONArray
@@ -54,7 +54,7 @@ class AnalyticsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_analytics)
-        window.navigationBarColor = android.graphics.Color.parseColor("#121212")
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background_dark)
 
         repo = ScreenTimeRepository(this)
 
@@ -251,15 +251,15 @@ class AnalyticsActivity : AppCompatActivity() {
                 when {
                     abs(changePercent) < 5 -> {
                         trendTextView.text = "Trend: Stable (${String.format("%.1f", changePercent)}%)"
-                        trendTextView.setTextColor(Color.YELLOW)
+                        trendTextView.setTextColor(ContextCompat.getColor(this, R.color.status_warning))
                     }
                     changePercent > 0 -> {
                         trendTextView.text = "Trend: Increasing (+${String.format("%.1f", changePercent)}%)"
-                        trendTextView.setTextColor(Color.RED)
+                        trendTextView.setTextColor(ContextCompat.getColor(this, R.color.status_danger))
                     }
                     else -> {
                         trendTextView.text = "Trend: Improving (${String.format("%.1f", changePercent)}%)"
-                        trendTextView.setTextColor(Color.GREEN)
+                        trendTextView.setTextColor(ContextCompat.getColor(this, R.color.status_good))
                     }
                 }
             }
@@ -272,15 +272,15 @@ class AnalyticsActivity : AppCompatActivity() {
         when {
             daysUnder2Hours >= 5 -> {
                 progressTextView.text = "Great job! You're maintaining healthy screen time!"
-                progressTextView.setTextColor(Color.GREEN)
+                progressTextView.setTextColor(ContextCompat.getColor(this, R.color.status_good))
             }
             daysUnder4Hours >= 5 -> {
                 progressTextView.text = "Good progress! Try to reduce screen time further."
-                progressTextView.setTextColor(Color.YELLOW)
+                progressTextView.setTextColor(ContextCompat.getColor(this, R.color.status_warning))
             }
             else -> {
                 progressTextView.text = "Consider reducing your daily screen time."
-                progressTextView.setTextColor(Color.RED)
+                progressTextView.setTextColor(ContextCompat.getColor(this, R.color.status_danger))
             }
         }
     }
@@ -295,20 +295,20 @@ class AnalyticsActivity : AppCompatActivity() {
         when {
             lifetimeYears >= 5 -> {
                 lifetimeYearsTextView.text = String.format("%.1f years", lifetimeYears)
-                lifetimeYearsTextView.setTextColor(Color.RED)
+                lifetimeYearsTextView.setTextColor(ContextCompat.getColor(this, R.color.status_danger))
             }
             lifetimeYears >= 2 -> {
                 lifetimeYearsTextView.text = String.format("%.1f years", lifetimeYears)
-                lifetimeYearsTextView.setTextColor(Color.parseColor("#FFA500"))
+                lifetimeYearsTextView.setTextColor(ContextCompat.getColor(this, R.color.status_high))
             }
             else -> {
                 lifetimeYearsTextView.text = String.format("%.1f years", lifetimeYears)
-                lifetimeYearsTextView.setTextColor(Color.GREEN)
+                lifetimeYearsTextView.setTextColor(ContextCompat.getColor(this, R.color.status_good))
             }
         }
 
         lifetimeDaysTextView.text = "$lifetimeDays days total"
-        lifetimeDaysTextView.setTextColor(Color.parseColor("#757575"))
+        lifetimeDaysTextView.setTextColor(ContextCompat.getColor(this, R.color.text_secondary_dark))
     }
 
     private fun formatTime(seconds: Int): String {
@@ -365,22 +365,23 @@ class AnalyticsAdapter : RecyclerView.Adapter<AnalyticsAdapter.ViewHolder>() {
 
             timeTextView.text = formatTime(dayData.screenTimeSeconds)
 
+            val context = itemView.context
             when {
                 dayData.screenTimeSeconds < 2 * 3600 -> {
                     statusTextView.text = "Great!"
-                    statusTextView.setTextColor(Color.GREEN)
+                    statusTextView.setTextColor(ContextCompat.getColor(context, R.color.status_good))
                 }
                 dayData.screenTimeSeconds < 4 * 3600 -> {
                     statusTextView.text = "Good"
-                    statusTextView.setTextColor(Color.YELLOW)
+                    statusTextView.setTextColor(ContextCompat.getColor(context, R.color.status_warning))
                 }
                 dayData.screenTimeSeconds < 6 * 3600 -> {
                     statusTextView.text = "High"
-                    statusTextView.setTextColor(Color.parseColor("#FFA500"))
+                    statusTextView.setTextColor(ContextCompat.getColor(context, R.color.status_high))
                 }
                 else -> {
                     statusTextView.text = "Too High"
-                    statusTextView.setTextColor(Color.RED)
+                    statusTextView.setTextColor(ContextCompat.getColor(context, R.color.status_danger))
                 }
             }
         }

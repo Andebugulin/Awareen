@@ -1,26 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-        The app's accent. Everything the user reads as "interactive" is this
-        orange: 29 hardcoded uses across the layouts, plus every Material
-        widget that derives from colorPrimary.
+        The app's accent: "Soft Sage Mist", picked from a 3-way palette study
+        for a calm/professional feel over the original orange (see
+        strategy.md). Everything the user reads as "interactive" is this
+        color, plus every Material widget that derives from colorPrimary.
 
-        These were previously named purple_* and set to #121212 - the same
-        value as the background - which made colorPrimary invisible, so every
-        outlined MaterialButton drew its text and stroke in the background
-        colour.
+        Named accent_primary rather than accent_orange (its pre-redesign
+        name) so the resource name never implies a hue it no longer has,
+        which is the failure mode that motivated this naming scheme.
     -->
-    <color name="accent_orange">#FFA500</color>
-    <color name="on_accent">#121212</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <color name="accent_primary">#8FBFAF</color>
+    <color name="on_accent">#122220</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="preview_header_active">#4CAF50</color>
     <color name="preview_header_not_active">#E0E0E0</color>
     <color name="app_background_dark">#121212</color>
     <color name="dialog_text_light">#FFFFFF</color>
-    <color name="dialog_button_highlight">@color/accent_orange</color>
+    <color name="dialog_button_highlight">@color/accent_primary</color>
 
     <!--
         Surfaces: everything drawn "on top of" the app background. One shade
@@ -37,9 +35,15 @@
     <color name="text_muted_dark">#888888</color>
     <color name="text_hint_dark">#555555</color>
 
-    <!-- Semantic status colors, independent of the user-configurable level colors. -->
+    <!--
+        Semantic status colors, independent of both the app's accent and the
+        user-configurable level colors. status_high is a fourth severity tier
+        Analytics uses between warning and danger (its own scale, unrelated
+        to the accent color even though it happens to be a similar hue).
+    -->
     <color name="status_good">#4CAF50</color>
     <color name="status_warning">#FFC107</color>
+    <color name="status_high">#FFA500</color>
     <color name="status_danger">#F44336</color>
     <color name="danger_button_background">#490904</color>
 

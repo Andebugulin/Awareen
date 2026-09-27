@@ -114,6 +114,10 @@ class SettingsActivity : AppCompatActivity() {
     private var currentDisplayIntervalMinutes = 0
     private var currentDisplayDurationSeconds = 0
 
+    private lateinit var overlayCornerStyleToggleGroup: com.google.android.material.button.MaterialButtonToggleGroup
+    private var currentCornerStyle: String = AppSettings.DEFAULT_OVERLAY_CORNER_STYLE
+    private lateinit var overlayBorderSwitch: SwitchCompat
+
     private var currentPreviewLevel = 1
 
     private val positionOptions = arrayOf(
@@ -173,7 +177,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
-        window.navigationBarColor = android.graphics.Color.parseColor("#121212")
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background_dark)
 
         prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
         settingsRepository = SettingsRepository(this, prefs)
@@ -249,6 +253,8 @@ class SettingsActivity : AppCompatActivity() {
         timerDisplayIntervalValue = findViewById(R.id.timerDisplayIntervalValue)
         timerDisplayDurationSeekBar = findViewById(R.id.timerDisplayDurationSeekBar)
         timerDisplayDurationValue = findViewById(R.id.timerDisplayDurationValue)
+        overlayCornerStyleToggleGroup = findViewById(R.id.overlayCornerStyleToggleGroup)
+        overlayBorderSwitch = findViewById(R.id.overlayBorderSwitch)
     }
 
     private fun setupCloseButton() {
@@ -320,7 +326,7 @@ class SettingsActivity : AppCompatActivity() {
             .create()
             .apply {
                 show()
-                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#FFA500"))
+                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this@SettingsActivity, R.color.accent_primary))
             }
     }
 
@@ -452,6 +458,34 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         applyDisplayModeEnablement(currentDisplayMode)
+
+        currentCornerStyle = prefs.getString(AppSettings.OVERLAY_CORNER_STYLE, AppSettings.DEFAULT_OVERLAY_CORNER_STYLE)
+            ?: AppSettings.DEFAULT_OVERLAY_CORNER_STYLE
+        if (currentCornerStyle !in setOf(AppSettings.CORNER_STYLE_SQUARE, AppSettings.CORNER_STYLE_ROUNDED)) {
+            currentCornerStyle = AppSettings.DEFAULT_OVERLAY_CORNER_STYLE
+        }
+        overlayCornerStyleToggleGroup.check(buttonIdForCornerStyle(currentCornerStyle))
+        overlayCornerStyleToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val newStyle = cornerStyleForButtonId(checkedId) ?: return@addOnButtonCheckedListener
+            if (newStyle == currentCornerStyle) return@addOnButtonCheckedListener
+            currentCornerStyle = newStyle
+            markChanged()
+        }
+
+        overlayBorderSwitch.isChecked = prefs.getBoolean(AppSettings.OVERLAY_BORDER_ENABLED, AppSettings.DEFAULT_OVERLAY_BORDER_ENABLED)
+        overlayBorderSwitch.setOnCheckedChangeListener { _, _ -> markChanged() }
+    }
+
+    private fun buttonIdForCornerStyle(style: String): Int = when (style) {
+        AppSettings.CORNER_STYLE_ROUNDED -> R.id.overlayCornerStyleRounded
+        else -> R.id.overlayCornerStyleSquare
+    }
+
+    private fun cornerStyleForButtonId(id: Int): String? = when (id) {
+        R.id.overlayCornerStyleSquare -> AppSettings.CORNER_STYLE_SQUARE
+        R.id.overlayCornerStyleRounded -> AppSettings.CORNER_STYLE_ROUNDED
+        else -> null
     }
 
     private fun buttonIdForMode(mode: String): Int = when (mode) {
@@ -558,8 +592,9 @@ class SettingsActivity : AppCompatActivity() {
             .create()
             .apply {
                 show()
-                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#FFA500"))
-                getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#FFA500"))
+                val accentColor = ContextCompat.getColor(this@SettingsActivity, R.color.accent_primary)
+                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(accentColor)
+                getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(accentColor)
             }
     }
 
@@ -615,6 +650,8 @@ class SettingsActivity : AppCompatActivity() {
         s.put("timer_display_mode", currentDisplayMode)
         s.put("timer_display_interval_minutes", currentDisplayIntervalMinutes)
         s.put("timer_display_duration_seconds", currentDisplayDurationSeconds)
+        s.put("overlay_corner_style", currentCornerStyle)
+        s.put("overlay_border_enabled", overlayBorderSwitch.isChecked)
 
         // Custom per-level drag positions as fractions of screen [0f, 1f].
         val positions = JSONObject()
@@ -699,6 +736,8 @@ class SettingsActivity : AppCompatActivity() {
                 timerDisplayMode = s.optString("timer_display_mode").takeIf { it.isNotEmpty() } ?: current.timerDisplayMode,
                 timerDisplayIntervalMinutes = if (s.has("timer_display_interval_minutes")) s.getInt("timer_display_interval_minutes") else current.timerDisplayIntervalMinutes,
                 timerDisplayDurationSeconds = if (s.has("timer_display_duration_seconds")) s.getInt("timer_display_duration_seconds") else current.timerDisplayDurationSeconds,
+                cornerStyle = s.optString("overlay_corner_style").takeIf { it.isNotEmpty() } ?: current.cornerStyle,
+                borderEnabled = if (s.has("overlay_border_enabled")) s.getBoolean("overlay_border_enabled") else current.borderEnabled,
             )
             settingsRepository.saveOverlaySettings(merged)
 
@@ -1034,6 +1073,8 @@ class SettingsActivity : AppCompatActivity() {
             timerDisplayMode = currentDisplayMode,
             timerDisplayIntervalMinutes = currentDisplayIntervalMinutes,
             timerDisplayDurationSeconds = currentDisplayDurationSeconds,
+            cornerStyle = currentCornerStyle,
+            borderEnabled = overlayBorderSwitch.isChecked,
         )
 
         settingsRepository.saveOverlaySettings(

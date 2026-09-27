@@ -44,20 +44,33 @@ object AppSettings {
     const val MODE_INTERVAL = "interval"
     const val MODE_NEVER = "never"
 
+    // Overlay badge shape — one global setting shared by all three levels, since
+    // shape is a style choice rather than a per-level severity signal the way
+    // color/blink already are.
+    const val OVERLAY_CORNER_STYLE = "overlay_corner_style" // CORNER_STYLE_SQUARE / CORNER_STYLE_ROUNDED
+    const val CORNER_STYLE_SQUARE = "square"
+    const val CORNER_STYLE_ROUNDED = "rounded"
+    const val OVERLAY_BORDER_ENABLED = "overlay_border_enabled"
+
     // --- Reset Time Settings ---
     const val RESET_HOUR = "reset_hour" // Integer (0-23)
     const val RESET_MINUTE = "reset_minute" // Integer (0-59)
 
     // --- Default Values ---
+    // Muted, not-pure-RGB defaults (part of the calm/professional redesign,
+    // see strategy.md) — legible severity progression without the old
+    // neon green/yellow/red "traffic light" look. Still fully overridable
+    // per level in Settings.
+
     // Default settings for Level 1
-    val DEFAULT_LEVEL_1_COLOR = Color.GREEN
+    val DEFAULT_LEVEL_1_COLOR = Color.parseColor("#6FB58B") // muted sage green
     val DEFAULT_LEVEL_1_POSITION = "Top Right" // Default position
     const val DEFAULT_LEVEL_1_FONT_SIZE = 24 // Default font size in sp
     const val DEFAULT_LEVEL_1_MAX_TIME_SECONDS = 30 * 60 // 30 minutes
     const val DEFAULT_LEVEL_1_BLINKING_ENABLED = false
 
     // Default settings for Level 2
-    val DEFAULT_LEVEL_2_COLOR = Color.YELLOW
+    val DEFAULT_LEVEL_2_COLOR = Color.parseColor("#E0A83D") // muted amber
     val DEFAULT_LEVEL_2_POSITION = "Middle Left"
     const val DEFAULT_LEVEL_2_FONT_SIZE = 26 // Default font size in sp
     const val DEFAULT_LEVEL_2_DURATION_SECONDS = 30 * 60 // 30 minutes duration for level 2
@@ -65,7 +78,7 @@ object AppSettings {
 
 
     // Default settings for Level 3
-    val DEFAULT_LEVEL_3_COLOR = Color.RED
+    val DEFAULT_LEVEL_3_COLOR = Color.parseColor("#D9534F") // muted red, still reads as "stop"
     val DEFAULT_LEVEL_3_POSITION = "Middle Center"
     const val DEFAULT_LEVEL_3_FONT_SIZE = 28 // Default font size in sp
     const val DEFAULT_LEVEL_3_BLINKING_ENABLED = true
@@ -74,6 +87,11 @@ object AppSettings {
     const val DEFAULT_TIMER_DISPLAY_MODE = MODE_INTERVAL
     const val DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES = 1 // Show every 1 minute
     const val DEFAULT_TIMER_DISPLAY_DURATION_SECONDS = 5 // Show for 5 seconds
+
+    // Square matches the app's original look, so upgrading existing installs
+    // changes nothing until the user opts into rounded.
+    const val DEFAULT_OVERLAY_CORNER_STYLE = CORNER_STYLE_SQUARE
+    const val DEFAULT_OVERLAY_BORDER_ENABLED = false
 
     const val MIN_DISPLAY_INTERVAL_MINUTES = 1
     const val MAX_DISPLAY_INTERVAL_MINUTES = 10

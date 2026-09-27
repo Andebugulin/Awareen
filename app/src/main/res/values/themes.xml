@@ -21,11 +21,11 @@
             with - outlined button text and stroke, toggle-group selection,
             switches, ripples. It must never be the background colour.
         -->
-        <item name="colorPrimary">@color/accent_orange</item>
-        <item name="colorPrimaryVariant">@color/accent_orange</item>
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorPrimaryVariant">@color/accent_primary</item>
         <item name="colorOnPrimary">@color/on_accent</item>
-        <item name="colorSecondary">@color/accent_orange</item>
-        <item name="colorSecondaryVariant">@color/accent_orange</item>
+        <item name="colorSecondary">@color/accent_primary</item>
+        <item name="colorSecondaryVariant">@color/accent_primary</item>
         <item name="colorOnSecondary">@color/on_accent</item>
 
         <item name="android:windowBackground">@color/app_background_dark</item>

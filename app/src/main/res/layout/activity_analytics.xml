@@ -19,7 +19,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        app:tint="@color/accent_orange" />
+        app:tint="@color/accent_primary" />
 
     <TextView
         android:id="@+id/titleTextView"

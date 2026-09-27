@@ -3,7 +3,6 @@ package com.andebugulin.awareen.ui
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +13,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.andebugulin.awareen.R
 import com.andebugulin.awareen.data.AppSettings
 import com.andebugulin.awareen.data.ScreenTimeRepository
@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Force dark navigation bar
-        window.navigationBarColor = Color.parseColor("#121212")
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background_dark)
 
         val startServiceButton = findViewById<Button>(R.id.startServiceButton)
         startServiceButton.setOnClickListener {

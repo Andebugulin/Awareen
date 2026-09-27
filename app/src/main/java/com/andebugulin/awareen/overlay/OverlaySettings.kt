@@ -26,4 +26,8 @@ data class OverlaySettings(
     val timerDisplayMode: String,
     val timerDisplayIntervalMinutes: Int,
     val timerDisplayDurationSeconds: Int,
+    // AppSettings.CORNER_STYLE_SQUARE / CORNER_STYLE_ROUNDED. Kept as a raw
+    // string rather than an enum to match timerDisplayMode's convention.
+    val cornerStyle: String,
+    val borderEnabled: Boolean,
 )

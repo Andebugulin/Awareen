@@ -63,6 +63,9 @@ class SettingsRepository(
             ?: AppSettings.DEFAULT_TIMER_DISPLAY_MODE,
         timerDisplayIntervalMinutes = prefs.getInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES),
         timerDisplayDurationSeconds = prefs.getInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS),
+        cornerStyle = prefs.getString(AppSettings.OVERLAY_CORNER_STYLE, AppSettings.DEFAULT_OVERLAY_CORNER_STYLE)
+            ?: AppSettings.DEFAULT_OVERLAY_CORNER_STYLE,
+        borderEnabled = prefs.getBoolean(AppSettings.OVERLAY_BORDER_ENABLED, AppSettings.DEFAULT_OVERLAY_BORDER_ENABLED),
     )
 
     /**
@@ -99,6 +102,8 @@ class SettingsRepository(
             putString(AppSettings.TIMER_DISPLAY_MODE, settings.timerDisplayMode)
             putInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, settings.timerDisplayIntervalMinutes)
             putInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, settings.timerDisplayDurationSeconds)
+            putString(AppSettings.OVERLAY_CORNER_STYLE, settings.cornerStyle)
+            putBoolean(AppSettings.OVERLAY_BORDER_ENABLED, settings.borderEnabled)
             apply()
         }
     }

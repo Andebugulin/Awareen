@@ -187,8 +187,8 @@
                     <SeekBar
                         android:id="@+id/timerDisplayIntervalSeekBar"
                         style="@style/SettingsSeekBar"
-                        android:progressTint="@color/accent_orange"
-                        android:thumbTint="@color/accent_orange" />
+                        android:progressTint="@color/accent_primary"
+                        android:thumbTint="@color/accent_primary" />
                     <TextView
                         android:id="@+id/timerDisplayIntervalValue"
                         style="@style/SettingsSeekBarValue"
@@ -201,8 +201,8 @@
                     <SeekBar
                         android:id="@+id/timerDisplayDurationSeekBar"
                         style="@style/SettingsSeekBar"
-                        android:progressTint="@color/accent_orange"
-                        android:thumbTint="@color/accent_orange" />
+                        android:progressTint="@color/accent_primary"
+                        android:thumbTint="@color/accent_primary" />
                     <TextView
                         android:id="@+id/timerDisplayDurationValue"
                         style="@style/SettingsSeekBarValue"
@@ -210,6 +210,69 @@
                         android:textColor="@color/text_primary_dark" />
                 </LinearLayout>
             </GridLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/rounded_background"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Corner Style"
+                android:textColor="@color/text_primary_dark"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/overlayCornerStyleToggleGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <Button
+                    android:id="@+id/overlayCornerStyleSquare"
+                    style="@style/DisplayModeToggleButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Square" />
+
+                <Button
+                    android:id="@+id/overlayCornerStyleRounded"
+                    style="@style/DisplayModeToggleButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Rounded" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Colored Border"
+                    android:textColor="@color/text_primary_dark" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/overlayBorderSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    app:thumbTint="@color/accent_primary"
+                    app:trackTint="@color/control_track_dark" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -255,8 +318,8 @@
                 <SeekBar
                     android:id="@+id/level1FontSizeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_orange"
-                    android:thumbTint="@color/accent_orange" />
+                    android:progressTint="@color/accent_primary"
+                    android:thumbTint="@color/accent_primary" />
                 <TextView
                     android:id="@+id/level1FontSizeValue"
                     style="@style/SettingsSeekBarValue"
@@ -274,7 +337,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|start"
                 android:minHeight="48dp"
-                app:thumbTint="@color/accent_orange"
+                app:thumbTint="@color/accent_primary"
                 app:trackTint="@color/control_track_dark" />
 
             <TextView style="@style/SettingsLabel" android:text="Max Time:" android:textColor="@color/text_primary_dark" />
@@ -282,8 +345,8 @@
                 <SeekBar
                     android:id="@+id/level1TimeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_orange"
-                    android:thumbTint="@color/accent_orange" />
+                    android:progressTint="@color/accent_primary"
+                    android:thumbTint="@color/accent_primary" />
                 <TextView
                     android:id="@+id/level1TimeValue"
                     style="@style/SettingsSeekBarValue"
@@ -333,8 +396,8 @@
                 <SeekBar
                     android:id="@+id/level2FontSizeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_orange"
-                    android:thumbTint="@color/accent_orange" />
+                    android:progressTint="@color/accent_primary"
+                    android:thumbTint="@color/accent_primary" />
                 <TextView
                     android:id="@+id/level2FontSizeValue"
                     style="@style/SettingsSeekBarValue"
@@ -352,7 +415,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|start"
                 android:minHeight="48dp"
-                app:thumbTint="@color/accent_orange"
+                app:thumbTint="@color/accent_primary"
                 app:trackTint="@color/control_track_dark" />
 
             <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="@color/text_primary_dark" />
@@ -360,8 +423,8 @@
                 <SeekBar
                     android:id="@+id/level2TimeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_orange"
-                    android:thumbTint="@color/accent_orange" />
+                    android:progressTint="@color/accent_primary"
+                    android:thumbTint="@color/accent_primary" />
                 <TextView
                     android:id="@+id/level2TimeValue"
                     style="@style/SettingsSeekBarValue"
@@ -411,8 +474,8 @@
                 <SeekBar
                     android:id="@+id/level3FontSizeSeekBar"
                     style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_orange"
-                    android:thumbTint="@color/accent_orange" />
+                    android:progressTint="@color/accent_primary"
+                    android:thumbTint="@color/accent_primary" />
                 <TextView
                     android:id="@+id/level3FontSizeValue"
                     style="@style/SettingsSeekBarValue"
@@ -430,7 +493,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|start"
                 android:minHeight="48dp"
-                app:thumbTint="@color/accent_orange"
+                app:thumbTint="@color/accent_primary"
                 app:trackTint="@color/control_track_dark"
                 tools:checked="true" />
         </GridLayout>

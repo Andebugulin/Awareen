@@ -52,14 +52,14 @@
     <!--
         Display Mode toggle (Always / Interval / Never). Explicit text,
         fill and stroke colours so the checked option reads as a filled
-        orange chip with dark text, and the unchecked ones as orange
+        accent chip with dark text, and the unchecked ones as accent
         outlines, on this app's dark surface.
     -->
     <style name="DisplayModeToggleButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="android:textColor">@color/toggle_mode_text</item>
         <item name="backgroundTint">@color/toggle_mode_background</item>
-        <item name="strokeColor">@color/accent_orange</item>
-        <item name="rippleColor">@color/accent_orange</item>
+        <item name="strokeColor">@color/accent_primary</item>
+        <item name="rippleColor">@color/accent_primary</item>
     </style>
 
     <style name="AlertDialog">
@@ -83,11 +83,11 @@
     </style>
 
     <!--
-        Filled orange call-to-action (Start Tracking, Save Settings). Used
+        Filled accent call-to-action (Start Tracking, Save Settings). Used
         wherever a screen's single primary action needs to stand out.
     -->
     <style name="Widget.Awareen.Button.Primary" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/accent_orange</item>
+        <item name="backgroundTint">@color/accent_primary</item>
         <item name="android:textColor">@color/on_accent</item>
         <item name="cornerRadius">24dp</item>
     </style>
@@ -106,7 +106,7 @@
     -->
     <style name="Widget.Awareen.Button.Flat" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/surface_variant_dark</item>
-        <item name="android:textColor">@color/accent_orange</item>
+        <item name="android:textColor">@color/accent_primary</item>
         <item name="android:stateListAnimator">@null</item>
         <item name="elevation">0dp</item>
     </style>
