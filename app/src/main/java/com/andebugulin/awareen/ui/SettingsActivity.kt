@@ -71,6 +71,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var previewLevel2Header: TextView
     private lateinit var previewLevel3Header: TextView
 
+    // Only the selected stage's settings block is visible at a time -- same
+    // stage the preview tabs already track -- so the screen isn't three
+    // near-identical blocks stacked and always all visible.
+    private lateinit var stage1SettingsSection: View
+    private lateinit var stage2SettingsSection: View
+    private lateinit var stage3SettingsSection: View
+
     // UI Elements for Level 1 Settings
     private lateinit var level1ColorButton: Button
     private lateinit var level1PositionSpinner: Spinner
@@ -214,6 +221,9 @@ class SettingsActivity : AppCompatActivity() {
         previewLevel1Header = findViewById(R.id.previewLevel1Header)
         previewLevel2Header = findViewById(R.id.previewLevel2Header)
         previewLevel3Header = findViewById(R.id.previewLevel3Header)
+        stage1SettingsSection = findViewById(R.id.stage1SettingsSection)
+        stage2SettingsSection = findViewById(R.id.stage2SettingsSection)
+        stage3SettingsSection = findViewById(R.id.stage3SettingsSection)
 
         // Level 1 controls
         level1ColorButton = findViewById(R.id.level1ColorButton)
@@ -287,21 +297,21 @@ class SettingsActivity : AppCompatActivity() {
         }
         findViewById<ImageButton>(R.id.helpLevel1).setOnClickListener {
             showHelpDialog(
-                "Level 1",
-                "Levels group your day into stages, each with its own color, position, font size, and blink behavior.\n\n" +
-                    "Level 1 is the first stage — from 0 minutes up to the threshold you set below. Customize how it looks and how long it lasts."
+                "Stage 1",
+                "Your day is split into three stages, each with its own color, position, font size, and blink behavior.\n\n" +
+                    "Stage 1 is the first stretch — from 0 minutes up to the threshold you set below. Customize how it looks and how long it lasts."
             )
         }
         findViewById<ImageButton>(R.id.helpLevel2).setOnClickListener {
             showHelpDialog(
-                "Level 2",
-                "Level 2 starts the moment Level 1's threshold is reached, and lasts for the duration you configure. Same styling options as Level 1."
+                "Stage 2",
+                "Stage 2 starts the moment Stage 1's threshold is reached, and lasts for the duration you configure. Same styling options as Stage 1."
             )
         }
         findViewById<ImageButton>(R.id.helpLevel3).setOnClickListener {
             showHelpDialog(
-                "Level 3",
-                "Level 3 takes over after Level 1 and Level 2 are exhausted, and stays for the rest of the day until the daily reset. Often paired with red plus blinking to signal \"too much.\""
+                "Stage 3",
+                "Stage 3 takes over after Stage 1 and Stage 2 are exhausted, and stays for the rest of the day until the daily reset. Often paired with red plus blinking to signal \"too much.\""
             )
         }
         findViewById<ImageButton>(R.id.helpResetTime).setOnClickListener {
@@ -373,9 +383,16 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupClickablePreviewHeaders() {
-        previewLevel1Header.setOnClickListener { currentPreviewLevel = 1; updatePreview() }
-        previewLevel2Header.setOnClickListener { currentPreviewLevel = 2; updatePreview() }
-        previewLevel3Header.setOnClickListener { currentPreviewLevel = 3; updatePreview() }
+        previewLevel1Header.setOnClickListener { currentPreviewLevel = 1; updatePreview(); updateStageSectionVisibility() }
+        previewLevel2Header.setOnClickListener { currentPreviewLevel = 2; updatePreview(); updateStageSectionVisibility() }
+        previewLevel3Header.setOnClickListener { currentPreviewLevel = 3; updatePreview(); updateStageSectionVisibility() }
+        updateStageSectionVisibility()
+    }
+
+    private fun updateStageSectionVisibility() {
+        stage1SettingsSection.visibility = if (currentPreviewLevel == 1) View.VISIBLE else View.GONE
+        stage2SettingsSection.visibility = if (currentPreviewLevel == 2) View.VISIBLE else View.GONE
+        stage3SettingsSection.visibility = if (currentPreviewLevel == 3) View.VISIBLE else View.GONE
     }
 
     private fun loadAndSetupControls() {
@@ -1034,11 +1051,11 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun validateSettings(): Boolean {
         if (currentLevel1MaxTimeMinutes <= 0) {
-            Toast.makeText(this, "Level 1 time must be positive.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Stage 1 time must be positive.", Toast.LENGTH_SHORT).show()
             return false
         }
         if (currentLevel2DurationMinutes <= 0) {
-            Toast.makeText(this, "Level 2 duration must be positive.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Stage 2 duration must be positive.", Toast.LENGTH_SHORT).show()
             return false
         }
         return true

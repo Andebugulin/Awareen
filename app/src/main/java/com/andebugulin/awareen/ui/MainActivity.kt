@@ -135,9 +135,9 @@ class MainActivity : AppCompatActivity() {
             overlaySettings.level2DurationSeconds,
         )
         val (levelColor, statusText) = when (level) {
-            1 -> overlaySettings.level1.color to "Level 1 — staying mindful"
-            2 -> overlaySettings.level2.color to "Level 2 — past your first checkpoint"
-            else -> overlaySettings.level3.color to "Level 3 — well over your limit"
+            1 -> overlaySettings.level1.color to "Stage 1 — staying mindful"
+            2 -> overlaySettings.level2.color to "Stage 2 — past your first checkpoint"
+            else -> overlaySettings.level3.color to "Stage 3 — well over your limit"
         }
 
         findViewById<TextView>(R.id.todayTimeTextView).apply {

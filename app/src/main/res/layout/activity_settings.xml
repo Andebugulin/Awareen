@@ -73,7 +73,7 @@
                 android:id="@+id/previewLevel1Header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Level 1"
+                android:text="Stage 1"
                 android:padding="8dp"
                 android:clickable="true"
                 android:focusable="true"
@@ -84,7 +84,7 @@
                 android:id="@+id/previewLevel2Header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Level 2"
+                android:text="Stage 2"
                 android:padding="8dp"
                 android:clickable="true"
                 android:focusable="true"
@@ -95,7 +95,7 @@
                 android:id="@+id/previewLevel3Header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Level 3"
+                android:text="Stage 3"
                 android:padding="8dp"
                 android:clickable="true"
                 android:focusable="true"
@@ -276,6 +276,12 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/stage1SettingsSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -287,7 +293,7 @@
                 style="@style/SettingsHeader"
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
-                android:text="Level 1 Settings (0 - X min)"
+                android:text="Stage 1 Settings (0 - X min)"
                 android:textColor="@color/text_primary_dark" />
 
             <ImageButton
@@ -296,7 +302,7 @@
                 android:layout_height="32dp"
                 android:layout_marginStart="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="What is Level 1?"
+                android:contentDescription="What is Stage 1?"
                 android:padding="6dp"
                 android:src="@drawable/ic_info" />
         </LinearLayout>
@@ -355,6 +361,15 @@
             </LinearLayout>
         </GridLayout>
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/stage2SettingsSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -367,7 +382,7 @@
                 style="@style/SettingsHeader"
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
-                android:text="Level 2 Settings (Level 1 Max - Y min)"
+                android:text="Stage 2 Settings (Stage 1 Max - Y min)"
                 android:textColor="@color/text_primary_dark" />
 
             <ImageButton
@@ -376,7 +391,7 @@
                 android:layout_height="32dp"
                 android:layout_marginStart="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="What is Level 2?"
+                android:contentDescription="What is Stage 2?"
                 android:padding="6dp"
                 android:src="@drawable/ic_info" />
         </LinearLayout>
@@ -433,6 +448,15 @@
             </LinearLayout>
         </GridLayout>
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/stage3SettingsSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -445,7 +469,7 @@
                 style="@style/SettingsHeader"
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
-                android:text="Level 3 Settings (Above Level 2 Max)"
+                android:text="Stage 3 Settings (Above Stage 2 Max)"
                 android:textColor="@color/text_primary_dark" />
 
             <ImageButton
@@ -454,7 +478,7 @@
                 android:layout_height="32dp"
                 android:layout_marginStart="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="What is Level 3?"
+                android:contentDescription="What is Stage 3?"
                 android:padding="6dp"
                 android:src="@drawable/ic_info" />
         </LinearLayout>
@@ -497,6 +521,8 @@
                 app:trackTint="@color/control_track_dark"
                 tools:checked="true" />
         </GridLayout>
+
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
