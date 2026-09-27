@@ -17,9 +17,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.andebugulin.awareen.R
 import com.andebugulin.awareen.data.ScreenTimeRepository
+import com.andebugulin.awareen.domain.AnalyticsKeys
+import com.google.android.material.button.MaterialButtonToggleGroup
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.abs
@@ -30,6 +36,8 @@ class AnalyticsActivity : AppCompatActivity() {
         private const val TAG = "AnalyticsActivity"
     }
 
+    private enum class ChartRange { WEEK, MONTH, YEAR }
+
     private lateinit var repo: ScreenTimeRepository
     private lateinit var recyclerView: RecyclerView
     private lateinit var averageTextView: TextView
@@ -38,6 +46,13 @@ class AnalyticsActivity : AppCompatActivity() {
     private lateinit var lifetimeYearsTextView: TextView
     private lateinit var lifetimeDaysTextView: TextView
     private lateinit var adapter: AnalyticsAdapter
+
+    private lateinit var chartView: ScreenTimeChartView
+    private lateinit var chartRangeToggleGroup: MaterialButtonToggleGroup
+    private lateinit var chartCaptionTextView: TextView
+    private lateinit var toggleDailyLogButton: Button
+    private lateinit var dailyLogContainer: View
+    private var currentChartRange = ChartRange.WEEK
 
     private val exportLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -60,6 +75,7 @@ class AnalyticsActivity : AppCompatActivity() {
 
         initializeViews()
         loadAnalyticsData()
+        updateChart()
     }
 
     private fun initializeViews() {
@@ -70,12 +86,42 @@ class AnalyticsActivity : AppCompatActivity() {
         lifetimeYearsTextView = findViewById(R.id.lifetimeYearsTextView)
         lifetimeDaysTextView = findViewById(R.id.lifetimeDaysTextView)
         recyclerView = findViewById(R.id.analyticsRecyclerView)
+        chartView = findViewById(R.id.screenTimeChartView)
+        chartRangeToggleGroup = findViewById(R.id.chartRangeToggleGroup)
+        chartCaptionTextView = findViewById(R.id.chartCaptionTextView)
+        toggleDailyLogButton = findViewById(R.id.toggleDailyLogButton)
+        dailyLogContainer = findViewById(R.id.dailyLogContainer)
 
         backButton.setOnClickListener { finish() }
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = AnalyticsAdapter()
         recyclerView.adapter = adapter
+
+        chartView.setColors(
+            ContextCompat.getColor(this, R.color.accent_primary),
+            ContextCompat.getColor(this, R.color.control_track_dark),
+            ContextCompat.getColor(this, R.color.text_secondary_dark),
+        )
+
+        chartRangeToggleGroup.check(R.id.chartRangeWeek)
+        chartRangeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val newRange = when (checkedId) {
+                R.id.chartRangeMonth -> ChartRange.MONTH
+                R.id.chartRangeYear -> ChartRange.YEAR
+                else -> ChartRange.WEEK
+            }
+            if (newRange == currentChartRange) return@addOnButtonCheckedListener
+            currentChartRange = newRange
+            updateChart()
+        }
+
+        toggleDailyLogButton.setOnClickListener {
+            val showing = dailyLogContainer.visibility == View.VISIBLE
+            dailyLogContainer.visibility = if (showing) View.GONE else View.VISIBLE
+            toggleDailyLogButton.text = if (showing) "View Daily Log" else "Hide Daily Log"
+        }
 
         findViewById<Button>(R.id.exportAnalyticsButton).setOnClickListener {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
@@ -85,6 +131,58 @@ class AnalyticsActivity : AppCompatActivity() {
         findViewById<Button>(R.id.importAnalyticsButton).setOnClickListener {
             importLauncher.launch(arrayOf("application/json", "*/*"))
         }
+    }
+
+    // =========================================================================
+    // TREND CHART
+    // =========================================================================
+
+    /**
+     * Week bars are each day's own total; month/year bars are the average
+     * daily total across a rolling window, so all three ranges plot the same
+     * unit (seconds per day) and stay comparable at a glance.
+     */
+    private fun updateChart() {
+        val today = LocalDate.now()
+        val bars = when (currentChartRange) {
+            ChartRange.WEEK -> {
+                chartCaptionTextView.text = "Daily screen time, last 7 days"
+                (6 downTo 0).map { offset ->
+                    val date = today.minusDays(offset.toLong())
+                    val seconds = repo.getDailyScreenTime(AnalyticsKeys.analyticsDateKey(date))
+                    ChartBar(date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()), seconds)
+                }
+            }
+            ChartRange.MONTH -> {
+                chartCaptionTextView.text = "Average daily screen time, last 4 weeks"
+                (3 downTo 0).map { weekOffset ->
+                    val weekEnd = today.minusWeeks(weekOffset.toLong())
+                    val weekStart = weekEnd.minusDays(6)
+                    var total = 0
+                    var day = weekStart
+                    while (!day.isAfter(weekEnd)) {
+                        total += repo.getDailyScreenTime(AnalyticsKeys.analyticsDateKey(day))
+                        day = day.plusDays(1)
+                    }
+                    ChartBar(weekEnd.format(DateTimeFormatter.ofPattern("MMM d")), total / 7)
+                }
+            }
+            ChartRange.YEAR -> {
+                chartCaptionTextView.text = "Average daily screen time, last 12 months"
+                (11 downTo 0).map { monthOffset ->
+                    val monthDate = today.minusMonths(monthOffset.toLong())
+                    val yearMonth = YearMonth.from(monthDate)
+                    val lastDayCounted = if (yearMonth == YearMonth.from(today)) today.dayOfMonth else yearMonth.lengthOfMonth()
+                    var total = 0
+                    for (day in 1..lastDayCounted) {
+                        total += repo.getDailyScreenTime(AnalyticsKeys.analyticsDateKey(yearMonth.atDay(day)))
+                    }
+                    val label = monthDate.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                    ChartBar(label, total / lastDayCounted)
+                }
+            }
+        }
+        chartView.setBars(bars)
     }
 
     private fun loadAnalyticsData() {
