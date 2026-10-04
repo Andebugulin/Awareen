@@ -52,7 +52,7 @@ class AnalyticsActivity : AppCompatActivity() {
     private lateinit var chartCaptionTextView: TextView
     private lateinit var toggleDailyLogButton: Button
     private lateinit var dailyLogContainer: View
-    private var currentChartRange = ChartRange.WEEK
+    private var currentChartRange = ChartRange.MONTH
 
     private val exportLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -104,7 +104,7 @@ class AnalyticsActivity : AppCompatActivity() {
             ContextCompat.getColor(this, R.color.text_secondary_dark),
         )
 
-        chartRangeToggleGroup.check(R.id.chartRangeWeek)
+        chartRangeToggleGroup.check(R.id.chartRangeMonth)
         chartRangeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
             val newRange = when (checkedId) {
