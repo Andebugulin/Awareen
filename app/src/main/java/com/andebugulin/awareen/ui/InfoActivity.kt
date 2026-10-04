@@ -13,7 +13,7 @@ class InfoActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_info)
-        window.navigationBarColor = android.graphics.Color.parseColor("#121212") // We'll create this layout next
+        window.navigationBarColor = androidx.core.content.ContextCompat.getColor(this, R.color.app_background)
 
         // Setup Toolbar
         val toolbar: Toolbar = findViewById(R.id.toolbar_info_screen)
@@ -21,7 +21,7 @@ class InfoActivity : AppCompatActivity() {
 
         // Enable the Up button (back arrow)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "About Awareen" // Set a title for the screen
+        supportActionBar?.title = "About" // Set a title for the screen
 
         val githubRepoLink = findViewById<TextView>(R.id.githubRepoLink)
         githubRepoLink.setOnClickListener {

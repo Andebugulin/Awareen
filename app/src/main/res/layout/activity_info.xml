@@ -4,169 +4,228 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/app_background_dark"
+    android:background="@color/app_background"
     android:fitsSystemWindows="true"
-    tools:context=".InfoActivity">
+    android:orientation="vertical"
+    tools:context=".ui.InfoActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar_info_screen"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/app_background_dark"
-        app:titleTextColor="@color/white"
-        app:navigationIcon="?attr/homeAsUpIndicator" />
+        android:background="@color/app_background"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:titleTextAppearance="@style/TextAppearance.Awareen.Heading"
+        app:titleTextColor="@color/text_primary" />
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:overScrollMode="never">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:paddingBottom="32dp">
 
             <ImageView
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:src="@drawable/awareen"
+                android:layout_width="104dp"
+                android:layout_height="104dp"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="16dp"
-                android:contentDescription="App Logo" />
+                android:layout_marginTop="12dp"
+                android:contentDescription="Awareen logo"
+                android:src="@drawable/awareen_logo" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Awareen: Screen Awareness"
-                android:textColor="@color/accent_primary"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="24dp"/>
+                android:layout_marginTop="18dp"
+                android:fontFamily="@font/fraunces"
+                android:text="Awareen"
+                android:textColor="@color/text_primary"
+                android:textSize="34sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="36dp"
+                android:fontFamily="@font/fraunces"
+                android:text="Notice the screen. Then look past it."
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp"
+                android:textStyle="italic" />
+
+            <TextView
+                style="@style/TextAppearance.Awareen.Heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="What is Awareen?" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="What is Awareen?"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_marginBottom="28dp"
+                android:lineSpacingExtra="6dp"
                 android:text="Awareen helps you become more mindful of your screen time. It displays a persistent, color-coded timer on your screen, visually representing your active screen usage for the day. The goal is to help you stay aware without being intrusive."
-                android:textColor="@color/text_primary_dark"
-                android:textSize="16sp"
-                android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="20dp"/>
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <TextView
+                style="@style/TextAppearance.Awareen.Heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="How the timer works" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="How the Timer Works"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="10dp"
+                android:drawableStart="@drawable/stage_dot_good"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="Stage 1 is the calm start. Its time, color, position and size are all yours to set."
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=" • Level 1 (e.g., Green): Initial phase. Customizable time, color, position, and font size."
-                android:textColor="@color/text_primary_dark"
-                android:textSize="16sp"
-                android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="6dp"/>
+                android:layout_marginBottom="10dp"
+                android:drawableStart="@drawable/stage_dot_warning"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="Stage 2 is a gentle nudge, just as customizable."
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=" • Level 2 (e.g., Yellow): Gentle nudge. Also fully customizable."
-                android:textColor="@color/text_primary_dark"
-                android:textSize="16sp"
-                android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="6dp"/>
+                android:layout_marginBottom="28dp"
+                android:drawableStart="@drawable/stage_dot_danger"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="Stage 3 is the stronger reminder, and can blink if you want it to."
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <TextView
+                style="@style/TextAppearance.Awareen.Heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Key features" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=" • Level 3 (e.g., Red/Flashing): Stronger reminder. Again, fully customizable."
-                android:textColor="@color/text_primary_dark"
-                android:textSize="16sp"
-                android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="20dp"/>
+                android:layout_marginBottom="6dp"
+                android:drawableStart="@drawable/bullet_muted"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="A persistent on-screen timer"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Key Features"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="6dp"
+                android:drawableStart="@drawable/bullet_muted"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="Three customizable stages"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=" • Persistent On-Screen Timer\n • Three Customizable Levels\n • Daily Reset (time configurable by you)\n • Overlay Permission Required (to show timer over other apps)\n • Minimal &amp; Ad-Free"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="16sp"
-                android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="20dp"/>
+                android:layout_marginBottom="6dp"
+                android:drawableStart="@drawable/bullet_muted"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="A daily reset at a time you choose"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Our Philosophy"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="6dp"
+                android:drawableStart="@drawable/bullet_muted"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="Overlay permission, to show the timer over other apps"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="28dp"
+                android:drawableStart="@drawable/bullet_muted"
+                android:drawablePadding="14dp"
+                android:lineSpacingExtra="6dp"
+                android:text="Minimal, and free of ads"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <TextView
+                style="@style/TextAppearance.Awareen.Heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Our philosophy" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="28dp"
+                android:lineSpacingExtra="6dp"
                 android:text="Awareen is about empowerment, not restriction. Understand your habits, make conscious choices. Remember to look up from your screen and enjoy the world!"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="16sp"
-                android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="20dp"/>
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <TextView
+                style="@style/TextAppearance.Awareen.Heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Open source" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Open Source"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Awareen is free and open source! The complete source code is available on GitHub. Feel free to contribute, report issues, or fork the project."
-                android:textColor="@color/text_primary_dark"
-                android:textSize="16sp"
-                android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="12dp"/>
+                android:layout_marginBottom="20dp"
+                android:lineSpacingExtra="6dp"
+                android:text="Awareen is free and open source. The complete source code is on GitHub: contribute, report issues, or fork the project."
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
 
             <TextView
                 android:id="@+id/githubRepoLink"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="→ View on GitHub ←"
-                android:textColor="@color/accent_primary"
-                android:textSize="16sp"
-                android:textStyle="bold"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/link_button_background"
                 android:clickable="true"
+                android:drawableStart="@drawable/ic_github"
                 android:focusable="true"
-                android:padding="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:layout_marginBottom="20dp"/>
+                android:gravity="center"
+                android:paddingStart="20dp"
+                android:paddingEnd="44dp"
+                android:text="View on GitHub"
+                android:textColor="@color/accent_primary"
+                android:textSize="15sp" />
 
         </LinearLayout>
     </ScrollView>

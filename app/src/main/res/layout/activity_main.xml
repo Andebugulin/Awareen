@@ -1,399 +1,378 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Home. A night landscape fills the top of the screen, the wordmark centred
+    in its sky and the mountains below it; the "how it works" / today card
+    overlaps the foot of the mountains, and the reminder
+    and the Start/Stop button rest at the bottom, leaving the space between
+    them open. Scrolls only when the screen is too short (landscape, small
+    phones).
+-->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/app_background_dark"
+    android:background="@color/app_background"
+    android:fillViewport="true"
     android:fitsSystemWindows="true"
-    tools:context=".MainActivity">
+    android:overScrollMode="never"
+    tools:context=".ui.MainActivity">
 
-    <ImageButton
-        android:id="@+id/infoButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Information"
-        android:src="@drawable/ic_info"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"
-        app:tint="@color/accent_primary" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <ImageButton
-        android:id="@+id/settingsButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Settings"
-        android:src="@drawable/ic_settings"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        app:tint="@color/accent_primary" />
+        <ImageView
+            android:id="@+id/sceneHeader"
+            android:layout_width="0dp"
+            android:layout_height="360dp"
+            android:importantForAccessibility="no"
+            android:scaleType="centerCrop"
+            android:src="@drawable/scene_header"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageButton
-        android:id="@+id/analyticsButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Analytics"
-        android:src="@drawable/ic_analytics"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="64dp"
-        android:layout_marginEnd="16dp"
-        app:tint="@color/accent_primary" />
+        <ImageButton
+            android:id="@+id/infoButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Information"
+            android:src="@drawable/ic_info"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/text_secondary" />
 
-    <ImageView
-        android:id="@+id/logoImageView"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_marginTop="64dp"
-        android:contentDescription="Awareen logo"
-        android:src="@drawable/awareen"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <!-- Top-right, left to right: GitHub, Analytics, Settings (corner). -->
+        <ImageButton
+            android:id="@+id/settingsButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Settings"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_settings"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/text_secondary" />
 
-    <TextView
-        android:id="@+id/titleTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:fontFamily="sans-serif-medium"
-        android:text="Awareen"
-        android:textColor="@color/accent_primary"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
+        <ImageButton
+            android:id="@+id/analyticsButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Analytics"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_analytics"
+            app:layout_constraintEnd_toStartOf="@id/settingsButton"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/text_secondary" />
 
-    <TextView
-        android:id="@+id/subtitleTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:fontFamily="sans-serif-light"
-        android:text="Screen Awareness"
-        android:textColor="@color/text_primary_dark"
-        android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleTextView" />
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/infoCardView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="40dp"
-        android:layout_marginEnd="24dp"
-        app:cardBackgroundColor="@color/surface_dark"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/subtitleTextView">
-
-        <LinearLayout
-            android:id="@+id/featuresContentView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:fontFamily="sans-serif-medium"
-                android:text="Interactive Features"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="20sp"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Feature 1: Timer Demo -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="10dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="03:38:13"
-                    android:textColor="@color/status_good"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:background="@color/scrim_overlay"
-                    android:padding="4dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="10dp"
-                    android:text="Displays on top of any app"
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- Feature 2: Tap to Hide -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="0dp">
-
-                <TextView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="14dp"
-                    android:text="👆"
-                    android:textSize="16sp"
-                    android:gravity="center" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:text="Tap timer to hide for 5 seconds"
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- Feature 3: Drag & Drop -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="0dp">
-
-                <TextView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="12dp"
-                    android:text="⇅"
-                    android:textSize="20sp"
-                    android:textColor="@color/accent_primary"
-                    android:gravity="center" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:text="Drag anywhere on the screen"
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- Feature 4: Customization -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <LinearLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:orientation="horizontal"
-                    android:layout_marginStart="16dp"
-                    android:gravity="center">
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="10dp"
-                        android:background="@color/status_good"
-                        android:layout_marginEnd="3dp" />
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="10dp"
-                        android:background="@color/status_warning"
-                        android:layout_marginEnd="3dp" />
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="10dp"
-                        android:background="@color/status_danger" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:text="Fully customizable timer"
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-        </LinearLayout>
+        <ImageButton
+            android:id="@+id/githubLink"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="GitHub"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_github"
+            app:layout_constraintEnd_toStartOf="@id/analyticsButton"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/text_secondary" />
 
         <!--
-            Live status for a returning user, shown instead of the onboarding
-            tips once there is a today (or currently-running) total. Sits in
-            the same card as featuresContentView so reminderTextView's anchor
-            below never points at a GONE view.
+            The card overlaps the bottom of the scene by this much, so the
+            mountain bases tuck behind it and the page stays compact.
         -->
-        <LinearLayout
-            android:id="@+id/todayContentView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal"
-            android:padding="24dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TODAY"
-                android:textColor="@color/text_secondary_dark"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.15"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:id="@+id/todayTimeTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0h 0m"
-                android:textSize="44sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-light"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:id="@+id/todayStatusTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="14sp"
-                android:gravity="center" />
-
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <TextView
-        android:id="@+id/reminderTextView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="32dp"
-        android:gravity="center"
-        android:text="Friendly reminder to touch grass!"
-        android:textColor="@color/text_primary_dark"
-        android:textSize="16sp"
-        android:textStyle="italic"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/infoCardView" />
-
-    <!--
-        Both buttons anchor to reminderTextView directly, at the identical
-        margin, rather than chaining stopServiceButton to startServiceButton.
-        Only one is ever visible (MainActivity toggles them oppositely), but
-        chaining them meant ConstraintLayout's gone-margin behavior shifted
-        stopServiceButton's effective position depending on which button was
-        GONE, causing the "Stop Tracking isn't centered" bug. Anchoring both to the
-        same fixed point makes the visible button's position independent of
-        the other button's state.
-
-        40dp matches the subtitle-to-card gap above, keeping the two
-        major top-level gaps on this screen the same size.
-    -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/startServiceButton"
-        style="@style/Widget.Awareen.Button.Primary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:paddingStart="32dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="32dp"
-        android:paddingBottom="12dp"
-        android:text="Start Tracking"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/reminderTextView" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/stopServiceButton"
-        style="@style/Widget.Awareen.Button.Danger"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:paddingStart="32dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="32dp"
-        android:paddingBottom="12dp"
-        android:text="Stop Tracking"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/reminderTextView" />
-
-    <LinearLayout
-        android:id="@+id/socialLinksLayout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        <Space
+            android:id="@+id/cardOverlap"
+            android:layout_width="0dp"
+            android:layout_height="28dp"
+            app:layout_constraintBottom_toBottomOf="@+id/sceneHeader"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <TextView
-            android:id="@+id/githubLink"
+            android:id="@+id/titleTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:drawableStart="@drawable/ic_github"
-            android:drawablePadding="4dp"
-            android:focusable="true"
-            android:textColor="@color/accent_primary"
-            android:textSize="14sp" />
+            android:fontFamily="@font/fraunces"
+            android:letterSpacing="-0.01"
+            android:text="Awareen"
+            android:textColor="@color/text_primary"
+            android:textSize="46sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/subtitleTextView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/infoButton"
+            app:layout_constraintVertical_bias="0.42"
+            app:layout_constraintVertical_chainStyle="packed" />
 
+        <!--
+            Title and subtitle form a packed chain centred between the icon
+            row and the card; the mountains sit below them in the scene.
+        -->
         <TextView
-            android:id="@+id/linkedinLink"
+            android:id="@+id/subtitleTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:drawableStart="@drawable/ic_linkedin"
-            android:drawablePadding="4dp"
-            android:focusable="true"
-            android:textColor="@color/accent_primary"
-            android:textSize="14sp" />
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.32"
+            android:text="SCREEN AWARENESS"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/infoCardView"
+            app:layout_constraintTop_toBottomOf="@+id/titleTextView" />
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/infoCardView"
+            style="@style/Widget.Awareen.Card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/cardOverlap">
+
+            <LinearLayout
+                android:id="@+id/featuresContentView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    style="@style/TextAppearance.Awareen.Overline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="How it works" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/feature_icon_background"
+                        android:importantForAccessibility="no"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_timer"
+                        app:tint="@color/accent_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:text="A quiet timer over any app"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/feature_icon_background"
+                        android:importantForAccessibility="no"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_touch"
+                        app:tint="@color/accent_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:text="Tap it to hide for 5 seconds"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/feature_icon_background"
+                        android:importantForAccessibility="no"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_drag"
+                        app:tint="@color/accent_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:text="Drag it anywhere on screen"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/feature_icon_background"
+                        android:importantForAccessibility="no"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_stages" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:text="Three stages, in your colors"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!--
+                Live status for a returning user, shown instead of the onboarding
+                tips once there is a today (or currently-running) total.
+            -->
+            <LinearLayout
+                android:id="@+id/todayContentView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="24dp"
+                android:paddingTop="22dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="24dp"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/TextAppearance.Awareen.Overline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Today" />
+
+                <TextView
+                    android:id="@+id/todayTimeTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/fraunces"
+                    android:text="0h 0m"
+                    android:textColor="@color/text_primary"
+                    android:textSize="56sp" />
+
+                <TextView
+                    android:id="@+id/todayStatusTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!--
+            The reminder and the button form a packed chain resting on the
+            bottom edge (bias 1): on a tall screen the open space collects
+            between the card and the reminder; on a short one the chain sits
+            right under the card and the page scrolls.
+        -->
         <TextView
-            android:id="@+id/donateLink"
-            android:layout_width="wrap_content"
+            android:id="@+id/reminderTextView"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:clickable="true"
-            android:drawableStart="@drawable/ic_coffee"
-            android:drawablePadding="4dp"
-            android:focusable="true"
-            android:text="Buy Me a Coffee"
-            android:textColor="@color/accent_primary"
-            android:textSize="14sp" />
-    </LinearLayout>
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="32dp"
+            android:fontFamily="@font/fraunces"
+            android:gravity="center"
+            android:text="Friendly reminder to touch grass."
+            android:textColor="@color/text_secondary"
+            android:textSize="18sp"
+            android:textStyle="italic"
+            app:layout_constraintBottom_toTopOf="@+id/trackingButtonContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/infoCardView"
+            app:layout_constraintVertical_bias="1"
+            app:layout_constraintVertical_chainStyle="packed" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!--
+            Start and Stop share one container (only one is ever visible), so
+            whichever is showing sits in exactly the same place.
+        -->
+        <FrameLayout
+            android:id="@+id/trackingButtonContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="28dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/reminderTextView">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/startServiceButton"
+                style="@style/Widget.Awareen.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Start tracking"
+                android:textSize="16sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/stopServiceButton"
+                style="@style/Widget.Awareen.Button.Danger"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Stop tracking"
+                android:textSize="16sp"
+                android:visibility="gone" />
+        </FrameLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

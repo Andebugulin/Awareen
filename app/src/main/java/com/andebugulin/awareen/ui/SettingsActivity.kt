@@ -184,7 +184,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
-        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background_dark)
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background)
 
         prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
         settingsRepository = SettingsRepository(this, prefs)

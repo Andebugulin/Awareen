@@ -7,9 +7,8 @@
     android:viewportHeight="108">
     <group android:scaleX="0.82" android:scaleY="0.82" android:translateX="9.72" android:translateY="11.5">
         <path android:fillColor="@color/scene_snow" android:pathData="M76,32 m-4.5,0 a4.5,4.5 0 1,0 9.0,0 a4.5,4.5 0 1,0 -9.0,0 Z" />
-        <path android:fillColor="@color/scene_ridge_far" android:pathData="M-40,64 L16,54 L28,60 L54,30 L80,60 L92,52 L148,62 V160 H-40 Z" />
+        <path android:fillColor="@color/scene_snow" android:pathData="M-40,64 L16,54 L28,60 L54,30 L80,60 L92,52 L148,62 L148,72 L92,64 L74,70 L56,62 L40,70 L22,64 L0,74 L-40,76 Z" android:fillAlpha="0.55" />
+        <path android:fillColor="@color/scene_snow" android:pathData="M-40,90 Q0,78 30,76 Q46,75 58,80 Q86,86 108,76 Q130,68 148,76 V160 H-40 Z" />
         <path android:fillColor="@color/scene_snow" android:pathData="M54,30 L65.5,43.2 L59.5,41.6 L54,47.4 L48.5,41.6 L42.5,43.2 Z" />
-        <path android:fillColor="@color/scene_ridge_mid" android:pathData="M-40,76 L0,74 L22,64 L40,70 L56,62 L74,70 L92,64 L148,72 V160 H-40 Z" />
-        <path android:fillColor="@color/scene_meadow" android:pathData="M-40,90 Q0,78 30,76 Q46,75 58,80 Q86,86 108,76 Q130,68 148,76 V160 H-40 Z" />
     </group>
 </vector>

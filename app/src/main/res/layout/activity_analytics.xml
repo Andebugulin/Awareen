@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/app_background_dark"
+    android:background="@color/app_background"
     android:fitsSystemWindows="true"
     tools:context=".AnalyticsActivity">
 
@@ -12,7 +12,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingStart="20dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -28,28 +31,25 @@
                 android:src="@drawable/ic_arrow_back"
                 android:layout_centerVertical="true"
                 android:layout_alignParentStart="true"
-                app:tint="@color/accent_primary" />
+                app:tint="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/titleTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Screen Time Analytics"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"
+                android:text="Your screen time"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:fontFamily="@font/fraunces"
                 android:layout_centerInParent="true" />
         </RelativeLayout>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Awareen.Card"
             android:id="@+id/summaryCardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardBackgroundColor="@color/surface_dark"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -62,39 +62,38 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Daily Average: Loading..."
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:layout_marginBottom="10dp" />
 
                 <TextView
                     android:id="@+id/trendTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Trend: Calculating..."
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:layout_marginBottom="10dp" />
 
                 <TextView
                     android:id="@+id/progressTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Keep tracking for insights!"
-                    android:textColor="@color/text_primary_dark"
+                    android:textColor="@color/text_secondary"
+                    android:fontFamily="@font/fraunces"
                     android:textSize="16sp"
                     android:textStyle="italic" />
 
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Awareen.Card"
             android:id="@+id/lifetimeCardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/surface_dark"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            android:layout_marginTop="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -104,23 +103,20 @@
                 android:gravity="center">
 
                 <TextView
+                    style="@style/TextAppearance.Awareen.Overline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Lifetime Projection"
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
+                    android:text="Lifetime projection"
+                    android:layout_marginBottom="4dp" />
 
                 <TextView
                     android:id="@+id/lifetimeYearsTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0.0 years"
-                    android:textColor="@color/text_primary_dark"
-                    android:textSize="36sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-light"
+                    android:textColor="@color/text_primary"
+                    android:textSize="48sp"
+                    android:fontFamily="@font/fraunces"
                     android:layout_marginBottom="4dp" />
 
                 <TextView
@@ -128,28 +124,26 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0 days total"
-                    android:textColor="@color/text_secondary_dark"
+                    android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
 
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Screen Time Trend"
-            android:textColor="@color/text_primary_dark"
-            android:textSize="18sp"
-            android:textStyle="bold"
+            android:text="Trend"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:fontFamily="@font/fraunces"
             android:layout_marginTop="24dp"
             android:layout_marginBottom="12dp" />
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Awareen.Card"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/surface_dark"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -195,7 +189,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Average daily screen time, last 4 weeks"
-                    android:textColor="@color/text_secondary_dark"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:layout_marginBottom="12dp" />
 
@@ -205,7 +199,7 @@
                     android:layout_height="160dp" />
 
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <Button
             android:id="@+id/toggleDailyLogButton"
@@ -213,7 +207,7 @@
             android:layout_width="match_parent"
             android:layout_height="44dp"
             android:layout_marginTop="16dp"
-            android:text="View Daily Log"
+            android:text="View daily log"
             android:textSize="14sp" />
 
         <LinearLayout
@@ -227,10 +221,10 @@
                 android:id="@+id/historyLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Daily History"
-                android:textColor="@color/text_primary_dark"
-                android:textSize="18sp"
-                android:textStyle="bold"
+                android:text="Daily history"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:fontFamily="@font/fraunces"
                 android:layout_marginTop="20dp"
                 android:layout_marginBottom="12dp" />
 
@@ -244,13 +238,11 @@
         </LinearLayout>
 
         <!-- Clean Export/Import card -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Awareen.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/surface_dark"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            android:layout_marginTop="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -278,7 +270,7 @@
                     android:textSize="14sp" />
 
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </ScrollView>

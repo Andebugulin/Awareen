@@ -9,10 +9,10 @@
         android:id="@+id/dialogTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Unsaved Changes"
-        android:textColor="@color/dialog_text_light"
-        android:textSize="20sp"
-        android:textStyle="bold"
+        android:text="Unsaved changes"
+        android:textColor="@color/dialog_text"
+        android:textSize="22sp"
+        android:fontFamily="@font/fraunces"
         android:layout_marginBottom="16dp"/>
 
     <TextView
@@ -20,8 +20,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="You have unsaved changes. Do you want to save them before exiting?"
-        android:textColor="@color/dialog_text_light"
-        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:textSize="15sp"
+        android:lineSpacingExtra="4dp"
         android:layout_marginBottom="24dp"/>
 
     <LinearLayout

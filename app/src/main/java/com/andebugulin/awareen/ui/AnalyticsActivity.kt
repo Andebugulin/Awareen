@@ -69,7 +69,7 @@ class AnalyticsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_analytics)
-        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background_dark)
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background)
 
         repo = ScreenTimeRepository(this)
 
@@ -100,8 +100,8 @@ class AnalyticsActivity : AppCompatActivity() {
 
         chartView.setColors(
             ContextCompat.getColor(this, R.color.accent_primary),
-            ContextCompat.getColor(this, R.color.control_track_dark),
-            ContextCompat.getColor(this, R.color.text_secondary_dark),
+            ContextCompat.getColor(this, R.color.control_track),
+            ContextCompat.getColor(this, R.color.text_secondary),
         )
 
         chartRangeToggleGroup.check(R.id.chartRangeMonth)
@@ -406,7 +406,7 @@ class AnalyticsActivity : AppCompatActivity() {
         }
 
         lifetimeDaysTextView.text = "$lifetimeDays days total"
-        lifetimeDaysTextView.setTextColor(ContextCompat.getColor(this, R.color.text_secondary_dark))
+        lifetimeDaysTextView.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
     }
 
     private fun formatTime(seconds: Int): String {

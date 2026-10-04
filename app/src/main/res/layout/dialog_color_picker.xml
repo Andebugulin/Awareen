@@ -3,16 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:background="@color/surface_dark">
+    android:padding="24dp"
+    android:background="@color/surface">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Choose Color"
-        android:textColor="@color/accent_primary"
-        android:textSize="18sp"
-        android:textStyle="bold"
+        android:text="Choose a color"
+        android:textColor="@color/text_primary"
+        android:textSize="22sp"
+        android:fontFamily="@font/fraunces"
         android:layout_marginBottom="16dp" />
 
     <!-- Custom HSV Color Picker -->
@@ -44,8 +44,8 @@
             android:layout_weight="1"
             android:hint="#RRGGBB"
             android:inputType="text"
-            android:textColor="@color/text_primary_dark"
-            android:textColorHint="@color/text_hint_dark"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
             android:background="@drawable/rounded_background"
             android:padding="12dp"
             android:textSize="15sp"
@@ -60,7 +60,7 @@
         style="@style/Widget.Awareen.Button.Flat"
         android:layout_width="match_parent"
         android:layout_height="44dp"
-        android:text="Random Color"
+        android:text="Surprise me"
         android:textSize="14sp" />
 
 </LinearLayout>

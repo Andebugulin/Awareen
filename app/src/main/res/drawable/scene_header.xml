@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Night sky over the mountains: the backdrop at the top of the home and
+    About screens. Generated with the logo from one set of layer definitions
+    (far ridges lighter, like atmospheric haze); the bottom fades into
+    app_background_dark so the scene melts into the page.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="400dp"
+    android:height="360dp"
+    android:viewportWidth="400"
+    android:viewportHeight="360">
+    <path android:pathData="M0,0 H400 V360 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="0" android:endY="300">
+                <item android:offset="0" android:color="#FF0F1613" />
+                <item android:offset="1" android:color="#FF1D2D28" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:fillColor="@color/scene_snow" android:pathData="M132.4,31.1 m-1.1,0 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" android:fillAlpha="0.18" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M35.8,85.0 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M30.3,81.0 m-0.7,0 a0.7,0.7 0 1,0 1.4,0 a0.7,0.7 0 1,0 -1.4,0 Z" android:fillAlpha="0.18" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M174.5,19.8 m-0.7,0 a0.7,0.7 0 1,0 1.4,0 a0.7,0.7 0 1,0 -1.4,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M171.0,125.8 m-0.7,0 a0.7,0.7 0 1,0 1.4,0 a0.7,0.7 0 1,0 -1.4,0 Z" android:fillAlpha="0.18" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M250.2,91.6 m-0.7,0 a0.7,0.7 0 1,0 1.4,0 a0.7,0.7 0 1,0 -1.4,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M232.8,16.9 m-0.7,0 a0.7,0.7 0 1,0 1.4,0 a0.7,0.7 0 1,0 -1.4,0 Z" android:fillAlpha="0.18" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M221.8,28.6 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.18" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M215.6,89.9 m-1.1,0 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M77.4,91.4 m-1.1,0 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" android:fillAlpha="0.18" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M151.0,86.7 m-0.7,0 a0.7,0.7 0 1,0 1.4,0 a0.7,0.7 0 1,0 -1.4,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M30.9,38.8 m-1.1,0 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M172.2,54.0 m-1.1,0 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" android:fillAlpha="0.28" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M146.8,44.8 m-0.7,0 a0.7,0.7 0 1,0 1.4,0 a0.7,0.7 0 1,0 -1.4,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M307.5,21.5 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M198.1,58.1 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.28" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M241.8,20.2 m-1.1,0 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" android:fillAlpha="0.28" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M71.3,57.9 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.28" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M23.1,103.6 m-1.1,0 a1.1,1.1 0 1,0 2.2,0 a1.1,1.1 0 1,0 -2.2,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M311.0,124.6 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M142.5,79.5 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.18" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M330.5,142.3 m-0.9,0 a0.9,0.9 0 1,0 1.8,0 a0.9,0.9 0 1,0 -1.8,0 Z" android:fillAlpha="0.4" />
+    <path android:fillColor="@color/scene_ridge_far" android:pathData="M0,308.8L38,299.8L70,304L112,290.2L150,299.2L192,282.4L222,289.6L250,268L282,287.2L314,280L352,292L400,284.8V360.4H0Z" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M250,268L265.5,278.2L258.5,276.4L252.5,280.6L246,276.7L237.5,277.6Z" android:fillAlpha="0.95" />
+    <path android:fillColor="@color/scene_snow" android:pathData="M192,282.4L200.5,287.2L195,286.3L190,288.4L186,286Z" android:fillAlpha="0.55" />
+    <path android:pathData="M0,298H400V322H0Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0" android:startY="298.0" android:endX="0" android:endY="322.0">
+                <item android:offset="0" android:color="#00ECE8DC" />
+                <item android:offset="0.6" android:color="#0DECE8DC" />
+                <item android:offset="1" android:color="#00ECE8DC" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:fillColor="@color/scene_ridge_mid" android:pathData="M0,319.6L40,311.8L80,316.6L124,305.2L166,315.4L206,308.2L248,317.8L292,302.8L338,313L372,307.6L400,311.2V360.4H0Z" />
+    <path android:fillColor="@color/app_background" android:pathData="M0,318 C60,309 112,323 172,314 S282,305 332,316 S388,322 400,317 V360 H0 Z" />
+</vector>

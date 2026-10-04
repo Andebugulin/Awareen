@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Force dark navigation bar
-        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background_dark)
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background)
 
         val startServiceButton = findViewById<Button>(R.id.startServiceButton)
         startServiceButton.setOnClickListener {
@@ -167,24 +167,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSocialLinks() {
-        val githubLink = findViewById<TextView>(R.id.githubLink)
-        val linkedinLink = findViewById<TextView>(R.id.linkedinLink)
-        val donateLink = findViewById<TextView>(R.id.donateLink)
-
-        // Set up GitHub link
-        githubLink.setOnClickListener {
+        findViewById<View>(R.id.githubLink).setOnClickListener {
             openUrl("https://github.com/Andebugulin")
-        }
-
-        // Set up LinkedIn link
-        linkedinLink.setOnClickListener {
-            openUrl("https://www.linkedin.com/in/andrei-gulin")
-        }
-
-        // Set up Donate link
-        donateLink.setOnClickListener {
-            // Replace with your actual Buy Me a Coffee link once you have it
-            openUrl("https://buymeacoffee.com/andebugulin")
         }
     }
 

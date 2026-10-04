@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fraunces (SIL Open Font License), the display face: headings, the big
+    numbers and the wordmark. Body copy stays on the system sans.
+-->
+<font-family xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <font
+        android:font="@font/fraunces_regular"
+        android:fontStyle="normal"
+        android:fontWeight="400"
+        app:font="@font/fraunces_regular"
+        app:fontStyle="normal"
+        app:fontWeight="400" />
+    <font
+        android:font="@font/fraunces_italic"
+        android:fontStyle="italic"
+        android:fontWeight="400"
+        app:font="@font/fraunces_italic"
+        app:fontStyle="italic"
+        app:fontWeight="400" />
+    <font
+        android:font="@font/fraunces_semibold"
+        android:fontStyle="normal"
+        android:fontWeight="600"
+        app:font="@font/fraunces_semibold"
+        app:fontStyle="normal"
+        app:fontWeight="600" />
+</font-family>

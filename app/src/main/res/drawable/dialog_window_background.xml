@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AlertDialog window: the rounded card, inset so it floats with a margin. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/dialog_background_shape"
+    android:inset="16dp" />

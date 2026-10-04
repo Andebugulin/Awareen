@@ -1,19 +1,15 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!--
-        Awareen is a dark-only app: every layout hardcodes light-on-dark
-        content (#E0E0E0 text on #121212, orange accents). The parent is
-        therefore the DARK Material theme, NOT .DayNight.
+        Dark-only, deliberately: the emerald-and-champagne identity holds its
+        look in both system modes. The parent is therefore the DARK Material
+        theme, not .DayNight; with a DayNight parent, framework-drawn pieces
+        (spinner popups, default dialogs) turn light in system light mode
+        and clash with the app.
 
-        With a DayNight parent the framework handed activities a light window
-        background whenever the system was in light mode, while the layouts
-        went on painting near-white text and icons over it — unreadable on
-        every screen except the few whose root view sets its own #121212.
-
-        windowLightStatusBar / windowLightNavigationBar are both false so the
+        windowLightStatusBar / windowLightNavigationBar are false so the
         system bar icons stay light against the dark bars. From API 35 the
         bars are drawn edge-to-edge and statusBarColor / navigationBarColor
-        are ignored, so these two flags are what actually keep the icons
-        visible.
+        are ignored, so these flags are what keep the icons visible.
     -->
     <style name="Theme.Screentimetracker" parent="Theme.MaterialComponents.NoActionBar">
         <!--
@@ -28,10 +24,20 @@
         <item name="colorSecondaryVariant">@color/accent_primary</item>
         <item name="colorOnSecondary">@color/on_accent</item>
 
-        <item name="android:windowBackground">@color/app_background_dark</item>
-        <item name="android:statusBarColor">@color/app_background_dark</item>
-        <item name="android:navigationBarColor">@color/app_background_dark</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/app_background</item>
+        <item name="android:navigationBarColor">@color/app_background</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- Sentence-case buttons everywhere: calmer than shouted caps. -->
+        <item name="textAppearanceButton">@style/TextAppearance.Awareen.Button</item>
+        <item name="colorControlNormal">@color/text_muted</item>
+        <item name="colorControlActivated">@color/accent_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:colorBackground">@color/app_background</item>
     </style>
 </resources>

@@ -3,9 +3,9 @@
     <style name="SettingsHeader">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">18sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:layout_marginTop">24dp</item>
+        <item name="android:textSize">21sp</item>
+        <item name="android:fontFamily">@font/fraunces</item>
+        <item name="android:layout_marginTop">28dp</item>
         <item name="android:layout_marginBottom">8dp</item>
     </style>
 
@@ -58,13 +58,16 @@
     <style name="DisplayModeToggleButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="android:textColor">@color/toggle_mode_text</item>
         <item name="backgroundTint">@color/toggle_mode_background</item>
-        <item name="strokeColor">@color/accent_primary</item>
+        <item name="strokeColor">@color/control_track</item>
         <item name="rippleColor">@color/accent_primary</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">44dp</item>
     </style>
 
     <style name="AlertDialog">
-        <item name="android:windowBackground">@color/app_background_dark</item>
-        <item name="android:textColorPrimary">@color/dialog_text_light</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:textColorPrimary">@color/dialog_text</item>
         <item name="colorAccent">@color/dialog_button_highlight</item>
 
         <item name="android:buttonBarPositiveButtonStyle">@style/AlertDialogButtonTextColor</item>
@@ -74,12 +77,18 @@
 
     <style name="AlertDialogButtonTextColor" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
         <item name="android:textColor">@color/dialog_button_highlight</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">15sp</item>
     </style>
 
     <style name="CustomAlertDialog" parent="Theme.AppCompat.Dialog.Alert">
-        <item name="android:background">#1E1E1E</item> <!-- dark card background -->
-        <item name="android:textColorPrimary">#FFFFFF</item>
-        <item name="android:textColorSecondary">#CCCCCC</item>
+        <item name="android:windowBackground">@drawable/dialog_window_background</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="colorAccent">@color/accent_primary</item>
+        <item name="buttonBarPositiveButtonStyle">@style/AlertDialogButtonTextColor</item>
+        <item name="buttonBarNegativeButtonStyle">@style/AlertDialogButtonTextColor</item>
+        <item name="buttonBarNeutralButtonStyle">@style/AlertDialogButtonTextColor</item>
     </style>
 
     <!--
@@ -89,14 +98,24 @@
     <style name="Widget.Awareen.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/accent_primary</item>
         <item name="android:textColor">@color/on_accent</item>
-        <item name="cornerRadius">24dp</item>
+        <item name="cornerRadius">28dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="elevation">0dp</item>
     </style>
 
-    <!-- Destructive action (Stop Tracking). -->
+    <!--
+        Stop Tracking. Deliberately quiet: a dark clay-tinted pill with a
+        clay outline rather than an alarm-red slab. Stopping is a choice,
+        not an emergency.
+    -->
     <style name="Widget.Awareen.Button.Danger" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/danger_button_background</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="cornerRadius">24dp</item>
+        <item name="android:textColor">@color/status_danger</item>
+        <item name="strokeColor">@color/status_danger</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cornerRadius">28dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="elevation">0dp</item>
     </style>
 
     <!--
@@ -105,10 +124,50 @@
         lives on.
     -->
     <style name="Widget.Awareen.Button.Flat" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/surface_variant_dark</item>
+        <item name="backgroundTint">@color/surface_variant</item>
         <item name="android:textColor">@color/accent_primary</item>
         <item name="android:stateListAnimator">@null</item>
         <item name="elevation">0dp</item>
+        <item name="cornerRadius">14dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+
+    <style name="TextAppearance.Awareen.Button" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Screen titles (Analytics, About) and card headings. -->
+    <style name="TextAppearance.Awareen.Title" parent="">
+        <item name="android:fontFamily">@font/fraunces</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">26sp</item>
+    </style>
+
+    <style name="TextAppearance.Awareen.Heading" parent="">
+        <item name="android:fontFamily">@font/fraunces</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <!-- Small letter-spaced caps label above a value (TODAY, LIFETIME). -->
+    <style name="TextAppearance.Awareen.Overline" parent="">
+        <item name="android:textColor">@color/text_muted</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:letterSpacing">0.2</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- A flat card: surface + hairline, no drop shadow. -->
+    <style name="Widget.Awareen.Card" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="cardCornerRadius">22dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/hairline</item>
+        <item name="strokeWidth">1dp</item>
     </style>
 
 </resources>

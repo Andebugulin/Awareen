@@ -1,11 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The Awareen mark: a snow-capped peak under a quiet moon, with a meadow
+    in front. Same artwork as the launcher icon, clipped to a circle.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:scaleX="0.82" android:scaleY="0.82" android:translateX="9.72" android:translateY="11.5">
+    <group>
+        <clip-path android:pathData="M54,54 m-54,0 a54,54 0 1,0 108,0 a54,54 0 1,0 -108,0 Z" />
+        <path android:pathData="M0,0 H108 V108 H0 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="0" android:endY="108">
+                    <item android:offset="0" android:color="#FF1D2D28" />
+                    <item android:offset="1" android:color="#FF0F1613" />
+                </gradient>
+            </aapt:attr>
+        </path>
         <path android:fillColor="@color/scene_snow" android:pathData="M76,32 m-4.5,0 a4.5,4.5 0 1,0 9.0,0 a4.5,4.5 0 1,0 -9.0,0 Z" />
         <path android:fillColor="@color/scene_ridge_far" android:pathData="M-40,64 L16,54 L28,60 L54,30 L80,60 L92,52 L148,62 V160 H-40 Z" />
         <path android:fillColor="@color/scene_snow" android:pathData="M54,30 L65.5,43.2 L59.5,41.6 L54,47.4 L48.5,41.6 L42.5,43.2 Z" />

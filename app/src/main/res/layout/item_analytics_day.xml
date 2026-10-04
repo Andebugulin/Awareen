@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.Awareen.Card"
+    app:cardCornerRadius="16dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="4dp"
-    app:cardBackgroundColor="@color/surface_dark"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_marginVertical="4dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="16dp">
 
         <TextView
             android:id="@+id/dateTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Today"
-            android:textColor="@color/text_primary_dark"
-            android:textSize="16sp"
-            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -29,9 +28,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="2h 30m"
-            android:textColor="@color/text_primary_dark"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
-            android:textStyle="bold"
+            android:fontFamily="@font/fraunces"
             app:layout_constraintEnd_toStartOf="@+id/statusTextView"
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginEnd="16dp" />
@@ -42,11 +41,11 @@
             android:layout_height="wrap_content"
             android:text="Good"
             android:textColor="@color/status_good"
-            android:textSize="14sp"
-            android:textStyle="bold"
+            android:textSize="13sp"
+            android:fontFamily="sans-serif-medium"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>
