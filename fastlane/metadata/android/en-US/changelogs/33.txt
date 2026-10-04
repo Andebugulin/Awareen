@@ -1,0 +1,9 @@
+A new look, built around a calm night in the mountains.
+
+* Redesigned app and a new app icon.
+* The home screen shows today's screen time once tracking has started.
+* Analytics has a trend chart for week, month or year (opens on month);
+  the daily log is tucked away until you need it.
+* Settings shows one stage at a time.
+* Optional coloured border around the timer.
+* The Start/Stop button no longer shifts position.
