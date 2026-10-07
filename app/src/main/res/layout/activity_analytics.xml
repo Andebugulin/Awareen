@@ -130,15 +130,36 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Your day: how 24 hours split into sleep, work, screen and free time. -->
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Trend"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:fontFamily="@font/fraunces"
             android:layout_marginTop="24dp"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:fontFamily="@font/fraunces"
+                android:text="Your day"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/editDaySplitButton"
+                style="@style/Widget.Awareen.Button.Flat"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:minWidth="0dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Edit hours"
+                android:textSize="13sp" />
+        </RelativeLayout>
 
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.Awareen.Card"
@@ -151,53 +172,35 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/chartRangeToggleGroup"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:singleSelection="true"
-                    app:selectionRequired="true">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                    <Button
-                        android:id="@+id/chartRangeWeek"
-                        style="@style/DisplayModeToggleButton"
+                    <com.andebugulin.awareen.ui.DaySplitChartView
+                        android:id="@+id/daySplitChartView"
+                        android:layout_width="150dp"
+                        android:layout_height="150dp" />
+
+                    <LinearLayout
+                        android:id="@+id/daySplitLegend"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
                         android:layout_weight="1"
-                        android:text="Week" />
-
-                    <Button
-                        android:id="@+id/chartRangeMonth"
-                        style="@style/DisplayModeToggleButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Month" />
-
-                    <Button
-                        android:id="@+id/chartRangeYear"
-                        style="@style/DisplayModeToggleButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Year" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
+                        android:orientation="vertical" />
+                </LinearLayout>
 
                 <TextView
-                    android:id="@+id/chartCaptionTextView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Average daily screen time, last 4 weeks"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:layout_marginBottom="12dp" />
-
-                <com.andebugulin.awareen.ui.ScreenTimeChartView
-                    android:id="@+id/screenTimeChartView"
+                    android:id="@+id/daySplitInsightTextView"
                     android:layout_width="match_parent"
-                    android:layout_height="160dp" />
-
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/fraunces"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="16sp"
+                    android:textStyle="italic" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

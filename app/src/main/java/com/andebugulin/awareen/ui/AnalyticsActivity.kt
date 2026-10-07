@@ -1,10 +1,13 @@
 package com.andebugulin.awareen.ui
 
+import android.app.AlertDialog
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -17,15 +20,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.andebugulin.awareen.R
 import com.andebugulin.awareen.data.ScreenTimeRepository
+import com.andebugulin.awareen.data.SettingsRepository
 import com.andebugulin.awareen.domain.AnalyticsKeys
-import com.google.android.material.button.MaterialButtonToggleGroup
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.abs
@@ -36,9 +36,11 @@ class AnalyticsActivity : AppCompatActivity() {
         private const val TAG = "AnalyticsActivity"
     }
 
-    private enum class ChartRange { WEEK, MONTH, YEAR }
-
     private lateinit var repo: ScreenTimeRepository
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var daySplitChartView: DaySplitChartView
+    private lateinit var daySplitLegend: LinearLayout
+    private lateinit var daySplitInsightTextView: TextView
     private lateinit var recyclerView: RecyclerView
     private lateinit var averageTextView: TextView
     private lateinit var trendTextView: TextView
@@ -47,12 +49,8 @@ class AnalyticsActivity : AppCompatActivity() {
     private lateinit var lifetimeDaysTextView: TextView
     private lateinit var adapter: AnalyticsAdapter
 
-    private lateinit var chartView: ScreenTimeChartView
-    private lateinit var chartRangeToggleGroup: MaterialButtonToggleGroup
-    private lateinit var chartCaptionTextView: TextView
     private lateinit var toggleDailyLogButton: Button
     private lateinit var dailyLogContainer: View
-    private var currentChartRange = ChartRange.MONTH
 
     private val exportLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -72,10 +70,11 @@ class AnalyticsActivity : AppCompatActivity() {
         window.navigationBarColor = ContextCompat.getColor(this, R.color.app_background)
 
         repo = ScreenTimeRepository(this)
+        settingsRepository = SettingsRepository(this)
 
         initializeViews()
         loadAnalyticsData()
-        updateChart()
+        updateDaySplit()
     }
 
     private fun initializeViews() {
@@ -86,9 +85,6 @@ class AnalyticsActivity : AppCompatActivity() {
         lifetimeYearsTextView = findViewById(R.id.lifetimeYearsTextView)
         lifetimeDaysTextView = findViewById(R.id.lifetimeDaysTextView)
         recyclerView = findViewById(R.id.analyticsRecyclerView)
-        chartView = findViewById(R.id.screenTimeChartView)
-        chartRangeToggleGroup = findViewById(R.id.chartRangeToggleGroup)
-        chartCaptionTextView = findViewById(R.id.chartCaptionTextView)
         toggleDailyLogButton = findViewById(R.id.toggleDailyLogButton)
         dailyLogContainer = findViewById(R.id.dailyLogContainer)
 
@@ -98,24 +94,15 @@ class AnalyticsActivity : AppCompatActivity() {
         adapter = AnalyticsAdapter()
         recyclerView.adapter = adapter
 
-        chartView.setColors(
-            ContextCompat.getColor(this, R.color.accent_primary),
-            ContextCompat.getColor(this, R.color.control_track),
+        daySplitChartView = findViewById(R.id.daySplitChartView)
+        daySplitLegend = findViewById(R.id.daySplitLegend)
+        daySplitInsightTextView = findViewById(R.id.daySplitInsightTextView)
+        daySplitChartView.setTextColors(
+            ContextCompat.getColor(this, R.color.text_primary),
             ContextCompat.getColor(this, R.color.text_secondary),
         )
-
-        chartRangeToggleGroup.check(R.id.chartRangeMonth)
-        chartRangeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val newRange = when (checkedId) {
-                R.id.chartRangeMonth -> ChartRange.MONTH
-                R.id.chartRangeYear -> ChartRange.YEAR
-                else -> ChartRange.WEEK
-            }
-            if (newRange == currentChartRange) return@addOnButtonCheckedListener
-            currentChartRange = newRange
-            updateChart()
-        }
+        daySplitChartView.setValueTypeface(androidx.core.content.res.ResourcesCompat.getFont(this, R.font.fraunces))
+        findViewById<Button>(R.id.editDaySplitButton).setOnClickListener { showDaySplitDialog() }
 
         toggleDailyLogButton.setOnClickListener {
             val showing = dailyLogContainer.visibility == View.VISIBLE
@@ -133,56 +120,109 @@ class AnalyticsActivity : AppCompatActivity() {
         }
     }
 
+    private fun dayValue(date: LocalDate): Int? =
+        repo.getDailyScreenTime(AnalyticsKeys.analyticsDateKey(date)).takeIf { it > 0 }
+
     // =========================================================================
-    // TREND CHART
+    // YOUR DAY — 24h split into sleep, work, screen time and what's left
     // =========================================================================
 
-    /**
-     * Week bars are each day's own total; month/year bars are the average
-     * daily total across a rolling window, so all three ranges plot the same
-     * unit (seconds per day) and stay comparable at a glance.
-     */
-    private fun updateChart() {
+    /** Average daily screen time over the last 30 days that have data (today if none). */
+    private fun recentAverageScreenSeconds(): Int {
         val today = LocalDate.now()
-        val bars = when (currentChartRange) {
-            ChartRange.WEEK -> {
-                chartCaptionTextView.text = "Daily screen time, last 7 days"
-                (6 downTo 0).map { offset ->
-                    val date = today.minusDays(offset.toLong())
-                    val seconds = repo.getDailyScreenTime(AnalyticsKeys.analyticsDateKey(date))
-                    ChartBar(date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()), seconds)
-                }
-            }
-            ChartRange.MONTH -> {
-                chartCaptionTextView.text = "Average daily screen time, last 4 weeks"
-                (3 downTo 0).map { weekOffset ->
-                    val weekEnd = today.minusWeeks(weekOffset.toLong())
-                    val weekStart = weekEnd.minusDays(6)
-                    var total = 0
-                    var day = weekStart
-                    while (!day.isAfter(weekEnd)) {
-                        total += repo.getDailyScreenTime(AnalyticsKeys.analyticsDateKey(day))
-                        day = day.plusDays(1)
-                    }
-                    ChartBar(weekEnd.format(DateTimeFormatter.ofPattern("MMM d")), total / 7)
-                }
-            }
-            ChartRange.YEAR -> {
-                chartCaptionTextView.text = "Average daily screen time, last 12 months"
-                (11 downTo 0).map { monthOffset ->
-                    val monthDate = today.minusMonths(monthOffset.toLong())
-                    val yearMonth = YearMonth.from(monthDate)
-                    val lastDayCounted = if (yearMonth == YearMonth.from(today)) today.dayOfMonth else yearMonth.lengthOfMonth()
-                    var total = 0
-                    for (day in 1..lastDayCounted) {
-                        total += repo.getDailyScreenTime(AnalyticsKeys.analyticsDateKey(yearMonth.atDay(day)))
-                    }
-                    val label = monthDate.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-                    ChartBar(label, total / lastDayCounted)
-                }
-            }
+        val values = (0L until 30L).mapNotNull { dayValue(today.minusDays(it)) }
+        return if (values.isEmpty()) repo.getTodayScreenTime() else values.sum() / values.size
+    }
+
+    private fun updateDaySplit() {
+        val sleep = settingsRepository.getDaySleepMinutes()
+        val busy = settingsRepository.getDayBusyMinutes()
+        val awakeFree = (24 * 60 - sleep - busy).coerceAtLeast(0)
+        val screen = (recentAverageScreenSeconds() / 60).coerceAtMost(awakeFree)
+        val free = awakeFree - screen
+
+        val rows = listOf(
+            Triple("Sleep", sleep, R.color.day_sleep),
+            Triple("Work & duties", busy, R.color.day_busy),
+            Triple("Free time", free, R.color.day_free),
+            Triple("Screen time", screen, R.color.day_screen),
+        )
+        daySplitChartView.setData(
+            rows.map { DaySegment(it.second, ContextCompat.getColor(this, it.third)) },
+            formatMinutes(free),
+            "truly free",
+        )
+
+        daySplitLegend.removeAllViews()
+        rows.forEach { (label, minutes, color) ->
+            val row = layoutInflater.inflate(R.layout.item_day_split_legend, daySplitLegend, false)
+            row.findViewById<View>(R.id.legendDot).backgroundTintList =
+                android.content.res.ColorStateList.valueOf(ContextCompat.getColor(this, color))
+            row.findViewById<TextView>(R.id.legendLabel).text = label
+            row.findViewById<TextView>(R.id.legendValue).text = formatMinutes(minutes)
+            daySplitLegend.addView(row)
         }
-        chartView.setBars(bars)
+
+        daySplitInsightTextView.text = if (awakeFree == 0) {
+            "Sleep and work fill your whole day as set. Adjust the hours to see the rest."
+        } else {
+            val share = screen * 100 / awakeFree
+            "After sleep and work you have ${formatMinutes(awakeFree)} a day. " +
+                "Screen time takes $share% of it."
+        }
+    }
+
+    private fun showDaySplitDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_day_split, null)
+        val sleepSeekBar = view.findViewById<SeekBar>(R.id.sleepSeekBar)
+        val sleepValue = view.findViewById<TextView>(R.id.sleepValue)
+        val busySeekBar = view.findViewById<SeekBar>(R.id.busySeekBar)
+        val busyValue = view.findViewById<TextView>(R.id.busyValue)
+
+        // Half-hour steps: sleep 4h to 12h, work 0h to 14h.
+        val sleepMin = 4 * 60
+        sleepSeekBar.max = (12 * 60 - sleepMin) / 30
+        sleepSeekBar.progress = (settingsRepository.getDaySleepMinutes() - sleepMin) / 30
+        busySeekBar.max = 14 * 60 / 30
+        busySeekBar.progress = settingsRepository.getDayBusyMinutes() / 30
+
+        fun refresh() {
+            sleepValue.text = formatMinutes(sleepMin + sleepSeekBar.progress * 30)
+            busyValue.text = formatMinutes(busySeekBar.progress * 30)
+        }
+        refresh()
+        val listener = object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) = refresh()
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        }
+        sleepSeekBar.setOnSeekBarChangeListener(listener)
+        busySeekBar.setOnSeekBarChangeListener(listener)
+
+        AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .setView(view)
+            .setPositiveButton("Save") { _, _ ->
+                settingsRepository.saveDaySplit(sleepMin + sleepSeekBar.progress * 30, busySeekBar.progress * 30)
+                updateDaySplit()
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+            .apply {
+                show()
+                val accent = ContextCompat.getColor(this@AnalyticsActivity, R.color.accent_primary)
+                getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(accent)
+                getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(accent)
+            }
+    }
+
+    private fun formatMinutes(minutes: Int): String {
+        val h = minutes / 60
+        val m = minutes % 60
+        return when {
+            h == 0 -> "${m}m"
+            m == 0 -> "${h}h"
+            else -> "${h}h ${m}m"
+        }
     }
 
     private fun loadAnalyticsData() {
@@ -315,6 +355,7 @@ class AnalyticsActivity : AppCompatActivity() {
 
             Toast.makeText(this, "Imported $importedCount days of data", Toast.LENGTH_SHORT).show()
             loadAnalyticsData()
+            updateDaySplit()
 
         } catch (e: Exception) {
             Log.e(TAG, "Import failed: ${e.message}", e)

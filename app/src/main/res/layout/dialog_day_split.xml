@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Edit the hours "Your day" on Analytics assumes for sleep and work. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:fontFamily="@font/fraunces"
+        android:text="Your typical day"
+        android:textColor="@color/text_primary"
+        android:textSize="22sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="What's left after these is your free time, and screen time comes out of it."
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="64dp"
+            android:text="Sleep"
+            android:textColor="@color/text_primary" />
+
+        <SeekBar
+            android:id="@+id/sleepSeekBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:progressTint="@color/accent_primary"
+            android:thumbTint="@color/accent_primary" />
+
+        <TextView
+            android:id="@+id/sleepValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:minWidth="56dp"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="64dp"
+            android:text="Work"
+            android:textColor="@color/text_primary" />
+
+        <SeekBar
+            android:id="@+id/busySeekBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:progressTint="@color/accent_primary"
+            android:thumbTint="@color/accent_primary" />
+
+        <TextView
+            android:id="@+id/busyValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:minWidth="56dp"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+</LinearLayout>

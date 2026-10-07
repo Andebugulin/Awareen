@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One legend row for the "Your day" donut: swatch, name, duration. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <View
+        android:id="@+id/legendDot"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/legend_dot" />
+
+    <TextView
+        android:id="@+id/legendLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/legendValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp" />
+</LinearLayout>
