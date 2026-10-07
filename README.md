@@ -95,4 +95,4 @@ If Awareen helps you, you can [buy me a coffee](https://www.buymeacoffee.com/and
 
 ## License
 
-MIT
+MIT, see [LICENSE.md](LICENSE.md).
