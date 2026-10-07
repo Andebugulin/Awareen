@@ -7,6 +7,7 @@ Writes, under app/src/main/res/drawable/:
   ic_launcher_background.xml  adaptive-icon sky
   ic_launcher_foreground.xml  adaptive-icon scene
   ic_launcher_monochrome.xml  themed-icon silhouette (Android 13+)
+and docs/scene.svg, the same night scene for the website.
 
 Usage:
   scripts/generate_scenery.py                 # regenerate the drawables
@@ -213,6 +214,9 @@ def main():
     drawable("ic_launcher_background.xml", vector(108, 108, [{"d": FULL, "fill": SKY}]))
     drawable("ic_launcher_foreground.xml", vector(108, 108, logo_scene, group=ICON_GROUP))
     drawable("ic_launcher_monochrome.xml", vector(108, 108, logo_mono, group=ICON_GROUP))
+
+    with open(os.path.join(REPO, "docs", "scene.svg"), "w") as fh:
+        fh.write(svg(W, H, header))
 
     square = svg(108, 108, logo_full)  # full bleed: stores and sites apply their own masks
     if args.preview:
