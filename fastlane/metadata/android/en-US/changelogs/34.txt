@@ -1,0 +1,6 @@
+* Settings apply instantly. No more save button: a live preview of the
+  timer shows exactly what you get while you edit.
+* Name each stage and pick its background colour.
+* Analytics: new "Your day" view splits 24 hours into sleep, work,
+  screen time and free time.
+* Today's time on the home screen now updates while you watch.
