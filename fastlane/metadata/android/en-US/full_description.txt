@@ -1,0 +1,24 @@
+A small timer sits on top of every app and shows how long you have been on your phone today. No blocking, no nagging. Just a quiet number in the corner that keeps you honest.
+
+No ads, no account, no tracking. Awareen does not even have the internet permission, so your screen time never leaves your phone. It is free and open source.
+
+HOW IT WORKS
+The timer moves through three stages as your day goes on. By default it stays green for the first 30 minutes, turns amber for the next 30, then red until the daily reset. You set the times, names and colors, so it can nudge you as gently or as firmly as you like.
+
+* A floating timer over any app, visible always or for a few seconds every minute
+* Tap it to hide it for 5 seconds, drag it anywhere on screen
+* Three stages, each with its own name, text color, background, position, size and optional blinking
+* Settings apply instantly with a live preview of the timer
+* A daily reset at the time you choose, reliable even when the phone is asleep
+* Today's screen time on the home screen
+
+SEE WHERE YOUR DAY GOES
+Analytics shows your daily average, whether you are trending up or down, and a lifetime projection of what your current habit adds up to. The "Your day" view splits 24 hours into sleep, work, free time and screen time, so you can see how much of your free time the phone really takes.
+
+YOUR DATA STAYS YOURS
+Everything is stored on your device. Export your settings and history to a file and import them on a new phone whenever you like.
+
+ABOUT THE OVERLAY PERMISSION
+Awareen asks to display over other apps because the floating timer is the whole point of the app. It uses this only to draw the timer. It cannot read what is on your screen.
+
+Friendly reminder to touch grass.

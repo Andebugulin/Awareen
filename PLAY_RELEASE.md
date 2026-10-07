@@ -19,7 +19,7 @@ IzzyOnDroid. Everything here was checked against this repo's actual state on
 | `USE_EXACT_ALARM` | **Cleared by Play** — do not remove, see below |
 | `specialUse` FGS Console declaration | **Cleared by Play** |
 | Privacy policy URL | **Open** |
-| Listing screenshots | **Open** — stale package name |
+| Listing screenshots | **Done** for 1.32: `fastlane/metadata/android/en-US/images/` |
 
 The app is **already published**, so two questions the original draft posed as
 "decide now" are in fact already settled and must not be changed:
@@ -267,9 +267,10 @@ fastlane/metadata/android/en-US/
     └── phoneScreenshots/1.png…   portrait, min 2, ordered by filename
 ```
 
-The screenshots in `images/` are from the old `com.example.screentimetracker`
-build and show a stale package name in the filename — retake them before
-uploading.
+The images were made for 1.32 from real screenshots on a 1220×2712 phone,
+cropped and framed at 1080×1920 (Play rejects anything taller than 2:1, so a
+raw screenshot from a modern phone will not upload). Listing copy avoids
+dashes of every kind, hyphens included.
 
 Copy lessons from nfcGuard's listing rewrite:
 
