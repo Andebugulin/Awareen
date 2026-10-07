@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small upward pointer joining the onboarding hint bubble to the icon it explains. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="9dp"
+    android:viewportWidth="16"
+    android:viewportHeight="9">
+    <path
+        android:fillColor="@color/accent_primary"
+        android:pathData="M8,0 L16,9 L0,9 Z" />
+</vector>

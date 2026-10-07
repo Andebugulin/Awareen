@@ -1,10 +1,13 @@
 package com.andebugulin.awareen.overlay
 
 /**
- * Visual configuration for a single level (color, position, font size, blink).
+ * Visual configuration for a single level: the user's name for the stage,
+ * text and badge-background colors, position, font size, blink.
  */
 data class LevelSettings(
+    val name: String,
     val color: Int,
+    val backgroundColor: Int,
     val position: String,
     val fontSize: Float,
     val blinkingEnabled: Boolean,
@@ -30,4 +33,18 @@ data class OverlaySettings(
     // string rather than an enum to match timerDisplayMode's convention.
     val cornerStyle: String,
     val borderEnabled: Boolean,
-)
+) {
+    /** Settings for stage [level] (1..3). */
+    fun level(level: Int): LevelSettings = when (level) {
+        1 -> level1
+        2 -> level2
+        else -> level3
+    }
+
+    /** Copy with stage [level]'s settings replaced. */
+    fun withLevel(level: Int, settings: LevelSettings): OverlaySettings = when (level) {
+        1 -> copy(level1 = settings)
+        2 -> copy(level2 = settings)
+        else -> copy(level3 = settings)
+    }
+}

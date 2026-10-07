@@ -54,6 +54,41 @@
             android:singleLine="true" />
     </LinearLayout>
 
+    <!-- Opacity, only shown when picking a timer background. -->
+    <LinearLayout
+        android:id="@+id/opacityRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Opacity"
+            android:textColor="@color/text_primary" />
+
+        <SeekBar
+            android:id="@+id/opacitySeekBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:max="100"
+            android:progressTint="@color/accent_primary"
+            android:thumbTint="@color/accent_primary" />
+
+        <TextView
+            android:id="@+id/opacityValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="44dp"
+            android:gravity="end"
+            android:text="70%"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
     <!-- Random Color Button -->
     <Button
         android:id="@+id/randomColorButton"

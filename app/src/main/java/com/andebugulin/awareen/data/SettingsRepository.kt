@@ -37,7 +37,9 @@ class SettingsRepository(
      */
     fun loadOverlaySettings(): OverlaySettings = OverlaySettings(
         level1 = LevelSettings(
+            name = loadLevelName(1),
             color = prefs.getInt(AppSettings.LEVEL_1_COLOR, AppSettings.DEFAULT_LEVEL_1_COLOR),
+            backgroundColor = prefs.getInt(AppSettings.levelBackgroundKey(1), AppSettings.DEFAULT_LEVEL_BACKGROUND_COLOR),
             position = prefs.getString(AppSettings.LEVEL_1_POSITION, AppSettings.DEFAULT_LEVEL_1_POSITION)
                 ?: AppSettings.DEFAULT_LEVEL_1_POSITION,
             fontSize = prefs.getInt(AppSettings.LEVEL_1_FONT_SIZE, AppSettings.DEFAULT_LEVEL_1_FONT_SIZE).toFloat(),
@@ -45,7 +47,9 @@ class SettingsRepository(
         ),
         level1MaxTimeSeconds = prefs.getInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, AppSettings.DEFAULT_LEVEL_1_MAX_TIME_SECONDS),
         level2 = LevelSettings(
+            name = loadLevelName(2),
             color = prefs.getInt(AppSettings.LEVEL_2_COLOR, AppSettings.DEFAULT_LEVEL_2_COLOR),
+            backgroundColor = prefs.getInt(AppSettings.levelBackgroundKey(2), AppSettings.DEFAULT_LEVEL_BACKGROUND_COLOR),
             position = prefs.getString(AppSettings.LEVEL_2_POSITION, AppSettings.DEFAULT_LEVEL_2_POSITION)
                 ?: AppSettings.DEFAULT_LEVEL_2_POSITION,
             fontSize = prefs.getInt(AppSettings.LEVEL_2_FONT_SIZE, AppSettings.DEFAULT_LEVEL_2_FONT_SIZE).toFloat(),
@@ -53,7 +57,9 @@ class SettingsRepository(
         ),
         level2DurationSeconds = prefs.getInt(AppSettings.LEVEL_2_DURATION_SECONDS, AppSettings.DEFAULT_LEVEL_2_DURATION_SECONDS),
         level3 = LevelSettings(
+            name = loadLevelName(3),
             color = prefs.getInt(AppSettings.LEVEL_3_COLOR, AppSettings.DEFAULT_LEVEL_3_COLOR),
+            backgroundColor = prefs.getInt(AppSettings.levelBackgroundKey(3), AppSettings.DEFAULT_LEVEL_BACKGROUND_COLOR),
             position = prefs.getString(AppSettings.LEVEL_3_POSITION, AppSettings.DEFAULT_LEVEL_3_POSITION)
                 ?: AppSettings.DEFAULT_LEVEL_3_POSITION,
             fontSize = prefs.getInt(AppSettings.LEVEL_3_FONT_SIZE, AppSettings.DEFAULT_LEVEL_3_FONT_SIZE).toFloat(),
@@ -67,6 +73,10 @@ class SettingsRepository(
             ?: AppSettings.DEFAULT_OVERLAY_CORNER_STYLE,
         borderEnabled = prefs.getBoolean(AppSettings.OVERLAY_BORDER_ENABLED, AppSettings.DEFAULT_OVERLAY_BORDER_ENABLED),
     )
+
+    private fun loadLevelName(level: Int): String =
+        prefs.getString(AppSettings.levelNameKey(level), null)?.takeIf { it.isNotBlank() }
+            ?: AppSettings.DEFAULT_LEVEL_NAMES[level - 1]
 
     /**
      * Atomic wholesale write of overlay settings. The three writeLevelXPosition
@@ -82,19 +92,25 @@ class SettingsRepository(
     ) {
         prefs.edit().apply {
             // Level 1
+            putString(AppSettings.levelNameKey(1), settings.level1.name)
             putInt(AppSettings.LEVEL_1_COLOR, settings.level1.color)
+            putInt(AppSettings.levelBackgroundKey(1), settings.level1.backgroundColor)
             if (writeLevel1Position) putString(AppSettings.LEVEL_1_POSITION, settings.level1.position)
             putInt(AppSettings.LEVEL_1_FONT_SIZE, settings.level1.fontSize.toInt())
             putBoolean(AppSettings.LEVEL_1_BLINKING_ENABLED, settings.level1.blinkingEnabled)
             putInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, settings.level1MaxTimeSeconds)
             // Level 2
+            putString(AppSettings.levelNameKey(2), settings.level2.name)
             putInt(AppSettings.LEVEL_2_COLOR, settings.level2.color)
+            putInt(AppSettings.levelBackgroundKey(2), settings.level2.backgroundColor)
             if (writeLevel2Position) putString(AppSettings.LEVEL_2_POSITION, settings.level2.position)
             putInt(AppSettings.LEVEL_2_FONT_SIZE, settings.level2.fontSize.toInt())
             putBoolean(AppSettings.LEVEL_2_BLINKING_ENABLED, settings.level2.blinkingEnabled)
             putInt(AppSettings.LEVEL_2_DURATION_SECONDS, settings.level2DurationSeconds)
             // Level 3
+            putString(AppSettings.levelNameKey(3), settings.level3.name)
             putInt(AppSettings.LEVEL_3_COLOR, settings.level3.color)
+            putInt(AppSettings.levelBackgroundKey(3), settings.level3.backgroundColor)
             if (writeLevel3Position) putString(AppSettings.LEVEL_3_POSITION, settings.level3.position)
             putInt(AppSettings.LEVEL_3_FONT_SIZE, settings.level3.fontSize.toInt())
             putBoolean(AppSettings.LEVEL_3_BLINKING_ENABLED, settings.level3.blinkingEnabled)
@@ -122,6 +138,24 @@ class SettingsRepository(
         prefs.edit()
             .putInt(AppSettings.RESET_HOUR, hour)
             .putInt(AppSettings.RESET_MINUTE, minute)
+            .apply()
+    }
+
+    // =========================================================================
+    // "YOUR DAY" SPLIT (Analytics) — how much of a day goes to sleep and to
+    // work/obligations, so the rest can be split into screen time vs free time.
+    // =========================================================================
+
+    fun getDaySleepMinutes(): Int =
+        prefs.getInt(AppSettings.DAY_SLEEP_MINUTES, AppSettings.DEFAULT_DAY_SLEEP_MINUTES)
+
+    fun getDayBusyMinutes(): Int =
+        prefs.getInt(AppSettings.DAY_BUSY_MINUTES, AppSettings.DEFAULT_DAY_BUSY_MINUTES)
+
+    fun saveDaySplit(sleepMinutes: Int, busyMinutes: Int) {
+        prefs.edit()
+            .putInt(AppSettings.DAY_SLEEP_MINUTES, sleepMinutes)
+            .putInt(AppSettings.DAY_BUSY_MINUTES, busyMinutes)
             .apply()
     }
 

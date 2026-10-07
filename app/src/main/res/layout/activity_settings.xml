@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Settings. There is no in-page preview: while this screen is open the real
+    floating timer is shown for the selected stage, and every change below is
+    saved and applied to it immediately. One stage editor is bound to the
+    stage picked in the tabs, instead of three identical blocks.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -6,7 +12,7 @@
     android:layout_height="match_parent"
     android:background="@color/app_background"
     android:fitsSystemWindows="true"
-    tools:context=".SettingsActivity">
+    tools:context=".ui.SettingsActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,131 +25,258 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp">
+            android:layout_height="wrap_content">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Settings"
-                android:fontFamily="@font/fraunces"
-                android:textSize="28sp"
-                android:textColor="@color/text_primary"
+                android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:layout_alignParentStart="true" />
+                android:fontFamily="@font/fraunces"
+                android:text="Settings"
+                android:textColor="@color/text_primary"
+                android:textSize="28sp" />
 
             <ImageButton
                 android:id="@+id/closeButton"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Close"
                 android:padding="6dp"
                 android:src="@drawable/ic_cross"
-                app:tint="@color/text_secondary"
-                android:layout_centerVertical="true"
-                android:layout_alignParentEnd="true" />
+                app:tint="@color/text_secondary" />
         </RelativeLayout>
 
-
-        <!--
-            The preview is a little window onto the landscape, with the timer
-            floating over it the way it floats over other apps. The card only
-            clips the corners; previewLayout is still the ConstraintLayout the
-            activity repositions the timer within.
-        -->
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.Awareen.Card"
-            android:layout_width="match_parent"
-            android:layout_height="170dp"
-            android:layout_marginTop="12dp">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/previewLayout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <ImageView
-                android:id="@+id/previewScene"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:importantForAccessibility="no"
-                android:scaleType="centerCrop"
-                android:src="@drawable/scene_header"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/previewTimeText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="00:12:34"
-                android:textSize="24sp"
-                android:textColor="@color/status_good"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <LinearLayout
+        <TextView
+            android:id="@+id/liveHintTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp"
-            android:gravity="center_horizontal">
+            android:layout_marginTop="6dp"
+            android:text="The timer on your screen is live. Drag it anywhere, and every change here shows up on it right away."
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/previewLevel1Header"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Stage 1"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:textColor="@color/status_good"
-                android:background="?attr/selectableItemBackground"
-                android:layout_marginEnd="8dp"/>
-            <TextView
-                android:id="@+id/previewLevel2Header"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Stage 2"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:textColor="@color/text_primary"
-                android:background="?attr/selectableItemBackground"
-                android:layout_marginEnd="8dp"/>
-            <TextView
-                android:id="@+id/previewLevel3Header"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Stage 3"
-                android:padding="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:textColor="@color/text_primary"
-                android:background="?attr/selectableItemBackground"/>
-        </LinearLayout>
-
+        <!-- ============================ STAGES ============================ -->
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
             android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 style="@style/SettingsHeader"
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
-                android:text="Timer Display Settings"
+                android:text="Stages"
+                android:textColor="@color/text_primary" />
+
+            <ImageButton
+                android:id="@+id/helpStages"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="What are stages?"
+                android:padding="6dp"
+                android:src="@drawable/ic_info"
+                app:tint="@color/text_muted" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/stageToggleGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <Button
+                android:id="@+id/stageTab1"
+                style="@style/DisplayModeToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Calm" />
+
+            <Button
+                android:id="@+id/stageTab2"
+                style="@style/DisplayModeToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Heads up" />
+
+            <Button
+                android:id="@+id/stageTab3"
+                style="@style/DisplayModeToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Enough" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/rounded_background"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/stageRangeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="From 0 to 30 min of screen time"
+                android:textColor="@color/text_muted"
+                android:textSize="13sp" />
+
+            <GridLayout style="@style/SettingsGrid">
+
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:text="Name:"
+                    android:textColor="@color/text_primary" />
+
+                <EditText
+                    android:id="@+id/stageNameInput"
+                    style="@style/SettingsControl"
+                    android:background="@drawable/rounded_background"
+                    android:hint="Stage name"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapSentences"
+                    android:maxLength="16"
+                    android:minHeight="44dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:singleLine="true"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:textSize="15sp" />
+
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:text="Text color:"
+                    android:textColor="@color/text_primary" />
+
+                <Button
+                    android:id="@+id/stageTextColorButton"
+                    style="@style/SettingsControl"
+                    android:fontFamily="monospace" />
+
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:text="Background:"
+                    android:textColor="@color/text_primary" />
+
+                <Button
+                    android:id="@+id/stageBackgroundColorButton"
+                    style="@style/SettingsControl"
+                    android:fontFamily="monospace" />
+
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:text="Position:"
+                    android:textColor="@color/text_primary" />
+
+                <Spinner
+                    android:id="@+id/stagePositionSpinner"
+                    style="@style/SettingsControl"
+                    android:backgroundTint="@color/control_track" />
+
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:text="Font size:"
+                    android:textColor="@color/text_primary" />
+
+                <LinearLayout style="@style/SettingsControlLayout">
+
+                    <SeekBar
+                        android:id="@+id/stageFontSizeSeekBar"
+                        style="@style/SettingsSeekBar"
+                        android:progressTint="@color/accent_primary"
+                        android:thumbTint="@color/accent_primary" />
+
+                    <TextView
+                        android:id="@+id/stageFontSizeValue"
+                        style="@style/SettingsSeekBarValue"
+                        android:text="24sp"
+                        android:textColor="@color/text_primary" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:text="Blinking:"
+                    android:textColor="@color/text_primary" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/stageBlinkingSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical|start"
+                    android:minHeight="48dp"
+                    app:thumbTint="@color/accent_primary"
+                    app:trackTint="@color/control_track" />
+            </GridLayout>
+
+            <!-- Stage 1 "ends after" / stage 2 "lasts"; hidden for stage 3. -->
+            <LinearLayout
+                android:id="@+id/stageThresholdRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/stageThresholdLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Ends after:"
+                    android:textColor="@color/text_primary" />
+
+                <SeekBar
+                    android:id="@+id/stageThresholdSeekBar"
+                    style="@style/SettingsSeekBar"
+                    android:progressTint="@color/accent_primary"
+                    android:thumbTint="@color/accent_primary" />
+
+                <TextView
+                    android:id="@+id/stageThresholdValue"
+                    style="@style/SettingsSeekBarValue"
+                    android:text="30 min"
+                    android:textColor="@color/text_primary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ========================= TIMER DISPLAY ========================= -->
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/SettingsHeader"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:text="When it shows"
                 android:textColor="@color/text_primary" />
 
             <ImageButton
@@ -161,24 +294,17 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_marginBottom="16dp"
             android:background="@drawable/rounded_background"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Display Mode"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="8dp" />
+            android:orientation="vertical"
+            android:padding="12dp">
 
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/timerDisplayModeToggleGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:selectionRequired="true">
+                app:selectionRequired="true"
+                app:singleSelection="true">
 
                 <Button
                     android:id="@+id/timerDisplayModeAlways"
@@ -206,17 +332,26 @@
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
             <GridLayout
+                android:id="@+id/timerIntervalGrid"
                 style="@style/SettingsGrid"
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="0dp">
 
-                <TextView style="@style/SettingsLabel" android:text="Interval:" android:textColor="@color/text_primary" />
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:gravity="center_vertical"
+                    android:minHeight="44dp"
+                    android:text="Every:"
+                    android:textColor="@color/text_primary" />
+
                 <LinearLayout style="@style/SettingsControlLayout">
+
                     <SeekBar
                         android:id="@+id/timerDisplayIntervalSeekBar"
                         style="@style/SettingsSeekBar"
                         android:progressTint="@color/accent_primary"
                         android:thumbTint="@color/accent_primary" />
+
                     <TextView
                         android:id="@+id/timerDisplayIntervalValue"
                         style="@style/SettingsSeekBarValue"
@@ -224,13 +359,21 @@
                         android:textColor="@color/text_primary" />
                 </LinearLayout>
 
-                <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="@color/text_primary" />
+                <TextView
+                    style="@style/SettingsLabel"
+                    android:gravity="center_vertical"
+                    android:minHeight="44dp"
+                    android:text="For:"
+                    android:textColor="@color/text_primary" />
+
                 <LinearLayout style="@style/SettingsControlLayout">
+
                     <SeekBar
                         android:id="@+id/timerDisplayDurationSeekBar"
                         style="@style/SettingsSeekBar"
                         android:progressTint="@color/accent_primary"
                         android:thumbTint="@color/accent_primary" />
+
                     <TextView
                         android:id="@+id/timerDisplayDurationValue"
                         style="@style/SettingsSeekBarValue"
@@ -240,27 +383,28 @@
             </GridLayout>
         </LinearLayout>
 
+        <!-- ============================= SHAPE ============================= -->
+
+        <TextView
+            style="@style/SettingsHeader"
+            android:layout_marginTop="8dp"
+            android:text="Shape"
+            android:textColor="@color/text_primary" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_marginBottom="16dp"
             android:background="@drawable/rounded_background"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Corner Style"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="8dp" />
+            android:orientation="vertical"
+            android:padding="12dp">
 
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/overlayCornerStyleToggleGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:selectionRequired="true">
+                app:selectionRequired="true"
+                app:singleSelection="true">
 
                 <Button
                     android:id="@+id/overlayCornerStyleSquare"
@@ -282,15 +426,15 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
                 android:gravity="center_vertical"
-                android:layout_marginTop="12dp">
+                android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Colored Border"
+                    android:text="Border in the stage color"
                     android:textColor="@color/text_primary" />
 
                 <androidx.appcompat.widget.SwitchCompat
@@ -303,271 +447,21 @@
             </LinearLayout>
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/stage1SettingsSection"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+        <!-- ========================== DAILY RESET ========================== -->
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
             android:gravity="center_vertical"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp">
+            android:orientation="horizontal">
 
             <TextView
                 style="@style/SettingsHeader"
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
-                android:text="Stage 1 Settings (0 - X min)"
-                android:textColor="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/helpLevel1"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginStart="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="What is Stage 1?"
-                android:padding="6dp"
-                android:src="@drawable/ic_info"
-                app:tint="@color/text_muted" />
-        </LinearLayout>
-
-        <GridLayout
-            style="@style/SettingsGrid"
-            android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="@color/text_primary" />
-            <Button android:id="@+id/level1ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
-
-            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="@color/text_primary" />
-            <Spinner
-                android:id="@+id/level1PositionSpinner"
-                style="@style/SettingsControl"
-                android:backgroundTint="@color/control_track" />
-
-            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="@color/text_primary" />
-            <LinearLayout style="@style/SettingsControlLayout">
-                <SeekBar
-                    android:id="@+id/level1FontSizeSeekBar"
-                    style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_primary"
-                    android:thumbTint="@color/accent_primary" />
-                <TextView
-                    android:id="@+id/level1FontSizeValue"
-                    style="@style/SettingsSeekBarValue"
-                    android:text="24sp"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-
-            <TextView
-                style="@style/SettingsLabel"
-                android:text="Enable Blinking:"
-                android:textColor="@color/text_primary" />
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/level1BlinkingSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical|start"
-                android:minHeight="48dp"
-                app:thumbTint="@color/accent_primary"
-                app:trackTint="@color/control_track" />
-
-            <TextView style="@style/SettingsLabel" android:text="Max Time:" android:textColor="@color/text_primary" />
-            <LinearLayout style="@style/SettingsControlLayout">
-                <SeekBar
-                    android:id="@+id/level1TimeSeekBar"
-                    style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_primary"
-                    android:thumbTint="@color/accent_primary" />
-                <TextView
-                    android:id="@+id/level1TimeValue"
-                    style="@style/SettingsSeekBarValue"
-                    android:text="30 min"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-        </GridLayout>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/stage2SettingsSection"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                style="@style/SettingsHeader"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="0dp"
-                android:text="Stage 2 Settings (Stage 1 Max - Y min)"
-                android:textColor="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/helpLevel2"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginStart="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="What is Stage 2?"
-                android:padding="6dp"
-                android:src="@drawable/ic_info"
-                app:tint="@color/text_muted" />
-        </LinearLayout>
-        <GridLayout
-            style="@style/SettingsGrid"
-            android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="@color/text_primary" />
-            <Button android:id="@+id/level2ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
-            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="@color/text_primary" />
-            <Spinner
-                android:id="@+id/level2PositionSpinner"
-                style="@style/SettingsControl"
-                android:backgroundTint="@color/control_track" />
-
-            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="@color/text_primary" />
-            <LinearLayout style="@style/SettingsControlLayout">
-                <SeekBar
-                    android:id="@+id/level2FontSizeSeekBar"
-                    style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_primary"
-                    android:thumbTint="@color/accent_primary" />
-                <TextView
-                    android:id="@+id/level2FontSizeValue"
-                    style="@style/SettingsSeekBarValue"
-                    android:text="26sp"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-
-            <TextView
-                style="@style/SettingsLabel"
-                android:text="Enable Blinking:"
-                android:textColor="@color/text_primary" />
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/level2BlinkingSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical|start"
-                android:minHeight="48dp"
-                app:thumbTint="@color/accent_primary"
-                app:trackTint="@color/control_track" />
-
-            <TextView style="@style/SettingsLabel" android:text="Duration:" android:textColor="@color/text_primary" />
-            <LinearLayout style="@style/SettingsControlLayout">
-                <SeekBar
-                    android:id="@+id/level2TimeSeekBar"
-                    style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_primary"
-                    android:thumbTint="@color/accent_primary" />
-                <TextView
-                    android:id="@+id/level2TimeValue"
-                    style="@style/SettingsSeekBarValue"
-                    android:text="30 min"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-        </GridLayout>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/stage3SettingsSection"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                style="@style/SettingsHeader"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="0dp"
-                android:text="Stage 3 Settings (Above Stage 2 Max)"
-                android:textColor="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/helpLevel3"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginStart="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="What is Stage 3?"
-                android:padding="6dp"
-                android:src="@drawable/ic_info"
-                app:tint="@color/text_muted" />
-        </LinearLayout>
-        <GridLayout
-            style="@style/SettingsGrid"
-            android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Color:" android:textColor="@color/text_primary" />
-            <Button android:id="@+id/level3ColorButton" style="@style/SettingsControl" android:text="Pick Color" />
-            <TextView style="@style/SettingsLabel" android:text="Position:" android:textColor="@color/text_primary" />
-            <Spinner
-                android:id="@+id/level3PositionSpinner"
-                style="@style/SettingsControl"
-                android:backgroundTint="@color/control_track" />
-
-            <TextView style="@style/SettingsLabel" android:text="Font Size:" android:textColor="@color/text_primary" />
-            <LinearLayout style="@style/SettingsControlLayout">
-                <SeekBar
-                    android:id="@+id/level3FontSizeSeekBar"
-                    style="@style/SettingsSeekBar"
-                    android:progressTint="@color/accent_primary"
-                    android:thumbTint="@color/accent_primary" />
-                <TextView
-                    android:id="@+id/level3FontSizeValue"
-                    style="@style/SettingsSeekBarValue"
-                    android:text="28sp"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-
-            <TextView
-                style="@style/SettingsLabel"
-                android:text="Enable Blinking:"
-                android:textColor="@color/text_primary" />
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/level3BlinkingSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical|start"
-                android:minHeight="48dp"
-                app:thumbTint="@color/accent_primary"
-                app:trackTint="@color/control_track"
-                tools:checked="true" />
-        </GridLayout>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                style="@style/SettingsHeader"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="0dp"
-                android:text="Daily Reset Time"
+                android:text="Daily reset"
                 android:textColor="@color/text_primary" />
 
             <ImageButton
@@ -581,36 +475,47 @@
                 android:src="@drawable/ic_info"
                 app:tint="@color/text_muted" />
         </LinearLayout>
+
         <GridLayout
             style="@style/SettingsGrid"
             android:background="@drawable/rounded_background">
-            <TextView style="@style/SettingsLabel" android:text="Hour (24h):" android:textColor="@color/text_primary" />
+
+            <TextView
+                style="@style/SettingsLabel"
+                android:text="Hour (24h):"
+                android:textColor="@color/text_primary" />
+
             <Spinner
                 android:id="@+id/resetHourSpinner"
                 style="@style/SettingsControl"
                 android:backgroundTint="@color/control_track" />
 
-            <TextView style="@style/SettingsLabel" android:text="Minute:" android:textColor="@color/text_primary" />
+            <TextView
+                style="@style/SettingsLabel"
+                android:text="Minute:"
+                android:textColor="@color/text_primary" />
+
             <Spinner
                 android:id="@+id/resetMinuteSpinner"
                 style="@style/SettingsControl"
                 android:backgroundTint="@color/control_track" />
         </GridLayout>
 
-        <!-- Import / Export Section -->
+        <!-- ======================== IMPORT / EXPORT ======================== -->
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
             android:gravity="center_vertical"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp">
+            android:orientation="horizontal">
 
             <TextView
                 style="@style/SettingsHeader"
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="0dp"
-                android:text="Import &amp; Export"
+                android:text="Import &amp; export"
                 android:textColor="@color/text_primary" />
 
             <ImageButton
@@ -628,47 +533,33 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_marginBottom="16dp"
             android:background="@drawable/rounded_background"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
+            android:orientation="horizontal"
+            android:padding="12dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Save or restore your settings as a JSON file."
-                android:textColor="@color/text_muted"
-                android:textSize="13sp"
-                android:layout_marginBottom="12dp" />
+            <Button
+                android:id="@+id/exportSettingsButton"
+                style="@style/Widget.Awareen.Button.Flat"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="Export"
+                android:textSize="14sp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/exportSettingsButton"
-                    style="@style/Widget.Awareen.Button.Flat"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:text="Export"
-                    android:textSize="14sp"
-                    android:layout_marginEnd="8dp" />
-
-                <Button
-                    android:id="@+id/importSettingsButton"
-                    style="@style/Widget.Awareen.Button.Flat"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:text="Import"
-                    android:textSize="14sp" />
-            </LinearLayout>
+            <Button
+                android:id="@+id/importSettingsButton"
+                style="@style/Widget.Awareen.Button.Flat"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="Import"
+                android:textSize="14sp" />
         </LinearLayout>
 
         <Button
-            android:id="@+id/saveButton"
+            android:id="@+id/doneButton"
             style="@style/Widget.Awareen.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="56dp"
@@ -676,7 +567,7 @@
             android:layout_marginBottom="16dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
-            android:text="Save settings"
+            android:text="Done"
             android:textSize="16sp" />
 
     </LinearLayout>

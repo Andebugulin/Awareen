@@ -32,6 +32,12 @@ object AppSettings {
     const val LEVEL_3_FONT_SIZE = "level_3_font_size"
     const val LEVEL_3_BLINKING_ENABLED = "level_3_blinking_enabled"
 
+    // --- Per-stage name and badge background (N = 1..3) ---
+    // Keyed by level so the three stages stay symmetric; see levelNameKey /
+    // levelBackgroundKey rather than spelling the strings out.
+    fun levelNameKey(level: Int) = "level_${level}_name"
+    fun levelBackgroundKey(level: Int) = "level_${level}_background_color"
+
     // --- Timer Display Settings ---
     const val TIMER_DISPLAY_MODE = "timer_display_mode" // MODE_ALWAYS / MODE_INTERVAL / MODE_NEVER
     const val TIMER_DISPLAY_INTERVAL_MINUTES = "timer_display_interval_minutes" // How often to show (in minutes)
@@ -83,6 +89,11 @@ object AppSettings {
     const val DEFAULT_LEVEL_3_FONT_SIZE = 28 // Default font size in sp
     const val DEFAULT_LEVEL_3_BLINKING_ENABLED = true
 
+    val DEFAULT_LEVEL_NAMES = listOf("Calm", "Heads up", "Enough")
+    // Same translucent pine scrim the badge always had, so existing installs
+    // look unchanged until the user picks a background of their own.
+    val DEFAULT_LEVEL_BACKGROUND_COLOR = Color.parseColor("#B30F1613")
+
     // Default timer display settings
     const val DEFAULT_TIMER_DISPLAY_MODE = MODE_INTERVAL
     const val DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES = 1 // Show every 1 minute
@@ -101,6 +112,15 @@ object AppSettings {
     // Default reset time (midnight)
     const val DEFAULT_RESET_HOUR = 0
     const val DEFAULT_RESET_MINUTE = 0
+
+    // --- "Your day" split on the Analytics screen, in minutes ---
+    const val DAY_SLEEP_MINUTES = "day_sleep_minutes"
+    const val DAY_BUSY_MINUTES = "day_busy_minutes"
+    const val DEFAULT_DAY_SLEEP_MINUTES = 7 * 60
+    const val DEFAULT_DAY_BUSY_MINUTES = 8 * 60
+
+    // --- One-time onboarding hints ---
+    const val ONBOARDING_SETTINGS_HINT_SHOWN = "onboarding_settings_hint_shown"
 
     // Action for broadcasting settings updates
     // Broadcast sent after settings save. recievers must be registered with setPackage(packageName) target!

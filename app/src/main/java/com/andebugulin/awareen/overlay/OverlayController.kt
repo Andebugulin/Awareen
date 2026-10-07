@@ -18,16 +18,29 @@ import android.view.ViewConfiguration
 import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import com.andebugulin.awareen.R
 import com.andebugulin.awareen.domain.OverlayDecisions
 import kotlin.math.abs
 
+/**
+ * @param isPreview true for the live preview SettingsActivity shows while the
+ *   user edits the timer. A preview is always drawn and, while it exists, the
+ *   service's own overlay hides itself so only one timer is on screen.
+ * @param onCustomPositionSaved called with the level after the user drags the
+ *   timer to a new spot (the position is already persisted by then).
+ */
 class OverlayController(
     private val context: Context,
     private val prefs: SharedPreferences,
+    private val isPreview: Boolean = false,
+    private val onCustomPositionSaved: ((level: Int) -> Unit)? = null,
 ) {
     companion object {
+        // Service and SettingsActivity share one process, so a plain flag is
+        // enough for the preview to tell the service's overlay to step aside.
+        @Volatile
+        private var previewShowing = false
+
         const val LEVEL_1_USE_CUSTOM = "level_1_use_custom_position"
         // Fraction of screen [0f, 1f]. Survives rotation because it scales with
         // the screen instead of being pinned to a pixel coordinate. Legacy keys
@@ -80,15 +93,14 @@ class OverlayController(
     private var windowManager: WindowManager? = null
     private var currentLayoutParams: WindowManager.LayoutParams? = null
 
-    // Mutable chrome for the overlay itself: a translucent scrim fill with a
-    // ring in the current level's color, so the badge carries the level
-    // identity even at a glance. Corner radius follows the user's square/
+    // Mutable chrome for the overlay itself: the level's background fill
+    // (a translucent scrim by default) with an optional ring in the level's
+    // color, so the badge carries the level identity even at a glance. Corner radius follows the user's square/
     // rounded choice (0, or oversized so it clips to a pill regardless of the
     // view's actual size). render() only ever mutates fill/stroke/radius —
     // never replaced, so this is the one GradientDrawable for the view's life.
     private var badgeBackground: GradientDrawable? = null
     private var strokeWidthPx: Int = 0
-    private var scrimColor: Int = 0
     private var pillCornerRadiusPx: Float = 0f
 
     private var currentLevel = 1
@@ -148,14 +160,14 @@ class OverlayController(
         val density = context.resources.displayMetrics.density
         strokeWidthPx = (1.5f * density).toInt()
         pillCornerRadiusPx = 100f * density // oversized on purpose — clips to a pill at any real badge size
-        scrimColor = ContextCompat.getColor(context, R.color.scrim_overlay)
         badgeBackground = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            setColor(scrimColor)
         }
         overlayView?.background = badgeBackground
 
         overlayView?.setOnTouchListener(buildTouchListener(handler))
+
+        if (isPreview) previewShowing = true
 
         try {
             if (overlayView != null && currentLayoutParams != null) {
@@ -185,6 +197,7 @@ class OverlayController(
     }
 
     fun destroy() {
+        if (isPreview) previewShowing = false
         if (overlayView != null && windowManager != null) {
             try {
                 windowManager?.removeView(overlayView)
@@ -272,7 +285,8 @@ class OverlayController(
         // 6. Colors. Blink parity is keyed to `seconds`, so the color flip lands
         // on the same instant as the digit change. The ring, when the user has
         // it enabled, always matches the level color; only the fill and text
-        // swap on a blink flash.
+        // swap on a blink flash: the fill takes the text color and the text
+        // takes an opaque version of the background.
         if (settings.borderEnabled) {
             badgeBackground?.setStroke(strokeWidthPx, levelSettings.color)
         } else {
@@ -280,41 +294,38 @@ class OverlayController(
         }
         if (levelSettings.blinkingEnabled) {
             if (seconds % 2 == 0) {
-                timeTextView?.setTextColor(Color.BLACK)
+                timeTextView?.setTextColor(levelSettings.backgroundColor or 0xFF000000.toInt())
                 badgeBackground?.setColor(levelSettings.color)
             } else {
                 timeTextView?.setTextColor(levelSettings.color)
-                badgeBackground?.setColor(scrimColor)
+                badgeBackground?.setColor(levelSettings.backgroundColor)
             }
         } else {
             timeTextView?.setTextColor(levelSettings.color)
-            badgeBackground?.setColor(scrimColor)
+            badgeBackground?.setColor(levelSettings.backgroundColor)
         }
 
         // 7. Display-mode visibility. NEVER hides the overlay entirely; the
         // service keeps ticking so the widget and analytics stay accurate.
-        val shouldShow = OverlayDecisions.shouldShowOverlay(
+        // Re-evaluated every tick (not only on change) so the service's
+        // overlay also notices a Settings preview appearing or going away.
+        isIntervalVisible = isPreview || OverlayDecisions.shouldShowOverlay(
             settings.timerDisplayMode,
             seconds,
             settings.timerDisplayIntervalMinutes,
             settings.timerDisplayDurationSeconds
         )
-        setIntervalVisible(shouldShow)
+        updateTimerVisibility()
     }
 
     // =========================================================================
     // VISIBILITY (internal — touch listener + render)
     // =========================================================================
 
-    private fun setIntervalVisible(shouldShow: Boolean) {
-        if (shouldShow == isIntervalVisible) return
-        isIntervalVisible = shouldShow
-        updateTimerVisibility()
-    }
-
     private fun updateTimerVisibility() {
-        val visible = !isHidden && isIntervalVisible
-        overlayView?.visibility = if (visible) View.VISIBLE else View.GONE
+        val visible = !isHidden && isIntervalVisible && (isPreview || !previewShowing)
+        val newVisibility = if (visible) View.VISIBLE else View.GONE
+        if (overlayView?.visibility != newVisibility) overlayView?.visibility = newVisibility
     }
 
     // =========================================================================
@@ -611,6 +622,7 @@ class OverlayController(
                             lastAppliedPositionKey =
                                 positionKeyFor(currentLevel, currentPositionString)
                             updateLayout()
+                            onCustomPositionSaved?.invoke(currentLevel)
                         }
                         isDragging = false
                         return true

@@ -1,5 +1,6 @@
 package com.andebugulin.awareen.ui
 
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -7,44 +8,50 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.DisplayMetrics
 import android.util.Log
-import android.util.TypedValue
-import android.view.WindowManager
-import android.view.MenuItem
 import android.view.View
+import android.view.WindowManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet
-import androidx.core.content.ContextCompat
-import android.app.AlertDialog
-import android.widget.ImageButton
-import android.os.Handler
-import android.os.Looper
-import androidx.appcompat.widget.SwitchCompat
-import android.text.Editable
-import android.text.TextWatcher
-import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import com.andebugulin.awareen.R
 import com.andebugulin.awareen.data.AppSettings
+import com.andebugulin.awareen.data.ScreenTimeRepository
 import com.andebugulin.awareen.data.SettingsRepository
+import com.andebugulin.awareen.domain.OverlayDecisions
 import com.andebugulin.awareen.overlay.LevelSettings
 import com.andebugulin.awareen.overlay.OverlayController
 import com.andebugulin.awareen.overlay.OverlaySettings
 import com.andebugulin.awareen.service.ScreenTimeService
+import com.google.android.material.button.MaterialButtonToggleGroup
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Settings apply live: every control writes through [SettingsRepository] the
+ * moment it changes and the service is notified, so there is nothing to save
+ * or discard. While the screen is visible a preview [OverlayController] shows
+ * the real floating timer for the selected stage (the service's own overlay
+ * steps aside meanwhile), so the user can drag it and watch every change.
+ */
 class SettingsActivity : AppCompatActivity() {
 
     companion object {
@@ -55,109 +62,70 @@ class SettingsActivity : AppCompatActivity() {
         const val MIN_LEVEL_2_DURATION_MINUTES = 15
         const val MAX_LEVEL_2_DURATION_MINUTES = 60
 
-        const val LEVEL_3_BLINKING_ENABLED = "level3_blinking_enabled"
-        const val DEFAULT_LEVEL_3_BLINKING_ENABLED = true
+        private const val POSITION_CUSTOM = "Custom (dragged)"
+        private val PRESET_POSITIONS = listOf(
+            "Top Left", "Top Center", "Top Right",
+            "Middle Left", "Middle Center", "Middle Right",
+            "Bottom Left", "Bottom Center", "Bottom Right"
+        )
 
         private const val TAG = "SettingsActivity"
     }
 
     private lateinit var prefs: SharedPreferences
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var screenTimeRepository: ScreenTimeRepository
 
-    // UI Elements for Preview
-    private lateinit var previewLayout: ConstraintLayout
-    private lateinit var previewTimeText: TextView
-    private lateinit var previewLevel1Header: TextView
-    private lateinit var previewLevel2Header: TextView
-    private lateinit var previewLevel3Header: TextView
+    /** The persisted settings; every edit replaces this and writes it through. */
+    private lateinit var settings: OverlaySettings
 
-    // Only the selected stage's settings block is visible at a time -- same
-    // stage the preview tabs already track -- so the screen isn't three
-    // near-identical blocks stacked and always all visible.
-    private lateinit var stage1SettingsSection: View
-    private lateinit var stage2SettingsSection: View
-    private lateinit var stage3SettingsSection: View
+    /** Unsaved settings shown on the preview while a color dialog is open. */
+    private var previewOverride: OverlaySettings? = null
 
-    // UI Elements for Level 1 Settings
-    private lateinit var level1ColorButton: Button
-    private lateinit var level1PositionSpinner: Spinner
-    private lateinit var level1FontSizeSeekBar: SeekBar
-    private lateinit var level1FontSizeValue: TextView
-    private lateinit var level1TimeSeekBar: SeekBar
-    private lateinit var level1TimeValue: TextView
-    private lateinit var level1BlinkingSwitch: SwitchCompat
+    private var selectedStage = 1
 
-    // UI Elements for Level 2 Settings
-    private lateinit var level2ColorButton: Button
-    private lateinit var level2PositionSpinner: Spinner
-    private lateinit var level2FontSizeSeekBar: SeekBar
-    private lateinit var level2FontSizeValue: TextView
-    private lateinit var level2TimeSeekBar: SeekBar
-    private lateinit var level2TimeValue: TextView
-    private lateinit var level2BlinkingSwitch: SwitchCompat
+    // True while controls are being filled from [settings], so their
+    // listeners don't write the same values straight back.
+    private var bindingControls = false
 
-    // UI Elements for Level 3 Settings
-    private lateinit var level3ColorButton: Button
-    private lateinit var level3PositionSpinner: Spinner
-    private lateinit var level3FontSizeSeekBar: SeekBar
-    private lateinit var level3FontSizeValue: TextView
-    private lateinit var level3BlinkingSwitch: SwitchCompat
+    private var previewController: OverlayController? = null
+    private val previewHandler = Handler(Looper.getMainLooper())
+    private var previewTick = 0
+    private val previewRunnable = object : Runnable {
+        override fun run() {
+            renderPreview()
+            previewTick++
+            previewHandler.postDelayed(this, 1000)
+        }
+    }
 
-    // UI Elements for Reset Time Settings
-    private lateinit var resetHourSpinner: Spinner
-    private lateinit var resetMinuteSpinner: Spinner
+    private lateinit var liveHintTextView: TextView
+    private lateinit var stageToggleGroup: MaterialButtonToggleGroup
+    private lateinit var stageTabs: List<Button>
+    private lateinit var stageRangeTextView: TextView
+    private lateinit var stageNameInput: EditText
+    private lateinit var stageTextColorButton: Button
+    private lateinit var stageBackgroundColorButton: Button
+    private lateinit var stagePositionSpinner: Spinner
+    private lateinit var stageFontSizeSeekBar: SeekBar
+    private lateinit var stageFontSizeValue: TextView
+    private lateinit var stageBlinkingSwitch: SwitchCompat
+    private lateinit var stageThresholdRow: View
+    private lateinit var stageThresholdLabel: TextView
+    private lateinit var stageThresholdSeekBar: SeekBar
+    private lateinit var stageThresholdValue: TextView
 
-    // Timer Display Settings
-    private lateinit var timerDisplayModeToggleGroup: com.google.android.material.button.MaterialButtonToggleGroup
-    private lateinit var timerDisplayModeAlways: Button
-    private lateinit var timerDisplayModeInterval: Button
-    private lateinit var timerDisplayModeNever: Button
+    private lateinit var timerDisplayModeToggleGroup: MaterialButtonToggleGroup
+    private lateinit var timerIntervalGrid: View
     private lateinit var timerDisplayIntervalSeekBar: SeekBar
     private lateinit var timerDisplayIntervalValue: TextView
     private lateinit var timerDisplayDurationSeekBar: SeekBar
     private lateinit var timerDisplayDurationValue: TextView
-    private var currentDisplayMode: String = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
-
-    private var currentDisplayIntervalMinutes = 0
-    private var currentDisplayDurationSeconds = 0
-
-    private lateinit var overlayCornerStyleToggleGroup: com.google.android.material.button.MaterialButtonToggleGroup
-    private var currentCornerStyle: String = AppSettings.DEFAULT_OVERLAY_CORNER_STYLE
+    private lateinit var overlayCornerStyleToggleGroup: MaterialButtonToggleGroup
     private lateinit var overlayBorderSwitch: SwitchCompat
 
-    private var currentPreviewLevel = 1
-
-    private val positionOptions = arrayOf(
-        "Top Left", "Top Center", "Top Right",
-        "Middle Left", "Middle Center", "Middle Right",
-        "Bottom Left", "Bottom Center", "Bottom Right"
-    )
-
-    private val positionOptionsWithCustom = arrayOf(
-        "Custom",
-        "Top Left", "Top Center", "Top Right",
-        "Middle Left", "Middle Center", "Middle Right",
-        "Bottom Left", "Bottom Center", "Bottom Right"
-    )
-
-    private var currentLevel1MaxTimeMinutes = 0
-    private var currentLevel2DurationMinutes = 0
-
-    private var currentLevel1Color: Int = AppSettings.DEFAULT_LEVEL_1_COLOR
-    private var currentLevel2Color: Int = AppSettings.DEFAULT_LEVEL_2_COLOR
-    private var currentLevel3Color: Int = AppSettings.DEFAULT_LEVEL_3_COLOR
-    private var currentLevel1BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED
-    private var currentLevel2BlinkingEnabled: Boolean = AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED
-    private var currentLevel3BlinkingEnabled: Boolean = DEFAULT_LEVEL_3_BLINKING_ENABLED
-
-    private var currentHour = 0
-    private var currentMinute = 0
-
-    private var hasChanges = false
-    private lateinit var closeButton: ImageButton
-
-    private var isInitialSetup = true
-    private var userChangesMade = false
+    private lateinit var resetHourSpinner: Spinner
+    private lateinit var resetMinuteSpinner: Spinner
 
     // =========================================================================
     // SAF launchers for export/import
@@ -175,11 +143,9 @@ class SettingsActivity : AppCompatActivity() {
         uri?.let { importSettingsFromUri(it) }
     }
 
-    private fun finishInitialSetup() {
-        Handler(Looper.getMainLooper()).postDelayed({
-            isInitialSetup = false
-        }, 300)
-    }
+    // =========================================================================
+    // LIFECYCLE
+    // =========================================================================
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -188,142 +154,444 @@ class SettingsActivity : AppCompatActivity() {
 
         prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
         settingsRepository = SettingsRepository(this, prefs)
-
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Settings"
+        screenTimeRepository = ScreenTimeRepository(prefs)
+        settings = settingsRepository.loadOverlaySettings()
 
         initializeViews()
-        setupCloseButton()
-        setupExportImportButtons()
+        setupStageControls()
+        setupTimerDisplayControls()
+        setupResetTimeControls()
         setupHelpButtons()
 
-        setupClickablePreviewHeaders()
-        loadAndSetupControls()
-
-        val saveButton = findViewById<Button>(R.id.saveButton)
-        saveButton.setOnClickListener {
-            if (validateSettings()) {
-                saveSettings()
-                settingsRepository.notifySettingsUpdated()
-
-                Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show()
-
-                finish()
-            }
+        findViewById<ImageButton>(R.id.closeButton).setOnClickListener { finish() }
+        findViewById<Button>(R.id.doneButton).setOnClickListener { finish() }
+        findViewById<Button>(R.id.exportSettingsButton).setOnClickListener {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
+            exportSettingsLauncher.launch("awareen_settings_$timestamp.json")
         }
-        updatePreview()
+        findViewById<Button>(R.id.importSettingsButton).setOnClickListener {
+            importSettingsLauncher.launch(arrayOf("application/json", "*/*"))
+        }
+
+        bindAllControls()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startPreview()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopPreview()
     }
 
     private fun initializeViews() {
-        // Preview section
-        previewLayout = findViewById(R.id.previewLayout)
-        previewTimeText = findViewById(R.id.previewTimeText)
-        previewLevel1Header = findViewById(R.id.previewLevel1Header)
-        previewLevel2Header = findViewById(R.id.previewLevel2Header)
-        previewLevel3Header = findViewById(R.id.previewLevel3Header)
-        stage1SettingsSection = findViewById(R.id.stage1SettingsSection)
-        stage2SettingsSection = findViewById(R.id.stage2SettingsSection)
-        stage3SettingsSection = findViewById(R.id.stage3SettingsSection)
+        liveHintTextView = findViewById(R.id.liveHintTextView)
+        stageToggleGroup = findViewById(R.id.stageToggleGroup)
+        stageTabs = listOf(findViewById(R.id.stageTab1), findViewById(R.id.stageTab2), findViewById(R.id.stageTab3))
+        stageRangeTextView = findViewById(R.id.stageRangeTextView)
+        stageNameInput = findViewById(R.id.stageNameInput)
+        stageTextColorButton = findViewById(R.id.stageTextColorButton)
+        stageBackgroundColorButton = findViewById(R.id.stageBackgroundColorButton)
+        stagePositionSpinner = findViewById(R.id.stagePositionSpinner)
+        stageFontSizeSeekBar = findViewById(R.id.stageFontSizeSeekBar)
+        stageFontSizeValue = findViewById(R.id.stageFontSizeValue)
+        stageBlinkingSwitch = findViewById(R.id.stageBlinkingSwitch)
+        stageThresholdRow = findViewById(R.id.stageThresholdRow)
+        stageThresholdLabel = findViewById(R.id.stageThresholdLabel)
+        stageThresholdSeekBar = findViewById(R.id.stageThresholdSeekBar)
+        stageThresholdValue = findViewById(R.id.stageThresholdValue)
 
-        // Level 1 controls
-        level1ColorButton = findViewById(R.id.level1ColorButton)
-        level1PositionSpinner = findViewById(R.id.level1PositionSpinner)
-        level1FontSizeSeekBar = findViewById(R.id.level1FontSizeSeekBar)
-        level1FontSizeValue = findViewById(R.id.level1FontSizeValue)
-        level1TimeSeekBar = findViewById(R.id.level1TimeSeekBar)
-        level1TimeValue = findViewById(R.id.level1TimeValue)
-        level1BlinkingSwitch = findViewById(R.id.level1BlinkingSwitch)
-
-        // Level 2 controls
-        level2ColorButton = findViewById(R.id.level2ColorButton)
-        level2PositionSpinner = findViewById(R.id.level2PositionSpinner)
-        level2FontSizeSeekBar = findViewById(R.id.level2FontSizeSeekBar)
-        level2FontSizeValue = findViewById(R.id.level2FontSizeValue)
-        level2TimeSeekBar = findViewById(R.id.level2TimeSeekBar)
-        level2TimeValue = findViewById(R.id.level2TimeValue)
-        level2BlinkingSwitch = findViewById(R.id.level2BlinkingSwitch)
-
-        // Level 3 controls
-        level3ColorButton = findViewById(R.id.level3ColorButton)
-        level3PositionSpinner = findViewById(R.id.level3PositionSpinner)
-        level3FontSizeSeekBar = findViewById(R.id.level3FontSizeSeekBar)
-        level3FontSizeValue = findViewById(R.id.level3FontSizeValue)
-        level3BlinkingSwitch = findViewById(R.id.level3BlinkingSwitch)
-
-        // Reset time controls
-        resetHourSpinner = findViewById(R.id.resetHourSpinner)
-        resetMinuteSpinner = findViewById(R.id.resetMinuteSpinner)
-
-        // Timer Display controls
         timerDisplayModeToggleGroup = findViewById(R.id.timerDisplayModeToggleGroup)
-        timerDisplayModeAlways = findViewById(R.id.timerDisplayModeAlways)
-        timerDisplayModeInterval = findViewById(R.id.timerDisplayModeInterval)
-        timerDisplayModeNever = findViewById(R.id.timerDisplayModeNever)
+        timerIntervalGrid = findViewById(R.id.timerIntervalGrid)
         timerDisplayIntervalSeekBar = findViewById(R.id.timerDisplayIntervalSeekBar)
         timerDisplayIntervalValue = findViewById(R.id.timerDisplayIntervalValue)
         timerDisplayDurationSeekBar = findViewById(R.id.timerDisplayDurationSeekBar)
         timerDisplayDurationValue = findViewById(R.id.timerDisplayDurationValue)
         overlayCornerStyleToggleGroup = findViewById(R.id.overlayCornerStyleToggleGroup)
         overlayBorderSwitch = findViewById(R.id.overlayBorderSwitch)
+
+        resetHourSpinner = findViewById(R.id.resetHourSpinner)
+        resetMinuteSpinner = findViewById(R.id.resetMinuteSpinner)
     }
 
-    private fun setupCloseButton() {
-        closeButton = findViewById(R.id.closeButton)
-        closeButton.setOnClickListener {
-            handleClose()
+    // =========================================================================
+    // LIVE PREVIEW
+    // =========================================================================
+
+    private fun startPreview() {
+        if (!android.provider.Settings.canDrawOverlays(this)) {
+            liveHintTextView.text =
+                "Allow Awareen to display over other apps to see the timer live while you edit it."
+            return
+        }
+        if (previewController == null) {
+            previewController = OverlayController(this, prefs, isPreview = true) {
+                // The user dragged the timer: the spinner should now say so.
+                bindPositionSpinner()
+            }.also { it.create(previewHandler, settings.level(selectedStage).position) }
+        }
+        previewTick = 0
+        previewHandler.removeCallbacks(previewRunnable)
+        previewHandler.post(previewRunnable)
+    }
+
+    private fun stopPreview() {
+        previewHandler.removeCallbacks(previewRunnable)
+        previewController?.destroy()
+        previewController = null
+    }
+
+    /**
+     * Shows the selected stage. Uses today's real total when it already falls
+     * in that stage; otherwise counts up from the stage's start, so blinking
+     * and the digits look the way they will for real.
+     */
+    private fun renderPreview() {
+        val shown = previewOverride ?: settings
+        val stageStart = when (selectedStage) {
+            1 -> 0
+            2 -> shown.level1MaxTimeSeconds
+            else -> shown.level1MaxTimeSeconds + shown.level2DurationSeconds
+        }
+        val live = screenTimeRepository.getTodayScreenTime()
+        val seconds = if (stageOf(live, shown) == selectedStage) live else stageStart + previewTick
+        previewController?.render(seconds, shown)
+    }
+
+    private fun stageOf(seconds: Int, s: OverlaySettings) =
+        OverlayDecisions.levelFor(seconds, s.level1MaxTimeSeconds, s.level2DurationSeconds)
+
+    // =========================================================================
+    // WRITE-THROUGH
+    // =========================================================================
+
+    private fun commit(newSettings: OverlaySettings) {
+        settings = newSettings
+        previewOverride = null
+        settingsRepository.saveOverlaySettings(newSettings)
+        settingsRepository.notifySettingsUpdated()
+        renderPreview()
+    }
+
+    private fun commitStage(transform: (LevelSettings) -> LevelSettings) {
+        commit(settings.withLevel(selectedStage, transform(settings.level(selectedStage))))
+    }
+
+    private fun stageName(level: Int): String =
+        settings.level(level).name.ifBlank { AppSettings.DEFAULT_LEVEL_NAMES[level - 1] }
+
+    // =========================================================================
+    // BINDING — fill controls from [settings]
+    // =========================================================================
+
+    private fun bindAllControls() {
+        bindingControls = true
+        stageTabs.forEachIndexed { i, tab -> tab.text = stageName(i + 1) }
+        stageToggleGroup.check(stageTabs[selectedStage - 1].id)
+
+        timerDisplayModeToggleGroup.check(buttonIdForMode(settings.timerDisplayMode))
+        timerDisplayIntervalSeekBar.progress =
+            settings.timerDisplayIntervalMinutes - AppSettings.MIN_DISPLAY_INTERVAL_MINUTES
+        timerDisplayIntervalValue.text = "${settings.timerDisplayIntervalMinutes} min"
+        timerDisplayDurationSeekBar.progress =
+            settings.timerDisplayDurationSeconds - AppSettings.MIN_DISPLAY_DURATION_SECONDS
+        timerDisplayDurationValue.text = "${settings.timerDisplayDurationSeconds} sec"
+        timerIntervalGrid.visibility =
+            if (settings.timerDisplayMode == AppSettings.MODE_INTERVAL) View.VISIBLE else View.GONE
+        overlayCornerStyleToggleGroup.check(
+            if (settings.cornerStyle == AppSettings.CORNER_STYLE_ROUNDED) R.id.overlayCornerStyleRounded
+            else R.id.overlayCornerStyleSquare
+        )
+        overlayBorderSwitch.isChecked = settings.borderEnabled
+
+        resetHourSpinner.setSelection(settingsRepository.getResetHour())
+        resetMinuteSpinner.setSelection(settingsRepository.getResetMinute())
+        bindingControls = false
+
+        bindStageControls()
+    }
+
+    private fun bindStageControls() {
+        bindingControls = true
+        val stage = settings.level(selectedStage)
+
+        if (stageNameInput.text.toString() != stage.name) stageNameInput.setText(stage.name)
+        stageNameInput.hint = AppSettings.DEFAULT_LEVEL_NAMES[selectedStage - 1]
+        styleColorButton(stageTextColorButton, stage.color)
+        styleColorButton(stageBackgroundColorButton, stage.backgroundColor)
+        stageFontSizeSeekBar.progress = (stage.fontSize - MIN_FONT_SIZE_SP).toInt()
+        stageFontSizeValue.text = "${stage.fontSize.toInt()}sp"
+        stageBlinkingSwitch.isChecked = stage.blinkingEnabled
+
+        when (selectedStage) {
+            1 -> {
+                stageThresholdRow.visibility = View.VISIBLE
+                stageThresholdLabel.text = "Ends after:"
+                stageThresholdSeekBar.max = MAX_LEVEL_1_TIME_MINUTES - MIN_LEVEL_1_TIME_MINUTES
+                stageThresholdSeekBar.progress = settings.level1MaxTimeSeconds / 60 - MIN_LEVEL_1_TIME_MINUTES
+            }
+            2 -> {
+                stageThresholdRow.visibility = View.VISIBLE
+                stageThresholdLabel.text = "Lasts:"
+                stageThresholdSeekBar.max = MAX_LEVEL_2_DURATION_MINUTES - MIN_LEVEL_2_DURATION_MINUTES
+                stageThresholdSeekBar.progress = settings.level2DurationSeconds / 60 - MIN_LEVEL_2_DURATION_MINUTES
+            }
+            else -> stageThresholdRow.visibility = View.GONE
+        }
+        bindStageRangeText()
+        bindingControls = false
+
+        bindPositionSpinner()
+    }
+
+    private fun bindStageRangeText() {
+        val l1 = settings.level1MaxTimeSeconds / 60
+        val l2 = l1 + settings.level2DurationSeconds / 60
+        stageRangeTextView.text = when (selectedStage) {
+            1 -> "From 0 to $l1 min of screen time"
+            2 -> "From $l1 to $l2 min of screen time"
+            else -> "From $l2 min until the daily reset"
+        }
+        when (selectedStage) {
+            1 -> stageThresholdValue.text = "$l1 min"
+            2 -> stageThresholdValue.text = "${l2 - l1} min"
         }
     }
 
-    private fun setupExportImportButtons() {
-        findViewById<Button>(R.id.exportSettingsButton).setOnClickListener {
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
-            exportSettingsLauncher.launch("awareen_settings_$timestamp.json")
+    /**
+     * "Custom (dragged)" is only offered while the stage actually has a
+     * dragged position; otherwise the list is just the presets.
+     */
+    private fun bindPositionSpinner() {
+        val hasCustom = prefs.getBoolean(customKey(selectedStage), false)
+        val options = if (hasCustom) listOf(POSITION_CUSTOM) + PRESET_POSITIONS else PRESET_POSITIONS
+        stagePositionSpinner.adapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, options)
+        val index = if (hasCustom) 0 else PRESET_POSITIONS.indexOf(settings.level(selectedStage).position)
+        stagePositionSpinner.setSelection(index.coerceAtLeast(0))
+    }
+
+    private fun customKey(level: Int) = when (level) {
+        1 -> OverlayController.LEVEL_1_USE_CUSTOM
+        2 -> OverlayController.LEVEL_2_USE_CUSTOM
+        else -> OverlayController.LEVEL_3_USE_CUSTOM
+    }
+
+    /** A color button is a swatch of its color, labelled with the hex value in a readable ink. */
+    private fun styleColorButton(button: Button, color: Int) {
+        button.setBackgroundColor(color)
+        button.text = if (Color.alpha(color) == 255) String.format("#%06X", 0xFFFFFF and color)
+        else String.format("#%06X · %d%%", 0xFFFFFF and color, Color.alpha(color) * 100 / 255)
+        // Judge legibility against what the user actually sees: the swatch
+        // composited over the card surface.
+        val seen = ColorUtils.compositeColors(color, ContextCompat.getColor(this, R.color.surface))
+        button.setTextColor(if (ColorUtils.calculateLuminance(seen) > 0.4) Color.BLACK else Color.WHITE)
+    }
+
+    // =========================================================================
+    // LISTENERS — set up once; they edit the selected stage
+    // =========================================================================
+
+    private fun setupStageControls() {
+        stageToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || bindingControls) return@addOnButtonCheckedListener
+            val stage = stageTabs.indexOfFirst { it.id == checkedId } + 1
+            if (stage == 0 || stage == selectedStage) return@addOnButtonCheckedListener
+            selectedStage = stage
+            previewTick = 0
+            bindStageControls()
+            renderPreview()
         }
 
-        findViewById<Button>(R.id.importSettingsButton).setOnClickListener {
-            importSettingsLauncher.launch(arrayOf("application/json", "*/*"))
+        stageNameInput.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                if (bindingControls) return
+                val name = s.toString().trim()
+                if (name == settings.level(selectedStage).name) return
+                commitStage { it.copy(name = name) }
+                stageTabs[selectedStage - 1].text = stageName(selectedStage)
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        stageTextColorButton.setOnClickListener {
+            val stage = settings.level(selectedStage)
+            showColorPickerDialog(
+                stage.color,
+                allowAlpha = false,
+                onPreview = { c -> previewStage(stage.copy(color = c)) },
+                onSelected = { c -> commitStage { it.copy(color = c) }; bindStageControls() },
+            )
+        }
+
+        stageBackgroundColorButton.setOnClickListener {
+            val stage = settings.level(selectedStage)
+            showColorPickerDialog(
+                stage.backgroundColor,
+                allowAlpha = true,
+                onPreview = { c -> previewStage(stage.copy(backgroundColor = c)) },
+                onSelected = { c -> commitStage { it.copy(backgroundColor = c) }; bindStageControls() },
+            )
+        }
+
+        stagePositionSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selected = parent?.getItemAtPosition(position)?.toString() ?: return
+                if (selected == POSITION_CUSTOM) return
+                val hadCustom = prefs.getBoolean(customKey(selectedStage), false)
+                if (!hadCustom && selected == settings.level(selectedStage).position) return
+                // Picking a preset drops the dragged position for this stage.
+                if (hadCustom) settingsRepository.clearCustomPosition(selectedStage)
+                commitStage { it.copy(position = selected) }
+                if (hadCustom) bindPositionSpinner()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        stageFontSizeSeekBar.max = (MAX_FONT_SIZE_SP - MIN_FONT_SIZE_SP).toInt()
+        stageFontSizeSeekBar.setOnSeekBarChangeListener(onUserProgress { progress ->
+            val size = MIN_FONT_SIZE_SP + progress
+            stageFontSizeValue.text = "${size.toInt()}sp"
+            commitStage { it.copy(fontSize = size) }
+        })
+
+        stageBlinkingSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (bindingControls) return@setOnCheckedChangeListener
+            commitStage { it.copy(blinkingEnabled = isChecked) }
+        }
+
+        stageThresholdSeekBar.setOnSeekBarChangeListener(onUserProgress { progress ->
+            when (selectedStage) {
+                1 -> commit(settings.copy(level1MaxTimeSeconds = (MIN_LEVEL_1_TIME_MINUTES + progress) * 60))
+                2 -> commit(settings.copy(level2DurationSeconds = (MIN_LEVEL_2_DURATION_MINUTES + progress) * 60))
+            }
+            bindStageRangeText()
+        })
+    }
+
+    /** Preview an unsaved edit of the selected stage without writing it. */
+    private fun previewStage(stage: LevelSettings) {
+        previewOverride = settings.withLevel(selectedStage, stage)
+        renderPreview()
+    }
+
+    private fun onUserProgress(onChange: (Int) -> Unit) = object : SeekBar.OnSeekBarChangeListener {
+        override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+            if (fromUser) onChange(progress)
+        }
+        override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+        override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+    }
+
+    private fun setupTimerDisplayControls() {
+        timerDisplayModeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || bindingControls) return@addOnButtonCheckedListener
+            val mode = modeForButtonId(checkedId) ?: return@addOnButtonCheckedListener
+            if (mode == settings.timerDisplayMode) return@addOnButtonCheckedListener
+            commit(settings.copy(timerDisplayMode = mode))
+            timerIntervalGrid.visibility = if (mode == AppSettings.MODE_INTERVAL) View.VISIBLE else View.GONE
+        }
+
+        timerDisplayIntervalSeekBar.max = AppSettings.MAX_DISPLAY_INTERVAL_MINUTES - AppSettings.MIN_DISPLAY_INTERVAL_MINUTES
+        timerDisplayIntervalSeekBar.setOnSeekBarChangeListener(onUserProgress { progress ->
+            val minutes = AppSettings.MIN_DISPLAY_INTERVAL_MINUTES + progress
+            timerDisplayIntervalValue.text = "$minutes min"
+            commit(settings.copy(timerDisplayIntervalMinutes = minutes))
+        })
+
+        timerDisplayDurationSeekBar.max = AppSettings.MAX_DISPLAY_DURATION_SECONDS - AppSettings.MIN_DISPLAY_DURATION_SECONDS
+        timerDisplayDurationSeekBar.setOnSeekBarChangeListener(onUserProgress { progress ->
+            val seconds = AppSettings.MIN_DISPLAY_DURATION_SECONDS + progress
+            timerDisplayDurationValue.text = "$seconds sec"
+            commit(settings.copy(timerDisplayDurationSeconds = seconds))
+        })
+
+        overlayCornerStyleToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || bindingControls) return@addOnButtonCheckedListener
+            val style = if (checkedId == R.id.overlayCornerStyleRounded) AppSettings.CORNER_STYLE_ROUNDED
+            else AppSettings.CORNER_STYLE_SQUARE
+            if (style != settings.cornerStyle) commit(settings.copy(cornerStyle = style))
+        }
+
+        overlayBorderSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (!bindingControls) commit(settings.copy(borderEnabled = isChecked))
         }
     }
+
+    private fun buttonIdForMode(mode: String): Int = when (mode) {
+        AppSettings.MODE_ALWAYS -> R.id.timerDisplayModeAlways
+        AppSettings.MODE_NEVER -> R.id.timerDisplayModeNever
+        else -> R.id.timerDisplayModeInterval
+    }
+
+    private fun modeForButtonId(id: Int): String? = when (id) {
+        R.id.timerDisplayModeAlways -> AppSettings.MODE_ALWAYS
+        R.id.timerDisplayModeInterval -> AppSettings.MODE_INTERVAL
+        R.id.timerDisplayModeNever -> AppSettings.MODE_NEVER
+        else -> null
+    }
+
+    private fun setupResetTimeControls() {
+        resetHourSpinner.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item, Array(24) { String.format("%02d", it) })
+        resetMinuteSpinner.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item, Array(60) { String.format("%02d", it) })
+
+        // Spinners report selections asynchronously (including the ones made
+        // while binding), so compare against what's stored instead of
+        // relying on [bindingControls].
+        val listener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val hour = resetHourSpinner.selectedItemPosition
+                val minute = resetMinuteSpinner.selectedItemPosition
+                if (hour == settingsRepository.getResetHour() && minute == settingsRepository.getResetMinute()) return
+                settingsRepository.saveResetTime(hour, minute)
+                settingsRepository.notifySettingsUpdated() // reschedules the reset alarm
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        resetHourSpinner.onItemSelectedListener = listener
+        resetMinuteSpinner.onItemSelectedListener = listener
+    }
+
+    // =========================================================================
+    // HELP
+    // =========================================================================
 
     private fun setupHelpButtons() {
+        findViewById<ImageButton>(R.id.helpStages).setOnClickListener {
+            showHelpDialog(
+                "Stages",
+                "Your day is split into three stages, each with its own name, colors, position, size and blinking.\n\n" +
+                    "• ${stageName(1)}: from 0 minutes until the time you set.\n" +
+                    "• ${stageName(2)}: starts where ${stageName(1)} ends and lasts as long as you set.\n" +
+                    "• ${stageName(3)}: everything after that, until the daily reset.\n\n" +
+                    "Tap a stage to edit it. The timer on your screen switches to that stage so you can see it, and you can drag it to any spot."
+            )
+        }
         findViewById<ImageButton>(R.id.helpTimerDisplay).setOnClickListener {
             showHelpDialog(
-                "Timer Display",
-                "Controls when the floating timer overlay appears on top of other apps.\n\n" +
+                "When it shows",
+                "Controls when the floating timer appears on top of other apps.\n\n" +
                     "• Always: visible whenever the screen is on.\n" +
                     "• Interval: appears briefly at a fixed interval (e.g. every 1 min for 5 sec).\n" +
-                    "• Never: tracking stays on but the overlay is hidden. Pick this if you only want the home-screen widget."
-            )
-        }
-        findViewById<ImageButton>(R.id.helpLevel1).setOnClickListener {
-            showHelpDialog(
-                "Stage 1",
-                "Your day is split into three stages, each with its own color, position, font size, and blink behavior.\n\n" +
-                    "Stage 1 is the first stretch: from 0 minutes up to the threshold you set below. Customize how it looks and how long it lasts."
-            )
-        }
-        findViewById<ImageButton>(R.id.helpLevel2).setOnClickListener {
-            showHelpDialog(
-                "Stage 2",
-                "Stage 2 starts the moment Stage 1's threshold is reached, and lasts for the duration you configure. Same styling options as Stage 1."
-            )
-        }
-        findViewById<ImageButton>(R.id.helpLevel3).setOnClickListener {
-            showHelpDialog(
-                "Stage 3",
-                "Stage 3 takes over after Stage 1 and Stage 2 are exhausted, and stays for the rest of the day until the daily reset. Often paired with red plus blinking to signal \"too much.\""
+                    "• Never: tracking stays on but the timer is hidden. Pick this if you only want the home-screen widget.\n\n" +
+                    "While you're on this screen the timer always shows, so you can style it."
             )
         }
         findViewById<ImageButton>(R.id.helpResetTime).setOnClickListener {
             showHelpDialog(
-                "Daily Reset Time",
+                "Daily reset",
                 "The time of day when your screen-time counter resets to zero. Reset is enforced even when the app is asleep or the device is in Doze."
             )
         }
         findViewById<ImageButton>(R.id.helpImportExport).setOnClickListener {
             showHelpDialog(
-                "Import & Export",
-                "Save all your settings (levels, colors, positions, reset time, timer display mode) to a JSON file, or restore them from one. Useful for backing up your setup or moving to a new device."
+                "Import & export",
+                "Save all your settings (stages, colors, positions, reset time, display mode) to a JSON file, or restore them from one. Useful for backing up your setup or moving to a new device."
             )
         }
     }
@@ -340,249 +608,75 @@ class SettingsActivity : AppCompatActivity() {
             }
     }
 
-    private fun handleClose() {
-        if (hasChanges) {
-            showUnsavedChangesDialog()
-        } else {
-            finish()
-        }
-    }
-
-    private fun showUnsavedChangesDialog() {
-        val customDialog = UnsavedChangesDialog(
-            this,
-            onSave = {
-                if (validateSettings()) {
-                    saveSettings()
-                    settingsRepository.notifySettingsUpdated()
-
-                    val serviceIntent = Intent(this, ScreenTimeService::class.java)
-                    stopService(serviceIntent)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
-                    } else {
-                        startService(serviceIntent)
-                    }
-                    finish()
-                }
-            },
-            onDiscard = {
-                finish()
-            },
-            onCancel = {
-            }
-        )
-        customDialog.show()
-    }
-
-    private fun markChanged() {
-        if (!isInitialSetup) {
-            hasChanges = true
-            userChangesMade = true
-        }
-    }
-
-    private fun setupClickablePreviewHeaders() {
-        previewLevel1Header.setOnClickListener { currentPreviewLevel = 1; updatePreview(); updateStageSectionVisibility() }
-        previewLevel2Header.setOnClickListener { currentPreviewLevel = 2; updatePreview(); updateStageSectionVisibility() }
-        previewLevel3Header.setOnClickListener { currentPreviewLevel = 3; updatePreview(); updateStageSectionVisibility() }
-        updateStageSectionVisibility()
-    }
-
-    private fun updateStageSectionVisibility() {
-        stage1SettingsSection.visibility = if (currentPreviewLevel == 1) View.VISIBLE else View.GONE
-        stage2SettingsSection.visibility = if (currentPreviewLevel == 2) View.VISIBLE else View.GONE
-        stage3SettingsSection.visibility = if (currentPreviewLevel == 3) View.VISIBLE else View.GONE
-    }
-
-    private fun loadAndSetupControls() {
-        // Level 1
-        setupColorButtonControl(level1ColorButton, AppSettings.LEVEL_1_COLOR, AppSettings.DEFAULT_LEVEL_1_COLOR) { color -> currentLevel1Color = color }
-        setupPositionSpinnerControl(level1PositionSpinner, AppSettings.LEVEL_1_POSITION, AppSettings.DEFAULT_LEVEL_1_POSITION, 1)
-        setupFontSizeSeekBarControl(level1FontSizeSeekBar, level1FontSizeValue, AppSettings.LEVEL_1_FONT_SIZE, AppSettings.DEFAULT_LEVEL_1_FONT_SIZE)
-        setupLevelBlinkingSwitchControl(level1BlinkingSwitch, AppSettings.LEVEL_1_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_1_BLINKING_ENABLED) { enabled -> currentLevel1BlinkingEnabled = enabled }
-        setupLevel1TimeSeekBarControl()
-
-        // Level 2
-        setupColorButtonControl(level2ColorButton, AppSettings.LEVEL_2_COLOR, AppSettings.DEFAULT_LEVEL_2_COLOR) { color -> currentLevel2Color = color }
-        setupPositionSpinnerControl(level2PositionSpinner, AppSettings.LEVEL_2_POSITION, AppSettings.DEFAULT_LEVEL_2_POSITION, 2)
-        setupFontSizeSeekBarControl(level2FontSizeSeekBar, level2FontSizeValue, AppSettings.LEVEL_2_FONT_SIZE, AppSettings.DEFAULT_LEVEL_2_FONT_SIZE)
-        setupLevelBlinkingSwitchControl(level2BlinkingSwitch, AppSettings.LEVEL_2_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_2_BLINKING_ENABLED) { enabled -> currentLevel2BlinkingEnabled = enabled }
-        setupLevel2TimeSeekBarControl()
-
-        // Level 3
-        setupColorButtonControl(level3ColorButton, AppSettings.LEVEL_3_COLOR, AppSettings.DEFAULT_LEVEL_3_COLOR) { color -> currentLevel3Color = color }
-        setupPositionSpinnerControl(level3PositionSpinner, AppSettings.LEVEL_3_POSITION, AppSettings.DEFAULT_LEVEL_3_POSITION, 3)
-        setupFontSizeSeekBarControl(level3FontSizeSeekBar, level3FontSizeValue, AppSettings.LEVEL_3_FONT_SIZE, AppSettings.DEFAULT_LEVEL_3_FONT_SIZE)
-        setupLevelBlinkingSwitchControl(level3BlinkingSwitch, AppSettings.LEVEL_3_BLINKING_ENABLED, AppSettings.DEFAULT_LEVEL_3_BLINKING_ENABLED) { enabled -> currentLevel3BlinkingEnabled = enabled}
-
-        // Reset Time
-        setupResetTimeControls()
-
-        // Timer Display Settings
-        setupTimerDisplayControls()
-
-        finishInitialSetup()
-    }
-
-    private fun setupTimerDisplayControls() {
-        currentDisplayMode = prefs.getString(AppSettings.TIMER_DISPLAY_MODE, AppSettings.DEFAULT_TIMER_DISPLAY_MODE)
-            ?: AppSettings.DEFAULT_TIMER_DISPLAY_MODE
-
-        // Migrate any stale value to a known mode.
-        if (currentDisplayMode !in setOf(AppSettings.MODE_ALWAYS, AppSettings.MODE_INTERVAL, AppSettings.MODE_NEVER)) {
-            currentDisplayMode = AppSettings.DEFAULT_TIMER_DISPLAY_MODE
-        }
-
-        timerDisplayModeToggleGroup.check(buttonIdForMode(currentDisplayMode))
-        applyDisplayModeEnablement(currentDisplayMode)
-
-        timerDisplayModeToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val newMode = modeForButtonId(checkedId) ?: return@addOnButtonCheckedListener
-            if (newMode == currentDisplayMode) return@addOnButtonCheckedListener
-            currentDisplayMode = newMode
-            applyDisplayModeEnablement(newMode)
-            markChanged()
-        }
-
-        currentDisplayIntervalMinutes = prefs.getInt(AppSettings.TIMER_DISPLAY_INTERVAL_MINUTES, AppSettings.DEFAULT_TIMER_DISPLAY_INTERVAL_MINUTES)
-        timerDisplayIntervalSeekBar.max = AppSettings.MAX_DISPLAY_INTERVAL_MINUTES - AppSettings.MIN_DISPLAY_INTERVAL_MINUTES
-        timerDisplayIntervalSeekBar.progress = (currentDisplayIntervalMinutes - AppSettings.MIN_DISPLAY_INTERVAL_MINUTES).coerceIn(0, timerDisplayIntervalSeekBar.max)
-        timerDisplayIntervalValue.text = "$currentDisplayIntervalMinutes min"
-
-        timerDisplayIntervalSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentDisplayIntervalMinutes = AppSettings.MIN_DISPLAY_INTERVAL_MINUTES + progress
-                timerDisplayIntervalValue.text = "$currentDisplayIntervalMinutes min"
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) { markChanged() }
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        currentDisplayDurationSeconds = prefs.getInt(AppSettings.TIMER_DISPLAY_DURATION_SECONDS, AppSettings.DEFAULT_TIMER_DISPLAY_DURATION_SECONDS)
-        timerDisplayDurationSeekBar.max = AppSettings.MAX_DISPLAY_DURATION_SECONDS - AppSettings.MIN_DISPLAY_DURATION_SECONDS
-        timerDisplayDurationSeekBar.progress = (currentDisplayDurationSeconds - AppSettings.MIN_DISPLAY_DURATION_SECONDS).coerceIn(0, timerDisplayDurationSeekBar.max)
-        timerDisplayDurationValue.text = "$currentDisplayDurationSeconds sec"
-
-        timerDisplayDurationSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentDisplayDurationSeconds = AppSettings.MIN_DISPLAY_DURATION_SECONDS + progress
-                timerDisplayDurationValue.text = "$currentDisplayDurationSeconds sec"
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) { markChanged() }
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        applyDisplayModeEnablement(currentDisplayMode)
-
-        currentCornerStyle = prefs.getString(AppSettings.OVERLAY_CORNER_STYLE, AppSettings.DEFAULT_OVERLAY_CORNER_STYLE)
-            ?: AppSettings.DEFAULT_OVERLAY_CORNER_STYLE
-        if (currentCornerStyle !in setOf(AppSettings.CORNER_STYLE_SQUARE, AppSettings.CORNER_STYLE_ROUNDED)) {
-            currentCornerStyle = AppSettings.DEFAULT_OVERLAY_CORNER_STYLE
-        }
-        overlayCornerStyleToggleGroup.check(buttonIdForCornerStyle(currentCornerStyle))
-        overlayCornerStyleToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val newStyle = cornerStyleForButtonId(checkedId) ?: return@addOnButtonCheckedListener
-            if (newStyle == currentCornerStyle) return@addOnButtonCheckedListener
-            currentCornerStyle = newStyle
-            markChanged()
-        }
-
-        overlayBorderSwitch.isChecked = prefs.getBoolean(AppSettings.OVERLAY_BORDER_ENABLED, AppSettings.DEFAULT_OVERLAY_BORDER_ENABLED)
-        overlayBorderSwitch.setOnCheckedChangeListener { _, _ -> markChanged() }
-    }
-
-    private fun buttonIdForCornerStyle(style: String): Int = when (style) {
-        AppSettings.CORNER_STYLE_ROUNDED -> R.id.overlayCornerStyleRounded
-        else -> R.id.overlayCornerStyleSquare
-    }
-
-    private fun cornerStyleForButtonId(id: Int): String? = when (id) {
-        R.id.overlayCornerStyleSquare -> AppSettings.CORNER_STYLE_SQUARE
-        R.id.overlayCornerStyleRounded -> AppSettings.CORNER_STYLE_ROUNDED
-        else -> null
-    }
-
-    private fun buttonIdForMode(mode: String): Int = when (mode) {
-        AppSettings.MODE_ALWAYS -> R.id.timerDisplayModeAlways
-        AppSettings.MODE_NEVER -> R.id.timerDisplayModeNever
-        else -> R.id.timerDisplayModeInterval
-    }
-
-    private fun modeForButtonId(id: Int): String? = when (id) {
-        R.id.timerDisplayModeAlways -> AppSettings.MODE_ALWAYS
-        R.id.timerDisplayModeInterval -> AppSettings.MODE_INTERVAL
-        R.id.timerDisplayModeNever -> AppSettings.MODE_NEVER
-        else -> null
-    }
-
-    private fun applyDisplayModeEnablement(mode: String) {
-        val isInterval = mode == AppSettings.MODE_INTERVAL
-        timerDisplayIntervalSeekBar.isEnabled = isInterval
-        timerDisplayDurationSeekBar.isEnabled = isInterval
-    }
-
     // =========================================================================
-    // COLOR PICKER — now with HSV visual picker
+    // COLOR PICKER
     // =========================================================================
 
-    private fun setupColorButtonControl(button: Button, prefKey: String, defaultColor: Int, onColorSelected: (Int) -> Unit) {
-        var loadedColor = prefs.getInt(prefKey, defaultColor)
-        button.setBackgroundColor(loadedColor)
-        onColorSelected(loadedColor)
-
-        button.setOnClickListener {
-            showColorPickerDialog(loadedColor) { selectedColor ->
-                loadedColor = selectedColor
-                button.setBackgroundColor(loadedColor)
-                onColorSelected(loadedColor)
-                updatePreview()
-                markChanged()
-            }
-        }
-    }
-
-    private fun showColorPickerDialog(currentColor: Int, onColorSelected: (Int) -> Unit) {
+    /**
+     * HSV picker with hex input. [onPreview] fires on every change so the live
+     * timer follows the picker; [onSelected] fires on "Select". Cancelling
+     * drops the preview and the timer returns to the saved colors.
+     * [allowAlpha] adds an opacity slider (used for the badge background).
+     */
+    private fun showColorPickerDialog(
+        currentColor: Int,
+        allowAlpha: Boolean,
+        onPreview: (Int) -> Unit,
+        onSelected: (Int) -> Unit,
+    ) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_color_picker, null)
         val colorPickerView = dialogView.findViewById<ColorPickerView>(R.id.colorPickerView)
         val hexInput = dialogView.findViewById<EditText>(R.id.hexInput)
         val previewColor = dialogView.findViewById<View>(R.id.previewColor)
         val randomButton = dialogView.findViewById<Button>(R.id.randomColorButton)
+        val opacityRow = dialogView.findViewById<View>(R.id.opacityRow)
+        val opacitySeekBar = dialogView.findViewById<SeekBar>(R.id.opacitySeekBar)
+        val opacityValue = dialogView.findViewById<TextView>(R.id.opacityValue)
 
+        var alpha = if (allowAlpha) Color.alpha(currentColor) else 255
         var updatingFromPicker = false
         var updatingFromHex = false
 
-        // Initialize with current color
+        fun result(): Int = ColorUtils.setAlphaComponent(colorPickerView.getColor(), alpha)
+        fun refresh() {
+            previewColor.setBackgroundColor(result())
+            onPreview(result())
+        }
+
         colorPickerView.setColor(currentColor)
         hexInput.setText(String.format("#%06X", 0xFFFFFF and currentColor))
         previewColor.setBackgroundColor(currentColor)
 
-        // When the visual picker changes, update hex + preview
+        if (allowAlpha) {
+            opacityRow.visibility = View.VISIBLE
+            opacitySeekBar.progress = alpha * 100 / 255
+            opacityValue.text = "${opacitySeekBar.progress}%"
+            opacitySeekBar.setOnSeekBarChangeListener(onUserProgress { progress ->
+                alpha = progress * 255 / 100
+                opacityValue.text = "$progress%"
+                refresh()
+            })
+        }
+
         colorPickerView.listener = object : ColorPickerView.OnColorChangedListener {
             override fun onColorChanged(color: Int) {
                 if (updatingFromHex) return
                 updatingFromPicker = true
                 hexInput.setText(String.format("#%06X", 0xFFFFFF and color))
-                previewColor.setBackgroundColor(color)
                 updatingFromPicker = false
+                refresh()
             }
         }
 
-        // Random button
         randomButton.setOnClickListener {
-            val randomColor = Color.rgb(
-                (0..255).random(),
-                (0..255).random(),
-                (0..255).random()
-            )
+            val randomColor = Color.rgb((0..255).random(), (0..255).random(), (0..255).random())
             colorPickerView.setColor(randomColor)
+            updatingFromPicker = true
             hexInput.setText(String.format("#%06X", 0xFFFFFF and randomColor))
-            previewColor.setBackgroundColor(randomColor)
+            updatingFromPicker = false
+            refresh()
         }
 
-        // When hex input changes, update picker + preview
         hexInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 if (updatingFromPicker) return
@@ -590,8 +684,8 @@ class SettingsActivity : AppCompatActivity() {
                     val color = Color.parseColor(s.toString())
                     updatingFromHex = true
                     colorPickerView.setColor(color)
-                    previewColor.setBackgroundColor(color)
                     updatingFromHex = false
+                    refresh()
                 } catch (e: Exception) {
                     // ignore invalid input while typing
                 }
@@ -600,12 +694,20 @@ class SettingsActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
+        var selected = false
         AlertDialog.Builder(this, R.style.CustomAlertDialog)
             .setView(dialogView)
             .setPositiveButton("Select") { _, _ ->
-                onColorSelected(colorPickerView.getColor())
+                selected = true
+                onSelected(result())
             }
             .setNegativeButton("Cancel", null)
+            .setOnDismissListener {
+                if (!selected) {
+                    previewOverride = null
+                    renderPreview()
+                }
+            }
             .create()
             .apply {
                 show()
@@ -634,41 +736,40 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun hex(color: Int) = String.format("#%06X", 0xFFFFFF and color)
+    private fun hexWithAlpha(color: Int) = String.format("#%08X", color)
+
     private fun buildSettingsJson(): JSONObject {
         val root = JSONObject()
         // v3: custom_positions store fractions (fx/fy) instead of pixels.
         // Import still accepts the v2 absolute-pixel format for backward compat.
+        // Stage names and background colors are optional additions to v3.
         root.put("version", 3)
         root.put("app", "awareen")
         root.put("type", "settings")
         root.put("exported_at", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()))
 
         val s = JSONObject()
-        s.put("level_1_color", String.format("#%06X", 0xFFFFFF and currentLevel1Color))
-        s.put("level_1_position", level1PositionSpinner.selectedItem.toString())
-        s.put("level_1_font_size", (MIN_FONT_SIZE_SP + level1FontSizeSeekBar.progress).toInt())
-        s.put("level_1_max_time_minutes", currentLevel1MaxTimeMinutes)
-        s.put("level_1_blinking_enabled", currentLevel1BlinkingEnabled)
+        for (level in 1..3) {
+            val stage = settings.level(level)
+            s.put("level_${level}_name", stage.name)
+            s.put("level_${level}_color", hex(stage.color))
+            s.put("level_${level}_background_color", hexWithAlpha(stage.backgroundColor))
+            s.put("level_${level}_position", stage.position)
+            s.put("level_${level}_font_size", stage.fontSize.toInt())
+            s.put("level_${level}_blinking_enabled", stage.blinkingEnabled)
+        }
+        s.put("level_1_max_time_minutes", settings.level1MaxTimeSeconds / 60)
+        s.put("level_2_duration_minutes", settings.level2DurationSeconds / 60)
 
-        s.put("level_2_color", String.format("#%06X", 0xFFFFFF and currentLevel2Color))
-        s.put("level_2_position", level2PositionSpinner.selectedItem.toString())
-        s.put("level_2_font_size", (MIN_FONT_SIZE_SP + level2FontSizeSeekBar.progress).toInt())
-        s.put("level_2_duration_minutes", currentLevel2DurationMinutes)
-        s.put("level_2_blinking_enabled", currentLevel2BlinkingEnabled)
+        s.put("reset_hour", settingsRepository.getResetHour())
+        s.put("reset_minute", settingsRepository.getResetMinute())
 
-        s.put("level_3_color", String.format("#%06X", 0xFFFFFF and currentLevel3Color))
-        s.put("level_3_position", level3PositionSpinner.selectedItem.toString())
-        s.put("level_3_font_size", (MIN_FONT_SIZE_SP + level3FontSizeSeekBar.progress).toInt())
-        s.put("level_3_blinking_enabled", level3BlinkingSwitch.isChecked)
-
-        s.put("reset_hour", resetHourSpinner.selectedItemPosition)
-        s.put("reset_minute", resetMinuteSpinner.selectedItemPosition)
-
-        s.put("timer_display_mode", currentDisplayMode)
-        s.put("timer_display_interval_minutes", currentDisplayIntervalMinutes)
-        s.put("timer_display_duration_seconds", currentDisplayDurationSeconds)
-        s.put("overlay_corner_style", currentCornerStyle)
-        s.put("overlay_border_enabled", overlayBorderSwitch.isChecked)
+        s.put("timer_display_mode", settings.timerDisplayMode)
+        s.put("timer_display_interval_minutes", settings.timerDisplayIntervalMinutes)
+        s.put("timer_display_duration_seconds", settings.timerDisplayDurationSeconds)
+        s.put("overlay_corner_style", settings.cornerStyle)
+        s.put("overlay_border_enabled", settings.borderEnabled)
 
         // Custom per-level drag positions as fractions of screen [0f, 1f].
         val positions = JSONObject()
@@ -706,6 +807,20 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    /** Merge stage [level] from the JSON over [current]; omitted fields are kept. */
+    private fun mergeLevel(s: JSONObject, level: Int, current: LevelSettings): LevelSettings {
+        fun color(key: String, fallback: Int) =
+            s.optString(key).takeIf { it.isNotEmpty() }?.let { Color.parseColor(it) } ?: fallback
+        return LevelSettings(
+            name = s.optString("level_${level}_name").takeIf { it.isNotEmpty() } ?: current.name,
+            color = color("level_${level}_color", current.color),
+            backgroundColor = color("level_${level}_background_color", current.backgroundColor),
+            position = s.optString("level_${level}_position").takeIf { it in PRESET_POSITIONS } ?: current.position,
+            fontSize = if (s.has("level_${level}_font_size")) s.getInt("level_${level}_font_size").toFloat() else current.fontSize,
+            blinkingEnabled = if (s.has("level_${level}_blinking_enabled")) s.getBoolean("level_${level}_blinking_enabled") else current.blinkingEnabled,
+        )
+    }
+
     private fun importSettingsFromUri(uri: Uri) {
         try {
             val jsonString = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
@@ -724,32 +839,11 @@ class SettingsActivity : AppCompatActivity() {
             // (backward-compat with older exports).
             val current = settingsRepository.loadOverlaySettings()
             val merged = OverlaySettings(
-                level1 = LevelSettings(
-                    color = s.optString("level_1_color").takeIf { it.isNotEmpty() }
-                        ?.let { Color.parseColor(it) } ?: current.level1.color,
-                    position = s.optString("level_1_position").takeIf { it.isNotEmpty() && it != "Custom" }
-                        ?: current.level1.position,
-                    fontSize = if (s.has("level_1_font_size")) s.getInt("level_1_font_size").toFloat() else current.level1.fontSize,
-                    blinkingEnabled = if (s.has("level_1_blinking_enabled")) s.getBoolean("level_1_blinking_enabled") else current.level1.blinkingEnabled,
-                ),
+                level1 = mergeLevel(s, 1, current.level1),
                 level1MaxTimeSeconds = if (s.has("level_1_max_time_minutes")) s.getInt("level_1_max_time_minutes") * 60 else current.level1MaxTimeSeconds,
-                level2 = LevelSettings(
-                    color = s.optString("level_2_color").takeIf { it.isNotEmpty() }
-                        ?.let { Color.parseColor(it) } ?: current.level2.color,
-                    position = s.optString("level_2_position").takeIf { it.isNotEmpty() && it != "Custom" }
-                        ?: current.level2.position,
-                    fontSize = if (s.has("level_2_font_size")) s.getInt("level_2_font_size").toFloat() else current.level2.fontSize,
-                    blinkingEnabled = if (s.has("level_2_blinking_enabled")) s.getBoolean("level_2_blinking_enabled") else current.level2.blinkingEnabled,
-                ),
+                level2 = mergeLevel(s, 2, current.level2),
                 level2DurationSeconds = if (s.has("level_2_duration_minutes")) s.getInt("level_2_duration_minutes") * 60 else current.level2DurationSeconds,
-                level3 = LevelSettings(
-                    color = s.optString("level_3_color").takeIf { it.isNotEmpty() }
-                        ?.let { Color.parseColor(it) } ?: current.level3.color,
-                    position = s.optString("level_3_position").takeIf { it.isNotEmpty() && it != "Custom" }
-                        ?: current.level3.position,
-                    fontSize = if (s.has("level_3_font_size")) s.getInt("level_3_font_size").toFloat() else current.level3.fontSize,
-                    blinkingEnabled = if (s.has("level_3_blinking_enabled")) s.getBoolean("level_3_blinking_enabled") else current.level3.blinkingEnabled,
-                ),
+                level3 = mergeLevel(s, 3, current.level3),
                 timerDisplayMode = s.optString("timer_display_mode").takeIf { it.isNotEmpty() } ?: current.timerDisplayMode,
                 timerDisplayIntervalMinutes = if (s.has("timer_display_interval_minutes")) s.getInt("timer_display_interval_minutes") else current.timerDisplayIntervalMinutes,
                 timerDisplayDurationSeconds = if (s.has("timer_display_duration_seconds")) s.getInt("timer_display_duration_seconds") else current.timerDisplayDurationSeconds,
@@ -809,324 +903,13 @@ class SettingsActivity : AppCompatActivity() {
 
             Toast.makeText(this, "Settings imported!", Toast.LENGTH_SHORT).show()
 
-            // Reload all UI controls in-place from the updated prefs
-            isInitialSetup = true
-            hasChanges = false
-            userChangesMade = false
-            loadAndSetupControls()
-            updatePreview()
+            settings = settingsRepository.loadOverlaySettings()
+            bindAllControls()
+            renderPreview()
 
         } catch (e: Exception) {
             Log.e(TAG, "Import failed: ${e.message}", e)
             Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
         }
-    }
-
-    // =========================================================================
-    // POSITION / FONT / TIME / BLINKING CONTROLS (unchanged logic)
-    // =========================================================================
-
-    private fun setupPositionSpinnerControl(spinner: Spinner, prefKey: String, defaultPosition: String, level: Int) {
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, positionOptionsWithCustom)
-        spinner.adapter = adapter
-
-        val useCustomKey = when (level) {
-            1 -> OverlayController.LEVEL_1_USE_CUSTOM
-            2 -> OverlayController.LEVEL_2_USE_CUSTOM
-            else -> OverlayController.LEVEL_3_USE_CUSTOM
-        }
-
-        val hasCustomPosition = prefs.getBoolean(useCustomKey, false)
-
-        if (hasCustomPosition) {
-            spinner.setSelection(0) // "Custom" is at index 0
-        } else {
-            val currentPosition = prefs.getString(prefKey, defaultPosition) ?: defaultPosition
-            val index = positionOptionsWithCustom.indexOf(currentPosition)
-            spinner.setSelection(if (index >= 0) index else 1)
-        }
-
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                // No prefs writes here — the user hasn't saved yet. Picking a
-                // preset while a dragged custom position is active will clear
-                // that custom in saveSettings(); backing out preserves it.
-                updatePreview()
-                markChanged()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-    }
-
-    private fun setupFontSizeSeekBarControl(seekBar: SeekBar, valueTextView: TextView, prefKey: String, defaultSizeSp: Int) {
-        val currentSizeSp = prefs.getInt(prefKey, defaultSizeSp).toFloat()
-        seekBar.max = (MAX_FONT_SIZE_SP - MIN_FONT_SIZE_SP).toInt()
-        seekBar.progress = (currentSizeSp - MIN_FONT_SIZE_SP).toInt().coerceIn(0, seekBar.max)
-        valueTextView.text = "${currentSizeSp.toInt()}sp"
-
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                val newSize = MIN_FONT_SIZE_SP + progress
-                valueTextView.text = "${newSize.toInt()}sp"
-                updatePreview()
-                markChanged()
-            }
-            override fun onStartTrackingTouch(sb: SeekBar?) {markChanged()}
-            override fun onStopTrackingTouch(sb: SeekBar?) {}
-        })
-    }
-
-    private fun setupLevel1TimeSeekBarControl() {
-        currentLevel1MaxTimeMinutes = prefs.getInt(AppSettings.LEVEL_1_MAX_TIME_SECONDS, AppSettings.DEFAULT_LEVEL_1_MAX_TIME_SECONDS) / 60
-        level1TimeSeekBar.max = MAX_LEVEL_1_TIME_MINUTES - MIN_LEVEL_1_TIME_MINUTES
-        level1TimeSeekBar.progress = (currentLevel1MaxTimeMinutes - MIN_LEVEL_1_TIME_MINUTES).coerceIn(0, level1TimeSeekBar.max)
-        level1TimeValue.text = "$currentLevel1MaxTimeMinutes min"
-
-        level1TimeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentLevel1MaxTimeMinutes = MIN_LEVEL_1_TIME_MINUTES + progress
-                level1TimeValue.text = "$currentLevel1MaxTimeMinutes min"
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {markChanged()}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-    }
-
-    private fun setupLevel2TimeSeekBarControl() {
-        currentLevel2DurationMinutes = prefs.getInt(AppSettings.LEVEL_2_DURATION_SECONDS, AppSettings.DEFAULT_LEVEL_2_DURATION_SECONDS) / 60
-        level2TimeSeekBar.max = MAX_LEVEL_2_DURATION_MINUTES - MIN_LEVEL_2_DURATION_MINUTES
-        level2TimeSeekBar.progress = (currentLevel2DurationMinutes - MIN_LEVEL_2_DURATION_MINUTES).coerceIn(0, level2TimeSeekBar.max)
-        level2TimeValue.text = "$currentLevel2DurationMinutes min duration"
-
-        level2TimeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentLevel2DurationMinutes = MIN_LEVEL_2_DURATION_MINUTES + progress
-                level2TimeValue.text = "$currentLevel2DurationMinutes min duration"
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                markChanged()
-            }
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-    }
-
-    private fun setupLevelBlinkingSwitchControl(switch: SwitchCompat, prefKey: String, default: Boolean, onToggle: (Boolean) -> Unit) {
-        val enabled = prefs.getBoolean(prefKey, default)
-        switch.isChecked = enabled
-        onToggle(enabled)
-
-        switch.setOnCheckedChangeListener { _, isChecked ->
-            onToggle(isChecked)
-            markChanged()
-        }
-    }
-
-    private fun setupResetTimeControls() {
-        val hours = Array(24) { i -> String.format("%02d", i) }
-        val minutes = Array(60) { i -> String.format("%02d", i) }
-
-        resetHourSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, hours)
-        resetMinuteSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, minutes)
-
-        val savedHour = prefs.getInt(AppSettings.RESET_HOUR, AppSettings.DEFAULT_RESET_HOUR)
-        val savedMinute = prefs.getInt(AppSettings.RESET_MINUTE, AppSettings.DEFAULT_RESET_MINUTE)
-
-        resetHourSpinner.setSelection(savedHour)
-        resetMinuteSpinner.setSelection(savedMinute)
-
-        resetHourSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                markChanged()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        resetMinuteSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                markChanged()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-    }
-
-    // =========================================================================
-    // PREVIEW
-    // =========================================================================
-
-    private fun updatePreview() {
-        val color: Int
-        val position: String
-        val fontSizeSp: Float
-
-        when (currentPreviewLevel) {
-            1 -> {
-                color = currentLevel1Color
-                val selectedItem = level1PositionSpinner.selectedItem?.toString()
-                position = if (selectedItem == "Custom") AppSettings.DEFAULT_LEVEL_1_POSITION else selectedItem ?: AppSettings.DEFAULT_LEVEL_1_POSITION
-                fontSizeSp = MIN_FONT_SIZE_SP + level1FontSizeSeekBar.progress
-                highlightPreviewHeader(previewLevel1Header)
-            }
-            2 -> {
-                color = currentLevel2Color
-                val selectedItem = level2PositionSpinner.selectedItem?.toString()
-                position = if (selectedItem == "Custom") AppSettings.DEFAULT_LEVEL_2_POSITION else selectedItem ?: AppSettings.DEFAULT_LEVEL_2_POSITION
-                fontSizeSp = MIN_FONT_SIZE_SP + level2FontSizeSeekBar.progress
-                highlightPreviewHeader(previewLevel2Header)
-            }
-            else -> {
-                color = currentLevel3Color
-                val selectedItem = level3PositionSpinner.selectedItem?.toString()
-                position = if (selectedItem == "Custom") AppSettings.DEFAULT_LEVEL_3_POSITION else selectedItem ?: AppSettings.DEFAULT_LEVEL_3_POSITION
-                fontSizeSp = MIN_FONT_SIZE_SP + level3FontSizeSeekBar.progress
-                highlightPreviewHeader(previewLevel3Header)
-            }
-        }
-
-        previewTimeText.text = "00:12:34"
-        previewTimeText.setTextColor(color)
-        previewTimeText.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSizeSp)
-
-        val constraintSet = ConstraintSet()
-        constraintSet.clone(previewLayout)
-        constraintSet.clear(previewTimeText.id, ConstraintSet.START)
-        constraintSet.clear(previewTimeText.id, ConstraintSet.END)
-        constraintSet.clear(previewTimeText.id, ConstraintSet.TOP)
-        constraintSet.clear(previewTimeText.id, ConstraintSet.BOTTOM)
-
-        when (position) {
-            "Top Left" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 16)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 16)
-            }
-            "Top Center" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 16)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
-            }
-            "Top Right" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 16)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 16)
-            }
-            "Middle Left" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 16)
-            }
-            "Middle Center" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
-            }
-            "Middle Right" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 16)
-            }
-            "Bottom Left" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 16)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 16)
-            }
-            "Bottom Center" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 16)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
-            }
-            "Bottom Right" -> {
-                constraintSet.connect(previewTimeText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 16)
-                constraintSet.connect(previewTimeText.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 16)
-            }
-        }
-        constraintSet.applyTo(previewLayout)
-    }
-
-    private fun highlightPreviewHeader(activeHeader: TextView) {
-        val activeColor = ContextCompat.getColor(this, R.color.preview_header_active)
-        val inactiveColor = ContextCompat.getColor(this, R.color.preview_header_not_active)
-
-        previewLevel1Header.setTextColor(if (activeHeader == previewLevel1Header) activeColor else inactiveColor)
-        previewLevel2Header.setTextColor(if (activeHeader == previewLevel2Header) activeColor else inactiveColor)
-        previewLevel3Header.setTextColor(if (activeHeader == previewLevel3Header) activeColor else inactiveColor)
-    }
-
-    private fun validateSettings(): Boolean {
-        if (currentLevel1MaxTimeMinutes <= 0) {
-            Toast.makeText(this, "Stage 1 time must be positive.", Toast.LENGTH_SHORT).show()
-            return false
-        }
-        if (currentLevel2DurationMinutes <= 0) {
-            Toast.makeText(this, "Stage 2 duration must be positive.", Toast.LENGTH_SHORT).show()
-            return false
-        }
-        return true
-    }
-
-    private fun saveSettings() {
-        val level1Pos = level1PositionSpinner.selectedItem.toString()
-        val level2Pos = level2PositionSpinner.selectedItem.toString()
-        val level3Pos = level3PositionSpinner.selectedItem.toString()
-
-        val snapshot = OverlaySettings(
-            level1 = LevelSettings(
-                color = currentLevel1Color,
-                position = level1Pos,
-                fontSize = MIN_FONT_SIZE_SP + level1FontSizeSeekBar.progress,
-                blinkingEnabled = currentLevel1BlinkingEnabled,
-            ),
-            level1MaxTimeSeconds = currentLevel1MaxTimeMinutes * 60,
-            level2 = LevelSettings(
-                color = currentLevel2Color,
-                position = level2Pos,
-                fontSize = MIN_FONT_SIZE_SP + level2FontSizeSeekBar.progress,
-                blinkingEnabled = currentLevel2BlinkingEnabled,
-            ),
-            level2DurationSeconds = currentLevel2DurationMinutes * 60,
-            level3 = LevelSettings(
-                color = currentLevel3Color,
-                position = level3Pos,
-                fontSize = MIN_FONT_SIZE_SP + level3FontSizeSeekBar.progress,
-                blinkingEnabled = level3BlinkingSwitch.isChecked,
-            ),
-            timerDisplayMode = currentDisplayMode,
-            timerDisplayIntervalMinutes = currentDisplayIntervalMinutes,
-            timerDisplayDurationSeconds = currentDisplayDurationSeconds,
-            cornerStyle = currentCornerStyle,
-            borderEnabled = overlayBorderSwitch.isChecked,
-        )
-
-        settingsRepository.saveOverlaySettings(
-            snapshot,
-            writeLevel1Position = level1Pos != "Custom",
-            writeLevel2Position = level2Pos != "Custom",
-            writeLevel3Position = level3Pos != "Custom",
-        )
-
-        // For any level whose spinner is on a preset (not "Custom"), drop any
-        // previously-dragged custom position so the preset takes effect.
-        // Spinner left on "Custom" preserves the drag. Doing this here rather
-        // than in the spinner listener means changes only persist when the
-        // user actually saves.
-        if (level1Pos != "Custom") settingsRepository.clearCustomPosition(1)
-        if (level2Pos != "Custom") settingsRepository.clearCustomPosition(2)
-        if (level3Pos != "Custom") settingsRepository.clearCustomPosition(3)
-
-        settingsRepository.saveResetTime(
-            hour = resetHourSpinner.selectedItemPosition,
-            minute = resetMinuteSpinner.selectedItemPosition,
-        )
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        super.onBackPressed()
-        handleClose()
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
-            handleClose()
-            return true
-        }
-        return super.onOptionsItemSelected(item)
     }
 }

@@ -60,7 +60,14 @@
     <color name="status_danger">#DE7C6A</color>
     <color name="danger_button_background">#2A1E1A</color>
 
-    <!-- Semi-transparent scrim used behind the floating overlay timer. -->
-    <color name="scrim_overlay">#B30F1613</color>
+    <!--
+        "Your day" donut on Analytics. A categorical set (identity, not
+        status), validated as a ring in this order on the dark surface:
+        sleep, work, free, screen.
+    -->
+    <color name="day_sleep">#3987E5</color>
+    <color name="day_busy">#C98500</color>
+    <color name="day_free">#199E70</color>
+    <color name="day_screen">#E66767</color>
 
 </resources>

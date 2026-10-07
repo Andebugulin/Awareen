@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Onboarding hint bubble: the accent fill so it reads as a one-off note, not a card. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/accent_primary" />
+    <corners android:radius="14dp" />
+</shape>

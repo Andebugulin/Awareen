@@ -6,6 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -26,9 +28,20 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
+        private const val HOME_CARD_REFRESH_MS = 5_000L
     }
 
     private val permissionWizard = PermissionWizard(this, ::actuallyStartService)
+
+    // The service writes today's total every second; re-read it while this
+    // screen is visible so the card doesn't sit on the value from onResume.
+    private val homeCardHandler = Handler(Looper.getMainLooper())
+    private val homeCardRefresh = object : Runnable {
+        override fun run() {
+            updateHomeCard()
+            homeCardHandler.postDelayed(this, HOME_CARD_REFRESH_MS)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +69,7 @@ class MainActivity : AppCompatActivity() {
         setupSocialLinks()
         val settingsButton: ImageButton = findViewById(R.id.settingsButton)
         settingsButton.setOnClickListener {
-            // Create an Intent to start SettingsActivity
+            dismissSettingsHint()
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
 
@@ -73,15 +86,22 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, AnalyticsActivity::class.java)
             startActivity(intent)
         }
+
+        findViewById<View>(R.id.settingsHint).setOnClickListener { dismissSettingsHint() }
     }
 
     override fun onResume() {
         super.onResume()
         updateButtonVisibility()
-        updateHomeCard()
+        homeCardHandler.post(homeCardRefresh)
 
         // Defensive reset check — catches missed resets even if service was killed
         performDefensiveResetCheck()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        homeCardHandler.removeCallbacks(homeCardRefresh)
     }
 
     /**
@@ -134,20 +154,45 @@ class MainActivity : AppCompatActivity() {
             overlaySettings.level1MaxTimeSeconds,
             overlaySettings.level2DurationSeconds,
         )
-        val (levelColor, statusText) = when (level) {
-            1 -> overlaySettings.level1.color to "Stage 1: staying mindful"
-            2 -> overlaySettings.level2.color to "Stage 2: past your first checkpoint"
-            else -> overlaySettings.level3.color to "Stage 3: well over your limit"
+        val stage = overlaySettings.level(level)
+        val statusText = "${stage.name}: " + when (level) {
+            1 -> "staying mindful"
+            2 -> "past your first checkpoint"
+            else -> "well over your limit"
         }
 
         findViewById<TextView>(R.id.todayTimeTextView).apply {
             text = formatHoursMinutes(todaySeconds)
-            setTextColor(levelColor)
+            setTextColor(stage.color)
         }
         findViewById<TextView>(R.id.todayStatusTextView).text = statusText
 
         featuresContentView.visibility = View.GONE
         todayContentView.visibility = View.VISIBLE
+    }
+
+    // =========================================================================
+    // ONBOARDING — a single hint pointing at Settings, the first time the
+    // user starts tracking. Dismissed by tapping it or opening Settings.
+    // =========================================================================
+
+    private fun showSettingsHintOnce() {
+        val prefs = getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE)
+        if (prefs.getBoolean(AppSettings.ONBOARDING_SETTINGS_HINT_SHOWN, false)) return
+        findViewById<View>(R.id.settingsHint).apply {
+            alpha = 0f
+            visibility = View.VISIBLE
+            animate().alpha(1f).setDuration(250).start()
+        }
+    }
+
+    private fun dismissSettingsHint() {
+        val hint = findViewById<View>(R.id.settingsHint)
+        if (hint.visibility != View.VISIBLE) return
+        hint.visibility = View.GONE
+        getSharedPreferences(AppSettings.PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putBoolean(AppSettings.ONBOARDING_SETTINGS_HINT_SHOWN, true)
+            .apply()
     }
 
     private fun formatHoursMinutes(seconds: Int): String {
@@ -189,6 +234,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Screen time tracking started", Toast.LENGTH_SHORT).show()
             findViewById<Button>(R.id.startServiceButton).visibility = View.GONE
             findViewById<Button>(R.id.stopServiceButton).visibility = View.VISIBLE
+            showSettingsHintOnce()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Error starting service: ${e.message}", Toast.LENGTH_LONG).show()
